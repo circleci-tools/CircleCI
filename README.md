@@ -1,4 +1,6 @@
 # CircleCI
+[![](https://jitpack.io/v/unhappychoice/circleci.svg)](https://jitpack.io/#unhappychoice/circleci)
+
 This is [CircleCI](https://circleci.com) API Client for Kotlin.
 
 ## Installation
