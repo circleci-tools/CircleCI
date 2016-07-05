@@ -15,6 +15,7 @@ plugins {
 
 apply plugin: 'maven'
 apply plugin: 'kotlin'
+apply plugin: 'jacoco'
 
 project.version = scmVersion.version
 group='com.github.unhappychoice'
@@ -43,4 +44,5 @@ repositories {
 
 sourceSets {
     main.java.srcDirs += 'src/main/kotlin'
+    test.java.srcDirs += 'src/test/kotlin'
 }
