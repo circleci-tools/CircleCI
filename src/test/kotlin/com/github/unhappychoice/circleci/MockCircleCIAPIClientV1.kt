@@ -36,7 +36,7 @@ class MockCircleCIAPIClientV1: CircleCIAPIClientV1 {
   }
 
   override fun getBuild(userName: String, project: String, buildNumber: Int): Observable<Build> {
-    return mockResponse("json/projectBuilds.json", Build::class.java)
+    return mockResponse("json/build.json", Build::class.java)
   }
 
   override fun getArtifacts(userName: String, project: String, buildNumber: Int): Observable<List<Artifact>> {
@@ -44,23 +44,23 @@ class MockCircleCIAPIClientV1: CircleCIAPIClientV1 {
   }
 
   override fun retryBuild(userName: String, project: String, buildNumber: Int): Observable<Build> {
-    return mockResponse("json/retryBuild", Build::class.java)
+    return mockResponse("json/retryBuild.json", Build::class.java)
   }
 
   override fun cancelBuild(userName: String, project: String, buildNumber: Int): Observable<Build> {
-    return mockResponse("json/cancelBuild", Build::class.java)
+    return mockResponse("json/cancelBuild.json", Build::class.java)
   }
 
   override fun addSSHUser(userName: String, project: String, buildNumber: Int): Observable<Build> {
-    return mockResponse("json/sshUser", Build::class.java)
+    return mockResponse("json/sshUser.json", Build::class.java)
   }
 
   override fun triggerNewBuild(userName: String, project: String, request: TriggerNewBuildRequest): Observable<Build> {
-    return mockResponse("json/triggerNewBuild", Build::class.java)
+    return mockResponse("json/triggerNewBuild.json", Build::class.java)
   }
 
   override fun triggerNewBuildWithBranch(userName: String, project: String, branch: String, request: TriggerNewBuildWithBranchRequest): Observable<Build> {
-    return mockResponse("json/triggerNewBuildWithBranch", Build::class.java)
+    return mockResponse("json/triggerNewBuildWithBranch.json", Build::class.java)
   }
 
   override fun deleteCache(userName: String, project: String): Observable<Unit> {
@@ -77,7 +77,7 @@ class MockCircleCIAPIClientV1: CircleCIAPIClientV1 {
       .create()
 
   private fun readJson(fileName: String): String {
-    val file = File(javaClass.classLoader.getResource(fileName).file)
+    val file = File(MockCircleCIAPIClientV1::class.java.getResource(fileName).file)
     val scanner = Scanner(file)
     try {
       return scanner.useDelimiter("\\A").next()

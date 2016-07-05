@@ -19,15 +19,16 @@ import rx.schedulers.Schedulers
 
 @RunWith(JUnitKSpecRunner::class)
 class CircleCIAPIClientSpec: KSpec() {
+  lateinit var client: CircleCIAPIClientV1
+  val userName = "unhappychoice"
+  val project = "circleci"
+  val branch = "master"
+  val buildNum = 1
+
   override fun spec() {
     describe("CircleCIAPIClient") {
-      val client = MockCircleCIAPIClientV1()
-      val userName = "unhappychoice"
-      val project = "circleci"
-      val branch = "master"
-      val buildNum = 1
-
       before {
+        client = MockCircleCIAPIClientV1()
         RxJavaPlugins.getInstance().registerSchedulersHook(object : RxJavaSchedulersHook() {
           override fun getNewThreadScheduler() = Schedulers.immediate()
           override fun getComputationScheduler() = Schedulers.immediate()
@@ -38,6 +39,7 @@ class CircleCIAPIClientSpec: KSpec() {
       it("#getMe() should return response") {
         val subscriber = TestSubscriber<User>()
         client.getMe().subscribe(subscriber)
+
         expect(subscriber.isFinished()).to.be.`true`
       }
 
@@ -118,13 +120,8 @@ class CircleCIAPIClientSpec: KSpec() {
   }
 
   private fun <T> TestSubscriber<T>.isFinished(): Boolean {
-    try {
-      assertNoErrors()
-      assertCompleted()
-    } catch (e: Throwable) {
-      e.printStackTrace()
-      return false
-    }
+    assertNoErrors()
+    assertCompleted()
     return true
   }
 }
