@@ -1,12 +1,10 @@
 machine:
   java:
     version: oraclejdk8
-general:
-  artifacts:
-    - "build/reports"
 test:
   override:
     - ./gradlew test
     - ./gradlew jacocoTestReport
+    - cp -r build/reports $CIRCLE_ARTIFACTS
   post:
     - bash <(curl -s https://codecov.io/bash) -t d295dceb-ac5c-4cde-94b4-21d58516cd74
