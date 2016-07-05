@@ -1,4 +1,4 @@
-package com.unhappychoice.norimaki.model
+package com.github.unhappychoice.circleci.response
 
 import java.util.*
 

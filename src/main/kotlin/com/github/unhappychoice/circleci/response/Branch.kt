@@ -1,4 +1,4 @@
-package com.unhappychoice.norimaki.model
+package com.github.unhappychoice.circleci.response
 
 data class Branch(
   val name: String,

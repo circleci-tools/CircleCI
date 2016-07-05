@@ -1,0 +1,111 @@
+{
+  "compare" : "https://example.com/test/color-hash.kt/compare/c8ae8dc1fccd...f05170184b32",
+  "previous_successful_build" : {
+    "build_num" : 10,
+    "status" : "success",
+    "build_time_millis" : 201647
+  },
+  "build_parameters" : null,
+  "oss" : true,
+  "all_commit_details_truncated" : false,
+  "committer_date" : "2016-06-07T00:41:21+09:00",
+  "body" : "Refactor",
+  "usage_queued_at" : "2016-06-06T15:41:38.319Z",
+  "fail_reason" : null,
+  "retry_of" : null,
+  "reponame" : "color-hash.kt",
+  "ssh_users" : [ ],
+  "build_url" : "https://example.com/gh/test/color-hash.kt/12",
+  "parallel" : 1,
+  "failed" : null,
+  "branch" : "master",
+  "username" : "test",
+  "author_date" : "2016-06-07T00:41:21+09:00",
+  "why" : "github",
+  "user" : {
+    "is_user" : true,
+    "login" : "test",
+    "avatar_url" : "https://avatars.githubusercontent.com/u/5608948?v=3",
+    "name" : "test",
+    "vcs_type" : "github",
+    "id" : 5608948
+  },
+  "vcs_revision" : "f05170184b32d936813c5b2bfc49fb287af52f09",
+  "vcs_tag" : null,
+  "build_num" : 12,
+  "infrastructure_fail" : false,
+  "committer_email" : "test@example.com",
+  "previous" : {
+    "build_num" : 10,
+    "status" : "success",
+    "build_time_millis" : 201647
+  },
+  "status" : "success",
+  "committer_name" : "test",
+  "retries" : [ 13, 16, 19, 22, 25, 28, 31, 34 ],
+  "subject" : "Merge pull request #2 from test/refactor",
+  "vcs_type" : "github",
+  "timedout" : false,
+  "dont_build" : null,
+  "lifecycle" : "finished",
+  "no_dependency_cache" : false,
+  "stop_time" : "2016-06-06T15:49:22.668Z",
+  "ssh_disabled" : false,
+  "build_time_millis" : 480379,
+  "circle_yml" : {
+    "string" : "machine:\n  java:\n    version: openjdk7\ndependencies:\n  pre:\n    - echo y | android update sdk --no-ui --all --filter tools,platform-tools,build-tools-23.0.3\n  cache_directories:\n    - ~/.android\n    - ~/android\ntest:\n  override:\n    - ./gradlew test\n    - ./gradlew jacocoTestReport\n  post:\n    - bash <(curl -s https://codecov.io/bash) -t c6baed7c-74c0-4042-8d37-dc0196b1374b\n"
+  },
+  "messages" : [ {
+    "type" : "warning",
+    "message" : "circle.yml specified cache directory: /home/ubuntu/android but it does not exist"
+  } ],
+  "is_first_green_build" : false,
+  "job_name" : null,
+  "start_time" : "2016-06-06T15:41:22.289Z",
+  "canceler" : {
+    "login" : "test",
+    "name" : "test"
+  },
+  "all_commit_details" : [ {
+    "committer_date" : "2016-06-07T00:36:06+09:00",
+    "body" : "",
+    "branch" : "master",
+    "author_date" : "2016-06-07T00:36:06+09:00",
+    "committer_email" : "test@example.com",
+    "commit" : "baa28e6ee3f518b5f20daed9e4af22ff1d65bdcf",
+    "committer_login" : "test",
+    "committer_name" : "test",
+    "subject" : "Refactor",
+    "commit_url" : "https://example.com/test/color-hash.kt/commit/baa28e6ee3f518b5f20daed9e4af22ff1d65bdcf",
+    "author_login" : "test",
+    "author_name" : "test",
+    "author_email" : "test@example.com"
+  }, {
+    "committer_date" : "2016-06-07T00:41:21+09:00",
+    "body" : "Refactor",
+    "branch" : "master",
+    "author_date" : "2016-06-07T00:41:21+09:00",
+    "committer_email" : "test@example.com",
+    "commit" : "f05170184b32d936813c5b2bfc49fb287af52f09",
+    "committer_login" : "test",
+    "committer_name" : "test",
+    "subject" : "Merge pull request #2 from test/refactor",
+    "commit_url" : "https://example.com/test/color-hash.kt/commit/f05170184b32d936813c5b2bfc49fb287af52f09",
+    "author_login" : "test",
+    "author_name" : "test",
+    "author_email" : "test@example.com"
+  } ],
+  "outcome" : "success",
+  "vcs_url" : "https://example.com/test/color-hash.kt",
+  "author_name" : "test",
+  "node" : [ {
+    "public_ip_addr" : "107.22.116.210",
+    "port" : 64538,
+    "username" : "ubuntu",
+    "image_id" : "s3://lxc-images/circletar-1741-cc586-20160424T232626Z",
+    "ssh_enabled" : null
+  } ],
+  "queued_at" : "2016-06-06T15:41:22.237Z",
+  "canceled" : false,
+  "author_email" : "test@example.com"
+}

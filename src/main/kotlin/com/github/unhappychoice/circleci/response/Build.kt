@@ -1,4 +1,4 @@
-package com.unhappychoice.norimaki.model
+package com.github.unhappychoice.circleci.response
 
 import java.util.*
 
@@ -33,11 +33,11 @@ data class Build(
   val stopTime: Date,
   val buildTimeMillis: Int,
   val circleYml: Map<String, Any>,
-  val messages: List<String>,
+  //val messages: List<String>,
   val isFirstGreenBuild: Boolean,
   val jobName: String,
   val startTime: Date,
-  val canceler: String,
+  val canceler: User,
   val allCommitDetails: List<Commit>,
   val outcome: String,
   val vcsUrl: String,
