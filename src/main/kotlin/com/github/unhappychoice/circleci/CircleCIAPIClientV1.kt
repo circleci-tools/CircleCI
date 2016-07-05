@@ -3,9 +3,9 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.request.TriggerNewBuildRequest
 import com.github.unhappychoice.circleci.request.TriggerNewBuildWithBranchRequest
 import com.github.unhappychoice.circleci.response.Artifact
-import com.unhappychoice.norimaki.model.Build
-import com.unhappychoice.norimaki.model.Project
-import com.unhappychoice.norimaki.model.User
+import com.github.unhappychoice.circleci.response.Build
+import com.github.unhappychoice.circleci.response.Project
+import com.github.unhappychoice.circleci.response.User
 import retrofit.http.*
 import rx.Observable
 
@@ -133,7 +133,7 @@ interface CircleCIAPIClientV1 {
     @Path("username") userName: String,
     @Path("project") project: String,
     @Body request: TriggerNewBuildRequest
-  )
+  ): Observable<Build>
 
   /**
    * POST: /project/:username/:project/tree/:branch
@@ -146,7 +146,7 @@ interface CircleCIAPIClientV1 {
     @Path("project") project: String,
     @Path("branch") branch: String,
     @Body request: TriggerNewBuildWithBranchRequest
-  )
+  ): Observable<Build>
 
   /**
    * DELETE: /project/:username/:project/build-cache

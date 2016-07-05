@@ -1,0 +1,16 @@
+[ {
+  "path" : "/tmp/path/to/something1",
+  "pretty_path" : "$CIRCLE_ARTIFACTS/path/to/something1",
+  "node_index" : 0,
+  "url" : "https://example.com/path/to/something1"
+}, {
+  "path" : "/tmp/path/to/something2",
+  "pretty_path" : "$CIRCLE_ARTIFACTS/path/to/something2",
+  "node_index" : 0,
+  "url" : "https://example.com/path/to/something2"
+}, {
+  "path" : "/tmp/path/to/something3",
+  "pretty_path" : "$CIRCLE_ARTIFACTS/path/to/something3",
+  "node_index" : 0,
+  "url" : "https://example.com/path/to/something3"
+} ]

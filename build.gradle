@@ -29,12 +29,18 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.squareup.retrofit:retrofit:1.9.0'
     compile 'io.reactivex:rxkotlin:0.24.100'
-    testCompile 'junit:junit:4.12'
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    testCompile 'junit:junit:4.12'
+    testCompile "com.winterbe:expekt:0.4.0"
+    testCompile "io.polymorphicpanda.kspec:kspec-core:0.4.0"
+    testCompile "io.polymorphicpanda.kspec:kspec-junit-runner:0.4.0"
 }
+
 repositories {
+    jcenter()
     mavenCentral()
 }
+
 sourceSets {
     main.java.srcDirs += 'src/main/kotlin'
 }
