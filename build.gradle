@@ -37,6 +37,13 @@ dependencies {
     testCompile "io.polymorphicpanda.kspec:kspec-junit-runner:0.4.0"
 }
 
+jacocoTestReport {
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
+}
+
 repositories {
     jcenter()
     mavenCentral()
