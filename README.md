@@ -5,6 +5,13 @@
 
 This is [CircleCI](https://circleci.com) API Client for Kotlin.
 
+## Usage
+```kotlin
+val token = "your-api-token"
+val client = CircleCIAPIClient(token).client()
+client.getMe().subscribe() // will returns response
+```
+
 ## Installation
 
 ```groovy
