@@ -1,5 +1,5 @@
 {
-  "compare" : "https://example.com/test/color-hash.kt/compare/c8ae8dc1fccd...f05170184b32",
+  "compare" : null,
   "previous_successful_build" : {
     "build_num" : 10,
     "status" : "success",
@@ -490,10 +490,7 @@
   "is_first_green_build" : false,
   "job_name" : null,
   "start_time" : "2016-06-06T15:41:22.289Z",
-  "canceler" : {
-    "login" : "test",
-    "name" : "test"
-  },
+  "canceler" : null,
   "all_commit_details" : [ {
     "committer_date" : "2016-06-07T00:36:06+09:00",
     "body" : "",

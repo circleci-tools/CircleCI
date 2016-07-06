@@ -1,8 +1,8 @@
 package com.github.unhappychoice.circleci.response
 
 data class Artifact(
+  val nodeIndex: Int,
   val path: String,
   val prettyPath: String,
-  val nodeIndex: Int,
   val url: String
 )

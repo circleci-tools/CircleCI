@@ -2,10 +2,7 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.request.TriggerNewBuildRequest
 import com.github.unhappychoice.circleci.request.TriggerNewBuildWithBranchRequest
-import com.github.unhappychoice.circleci.response.Artifact
-import com.github.unhappychoice.circleci.response.Build
-import com.github.unhappychoice.circleci.response.Project
-import com.github.unhappychoice.circleci.response.User
+import com.github.unhappychoice.circleci.response.*
 import com.winterbe.expekt.expect
 import io.polymorphicpanda.kspec.KSpec
 import io.polymorphicpanda.kspec.describe
@@ -41,18 +38,8 @@ class CircleCIAPIClientSpec: KSpec() {
         client.getMe().subscribe(subscriber)
         expect(subscriber.isFinished()).to.be.`true`
 
-        val expected = User(
-          "test@example.com",
-          "test",
-          "test",
-          "https://avatars.githubusercontent.com/u/5608948?v=3",
-          mapOf(
-            "https://example.com/test/project1" to mapOf("on_dashboard" to true, "emails" to "default"),
-            "https://example.com/test/project2" to mapOf("on_dashboard" to true, "emails" to "default"),
-            "https://example.com/test/project3" to mapOf("on_dashboard" to true, "emails" to "default")
-          )
-        )
-        expect(subscriber.onNextEvents[0]).to.equal(expected)
+        val user = subscriber.onNextEvents.first()
+        expectNotNull(user)
       }
 
       it("#getProjects() should return response") {
@@ -60,87 +47,95 @@ class CircleCIAPIClientSpec: KSpec() {
         client.getProjects().subscribe(subscriber)
         expect(subscriber.isFinished()).to.be.`true`
 
-        val expected = listOf(
-          Project(
-            1,
-            "test-project",
-            "test",
-            "https://example.com/test/test-project",
-            mapOf(
-              "master" to mapOf(
-                "last_non_success" to mapOf(
-                  "added_at" to "2015-08-07T00:00:00.000Z",
-                  "pushed_at" to "2015-08-07T00:00:00.000Z",
-                  "vcs_revision" to "db5f8b5ef6c1df1dd9c3df388af2624aa930324a",
-                  "build_num" to 159.0,
-                  "status" to "failed",
-                  "outcome" to "failed"
-                ),
-                "pusher_logins" to listOf("test"),
-                "recent_builds" to listOf(
-                  mapOf(
-                    "added_at" to "2015-08-07T00:00:00.000Z",
-                    "pushed_at" to "2015-08-07T00:00:00.000Z",
-                    "vcs_revision" to "db5f8b5ef6c1df1dd9c3df388af2624aa930324a",
-                    "build_num" to 159.0,
-                    "status" to "failed",
-                    "outcome" to "failed"
-                  )
-                ),
-                "running_builds" to listOf<String>()
-              )
-            )
-          )
-        )
-        expect(subscriber.onNextEvents[0]).to.equal(expected)
+        val projects = subscriber.onNextEvents.first()
+        expect(projects).not.to.be.empty
+
+        val project = projects.first()
+        expectNotNull(project)
       }
 
       it("#getProjectBuilds() should return response") {
         val subscriber = TestSubscriber<List<Build>>()
         client.getProjectBuilds(userName, project).subscribe(subscriber)
         expect(subscriber.isFinished()).to.be.`true`
+
+        val builds = subscriber.onNextEvents.first()
+        expect(builds).not.to.be.empty
+
+        val build = builds.first()
+        expectNotNull(build)
       }
 
       it("#getBranchBuilds() should return response") {
         val subscriber = TestSubscriber<List<Build>>()
         client.getBranchBuilds(userName, project, branch).subscribe(subscriber)
         expect(subscriber.isFinished()).to.be.`true`
+
+        val builds = subscriber.onNextEvents.first()
+        expect(builds).not.to.be.empty
+
+        val build = builds.first()
+        expectNotNull(build)
       }
 
       it("#getRecentBuilds() should return response") {
         val subscriber = TestSubscriber<List<Build>>()
         client.getRecentBuilds().subscribe(subscriber)
         expect(subscriber.isFinished()).to.be.`true`
+
+        val builds = subscriber.onNextEvents.first()
+        expect(builds).not.to.be.empty
+
+        val build = builds.first()
+        expectNotNull(build)
       }
 
       it("#getBuild() should return response") {
         val subscriber = TestSubscriber<Build>()
         client.getBuild(userName, project, buildNum).subscribe(subscriber)
         expect(subscriber.isFinished()).to.be.`true`
+
+        val build = subscriber.onNextEvents.first()
+        expectNotNull(build)
       }
 
       it("#getArtifacts() should return response") {
         val subscriber = TestSubscriber<List<Artifact>>()
         client.getArtifacts(userName, project, buildNum).subscribe(subscriber)
         expect(subscriber.isFinished()).to.be.`true`
+
+        val artifacts = subscriber.onNextEvents.first()
+        expect(artifacts).not.to.be.empty
+
+        val artifact = artifacts.first()
+        expectNotNull(artifact)
       }
 
       it("#retryBuild() should return response") {
         val subscriber = TestSubscriber<Build>()
         client.retryBuild(userName, project, buildNum).subscribe(subscriber)
         expect(subscriber.isFinished()).to.be.`true`
+
+        val build = subscriber.onNextEvents.first()
+        expectNotNull(build)
       }
 
       it("#cancelBuild() should return response") {
         val subscriber = TestSubscriber<Build>()
         client.cancelBuild(userName, project, buildNum).subscribe(subscriber)
         expect(subscriber.isFinished()).to.be.`true`
+
+        val build = subscriber.onNextEvents.first()
+        expectNotNull(build)
       }
 
       it("#addSSHUser() should return response") {
         val subscriber = TestSubscriber<Build>()
         client.addSSHUser(userName, project, buildNum).subscribe(subscriber)
         expect(subscriber.isFinished()).to.be.`true`
+
+        val build = subscriber.onNextEvents.first()
+        expectNotNull(build)
       }
 
       it("#triggerNewBuild() should return response") {
@@ -148,6 +143,9 @@ class CircleCIAPIClientSpec: KSpec() {
         val subscriber = TestSubscriber<Build>()
         client.triggerNewBuild(userName, project, request).subscribe(subscriber)
         expect(subscriber.isFinished()).to.be.`true`
+
+        val build = subscriber.onNextEvents.first()
+        expectNotNull(build)
       }
 
       it("#triggerNewBuildWithBranch() should return response") {
@@ -155,6 +153,9 @@ class CircleCIAPIClientSpec: KSpec() {
         val subscriber = TestSubscriber<Build>()
         client.triggerNewBuildWithBranch(userName, project, branch, request).subscribe(subscriber)
         expect(subscriber.isFinished()).to.be.`true`
+
+        val build = subscriber.onNextEvents.first()
+        expectNotNull(build)
       }
 
       it("#deleteCache() should return response") {
@@ -169,5 +170,66 @@ class CircleCIAPIClientSpec: KSpec() {
     assertNoErrors()
     assertCompleted()
     return true
+  }
+
+  private fun expectNotNull(user: User) {
+    expect(user.avatarUrl).not.to.be.`null`
+    expect(user.login).not.to.be.`null`
+    expect(user.name).not.to.be.`null`
+    expect(user.projects).not.to.be.`null`
+    expect(user.selectedEmail).not.to.be.`null`
+  }
+
+  private fun expectNotNull(project: Project) {
+    expect(project.branches!!).not.to.be.`null`
+    expect(project.parallel).not.to.be.`null`
+    expect(project.reponame).not.to.be.`null`
+    expect(project.username).not.to.be.`null`
+    expect(project.vcsUrl).not.to.be.`null`
+  }
+
+  private fun expectNotNull(build: Build) {
+    expect(build.authorEmail).not.to.be.`null`
+    expect(build.authorDate).not.to.be.`null`
+    expect(build.authorName).not.to.be.`null`
+    expect(build.body).not.to.be.`null`
+    expect(build.branch).not.to.be.`null`
+    expect(build.buildNum).not.to.be.`null`
+    expect(build.buildTimeMillis).not.to.be.`null`
+    expect(build.buildUrl).not.to.be.`null`
+    expect(build.canceled).not.to.be.`null`
+    expect(build.canceler).to.be.`null`
+    expect(build.committerEmail).not.to.be.`null`
+    expect(build.committerDate).not.to.be.`null`
+    expect(build.committerName).not.to.be.`null`
+    expect(build.compare).to.be.`null`
+    expect(build.dontBuild).to.be.`null`
+    expect(build.failed).to.be.`null`
+    expect(build.infrastructureFail).not.to.be.`null`
+    expect(build.isFirstGreenBuild).not.to.be.`null`
+    expect(build.jobName).to.be.`null`
+    expect(build.lifecycle).not.to.be.`null`
+    expect(build.outcome).not.to.be.`null`
+    expect(build.queuedAt).not.to.be.`null`
+    expect(build.retryOf).to.be.`null`
+    expect(build.reponame).not.to.be.`null`
+    expect(build.startTime).not.to.be.`null`
+    expect(build.status).not.to.be.`null`
+    expect(build.stopTime).not.to.be.`null`
+    expect(build.subject).not.to.be.`null`
+    expect(build.timedout).not.to.be.`null`
+    expect(build.usageQueuedAt).not.to.be.`null`
+    expect(build.username).not.to.be.`null`
+    expect(build.vcsRevision).not.to.be.`null`
+    expect(build.vcsTag).to.be.`null`
+    expect(build.vcsUrl).not.to.be.`null`
+    expect(build.why).not.to.be.`null`
+  }
+
+  private fun expectNotNull(artifact: Artifact) {
+    expect(artifact.nodeIndex).not.to.be.`null`
+    expect(artifact.path).not.to.be.`null`
+    expect(artifact.prettyPath).not.to.be.`null`
+    expect(artifact.url).not.to.be.`null`
   }
 }

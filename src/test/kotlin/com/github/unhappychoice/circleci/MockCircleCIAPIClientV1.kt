@@ -24,15 +24,15 @@ class MockCircleCIAPIClientV1: CircleCIAPIClientV1 {
   }
 
   override fun getProjectBuilds(userName: String, project: String, offset: Int, limit: Int): Observable<List<Build>> {
-    return mockResponse("json/projectBuilds.json", object: TypeToken<List<Build>>(){}.type)
+    return mockResponse("json/builds.json", object: TypeToken<List<Build>>(){}.type)
   }
 
   override fun getBranchBuilds(userName: String, project: String, branch: String, offset: Int, limit: Int): Observable<List<Build>> {
-    return mockResponse("json/projectBuilds.json", object: TypeToken<List<Build>>(){}.type)
+    return mockResponse("json/builds.json", object: TypeToken<List<Build>>(){}.type)
   }
 
   override fun getRecentBuilds(offset: Int, limit: Int): Observable<List<Build>> {
-    return mockResponse("json/projectBuilds.json", object: TypeToken<List<Build>>(){}.type)
+    return mockResponse("json/builds.json", object: TypeToken<List<Build>>(){}.type)
   }
 
   override fun getBuild(userName: String, project: String, buildNumber: Int): Observable<Build> {
@@ -40,27 +40,27 @@ class MockCircleCIAPIClientV1: CircleCIAPIClientV1 {
   }
 
   override fun getArtifacts(userName: String, project: String, buildNumber: Int): Observable<List<Artifact>> {
-    return mockResponse("json/projectBuilds.json", object: TypeToken<List<Artifact>>(){}.type)
+    return mockResponse("json/artifacts.json", object: TypeToken<List<Artifact>>(){}.type)
   }
 
   override fun retryBuild(userName: String, project: String, buildNumber: Int): Observable<Build> {
-    return mockResponse("json/retryBuild.json", Build::class.java)
+    return mockResponse("json/build.json", Build::class.java)
   }
 
   override fun cancelBuild(userName: String, project: String, buildNumber: Int): Observable<Build> {
-    return mockResponse("json/cancelBuild.json", Build::class.java)
+    return mockResponse("json/build.json", Build::class.java)
   }
 
   override fun addSSHUser(userName: String, project: String, buildNumber: Int): Observable<Build> {
-    return mockResponse("json/sshUser.json", Build::class.java)
+    return mockResponse("json/build.json", Build::class.java)
   }
 
   override fun triggerNewBuild(userName: String, project: String, request: TriggerNewBuildRequest): Observable<Build> {
-    return mockResponse("json/triggerNewBuild.json", Build::class.java)
+    return mockResponse("json/build.json", Build::class.java)
   }
 
   override fun triggerNewBuildWithBranch(userName: String, project: String, branch: String, request: TriggerNewBuildWithBranchRequest): Observable<Build> {
-    return mockResponse("json/triggerNewBuildWithBranch.json", Build::class.java)
+    return mockResponse("json/build.json", Build::class.java)
   }
 
   override fun deleteCache(userName: String, project: String): Observable<Unit> {
