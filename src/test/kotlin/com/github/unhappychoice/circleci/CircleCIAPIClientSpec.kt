@@ -39,14 +39,60 @@ class CircleCIAPIClientSpec: KSpec() {
       it("#getMe() should return response") {
         val subscriber = TestSubscriber<User>()
         client.getMe().subscribe(subscriber)
-
         expect(subscriber.isFinished()).to.be.`true`
+
+        val expected = User(
+          "test@example.com",
+          "test",
+          "test",
+          "https://avatars.githubusercontent.com/u/5608948?v=3",
+          mapOf(
+            "https://example.com/test/project1" to mapOf("on_dashboard" to true, "emails" to "default"),
+            "https://example.com/test/project2" to mapOf("on_dashboard" to true, "emails" to "default"),
+            "https://example.com/test/project3" to mapOf("on_dashboard" to true, "emails" to "default")
+          )
+        )
+        expect(subscriber.onNextEvents[0]).to.equal(expected)
       }
 
       it("#getProjects() should return response") {
         val subscriber = TestSubscriber<List<Project>>()
         client.getProjects().subscribe(subscriber)
         expect(subscriber.isFinished()).to.be.`true`
+
+        val expected = listOf(
+          Project(
+            1,
+            "test-project",
+            "test",
+            "https://example.com/test/test-project",
+            mapOf(
+              "master" to mapOf(
+                "last_non_success" to mapOf(
+                  "added_at" to "2015-08-07T00:00:00.000Z",
+                  "pushed_at" to "2015-08-07T00:00:00.000Z",
+                  "vcs_revision" to "db5f8b5ef6c1df1dd9c3df388af2624aa930324a",
+                  "build_num" to 159.0,
+                  "status" to "failed",
+                  "outcome" to "failed"
+                ),
+                "pusher_logins" to listOf("test"),
+                "recent_builds" to listOf(
+                  mapOf(
+                    "added_at" to "2015-08-07T00:00:00.000Z",
+                    "pushed_at" to "2015-08-07T00:00:00.000Z",
+                    "vcs_revision" to "db5f8b5ef6c1df1dd9c3df388af2624aa930324a",
+                    "build_num" to 159.0,
+                    "status" to "failed",
+                    "outcome" to "failed"
+                  )
+                ),
+                "running_builds" to listOf<String>()
+              )
+            )
+          )
+        )
+        expect(subscriber.onNextEvents[0]).to.equal(expected)
       }
 
       it("#getProjectBuilds() should return response") {
