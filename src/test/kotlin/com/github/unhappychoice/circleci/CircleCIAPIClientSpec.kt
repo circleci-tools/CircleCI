@@ -97,6 +97,12 @@ class CircleCIAPIClientSpec: KSpec() {
 
         val build = subscriber.onNextEvents.first()
         expectNotNull(build)
+
+        val step = build.steps!!.first()
+        expectNotNull(step)
+
+        val action = step.actions.first()
+        expectNotNull(action)
       }
 
       it("#getArtifacts() should return response") {
@@ -224,6 +230,33 @@ class CircleCIAPIClientSpec: KSpec() {
     expect(build.vcsTag).to.be.`null`
     expect(build.vcsUrl).not.to.be.`null`
     expect(build.why).not.to.be.`null`
+  }
+
+  private fun expectNotNull(step: BuildStep) {
+    expect(step.name).not.to.be.`null`
+    expect(step.actions).not.to.be.`null`
+  }
+
+  private fun expectNotNull(action: BuildAction) {
+    expect(action.bashCommand).to.be.`null`
+    expect(action.canceled).to.be.`null`
+    expect(action.endTime).not.to.be.`null`
+    expect(action.exitCode).to.be.`null`
+    expect(action.failed).to.be.`null`
+    expect(action.hasOutput).not.to.be.`null`
+    expect(action.infrastructureFail).to.be.`null`
+    expect(action.index).not.to.be.`null`
+    expect(action.name).not.to.be.`null`
+    expect(action.outputUrl).not.to.be.`null`
+    expect(action.parallel).not.to.be.`null`
+    expect(action.runTimeMillis).not.to.be.`null`
+    expect(action.startTime).not.to.be.`null`
+    expect(action.status).not.to.be.`null`
+    expect(action.step).not.to.be.`null`
+    expect(action.timedout).to.be.`null`
+    expect(action.truncated).not.to.be.`null`
+    expect(action.type).not.to.be.`null`
+
   }
 
   private fun expectNotNull(artifact: Artifact) {
