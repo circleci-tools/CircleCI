@@ -25,7 +25,6 @@ data class Build(
   val isFirstGreenBuild: Boolean?,
   val jobName: String?,
   val lifecycle: String?,
-  // val messages: Map<String, String>?,
   val outcome: String?,
   val previous: Map<String, Any>?,
   val queuedAt: Date?,

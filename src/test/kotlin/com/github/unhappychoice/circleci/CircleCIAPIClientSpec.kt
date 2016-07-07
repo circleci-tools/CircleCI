@@ -98,6 +98,9 @@ class CircleCIAPIClientSpec: KSpec() {
         val build = subscriber.onNextEvents.first()
         expectNotNull(build)
 
+        val commit = build.allCommitDetails!!.first()
+        expectNotNull(commit)
+
         val step = build.steps!!.first()
         expectNotNull(step)
 
@@ -256,7 +259,22 @@ class CircleCIAPIClientSpec: KSpec() {
     expect(action.timedout).to.be.`null`
     expect(action.truncated).not.to.be.`null`
     expect(action.type).not.to.be.`null`
+  }
 
+  private fun expectNotNull(commit: Commit) {
+    expect(commit.authorDate).not.to.be.`null`
+    expect(commit.authorEmail).not.to.be.`null`
+    expect(commit.authorLogin).not.to.be.`null`
+    expect(commit.authorName).not.to.be.`null`
+    expect(commit.body).not.to.be.`null`
+    expect(commit.branch).not.to.be.`null`
+    expect(commit.commit).not.to.be.`null`
+    expect(commit.commitUrl).not.to.be.`null`
+    expect(commit.committerDate).not.to.be.`null`
+    expect(commit.committerEmail).not.to.be.`null`
+    expect(commit.committerLogin).not.to.be.`null`
+    expect(commit.committerName).not.to.be.`null`
+    expect(commit.subject).not.to.be.`null`
   }
 
   private fun expectNotNull(artifact: Artifact) {
