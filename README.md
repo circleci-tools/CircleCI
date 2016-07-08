@@ -5,6 +5,8 @@
 
 This is [CircleCI](https://circleci.com) API Client for Kotlin.
 
+Only RxAdapter is supported for now.
+
 ## Usage
 ```kotlin
 val token = "your-api-token"
