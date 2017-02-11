@@ -1,5 +1,5 @@
 # CircleCI
-[![CircleCI](https://circleci.com/gh/unhappychoice/CircleCI.svg?style=svg)](https://circleci.com/gh/unhappychoice/CircleCI)
+[![CircleCI](https://circleci.com/gh/unhappychoice/CircleCI.svg?style=shield)](https://circleci.com/gh/unhappychoice/CircleCI)
 [![](https://jitpack.io/v/unhappychoice/circleci.svg)](https://jitpack.io/#unhappychoice/circleci)
 [![codecov](https://codecov.io/gh/unhappychoice/circleci/branch/master/graph/badge.svg)](https://codecov.io/gh/unhappychoice/circleci)
 
