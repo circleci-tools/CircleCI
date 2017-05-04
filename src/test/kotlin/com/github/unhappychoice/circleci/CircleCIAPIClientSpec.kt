@@ -8,11 +8,10 @@ import io.polymorphicpanda.kspec.KSpec
 import io.polymorphicpanda.kspec.describe
 import io.polymorphicpanda.kspec.it
 import io.polymorphicpanda.kspec.junit.JUnitKSpecRunner
+import io.reactivex.observers.TestObserver
+import io.reactivex.plugins.RxJavaPlugins
+import io.reactivex.schedulers.TestScheduler
 import org.junit.runner.RunWith
-import rx.observers.TestSubscriber
-import rx.plugins.RxJavaPlugins
-import rx.plugins.RxJavaSchedulersHook
-import rx.schedulers.Schedulers
 
 @RunWith(JUnitKSpecRunner::class)
 class CircleCIAPIClientSpec: KSpec() {
@@ -26,28 +25,24 @@ class CircleCIAPIClientSpec: KSpec() {
     describe("CircleCIAPIClient") {
       before {
         client = MockCircleCIAPIClientV1()
-        RxJavaPlugins.getInstance().registerSchedulersHook(object : RxJavaSchedulersHook() {
-          override fun getNewThreadScheduler() = Schedulers.immediate()
-          override fun getComputationScheduler() = Schedulers.immediate()
-          override fun getIOScheduler() = Schedulers.immediate()
-        })
+        RxJavaPlugins.onComputationScheduler(TestScheduler())
+        RxJavaPlugins.onIoScheduler(TestScheduler())
+        RxJavaPlugins.onNewThreadScheduler(TestScheduler())
       }
 
       it("#getMe() should return response") {
-        val subscriber = TestSubscriber<User>()
-        client.getMe().subscribe(subscriber)
+        val subscriber = client.getMe().test()
         expect(subscriber.isFinished()).to.be.`true`
 
-        val user = subscriber.onNextEvents.first()
+        val user = subscriber.values().first()
         expectNotNull(user)
       }
 
       it("#getProjects() should return response") {
-        val subscriber = TestSubscriber<List<Project>>()
-        client.getProjects().subscribe(subscriber)
+        val subscriber = client.getProjects().test()
         expect(subscriber.isFinished()).to.be.`true`
 
-        val projects = subscriber.onNextEvents.first()
+        val projects = subscriber.values().first()
         expect(projects).not.to.be.empty
 
         val project = projects.first()
@@ -55,11 +50,10 @@ class CircleCIAPIClientSpec: KSpec() {
       }
 
       it("#getProjectBuilds() should return response") {
-        val subscriber = TestSubscriber<List<Build>>()
-        client.getProjectBuilds(userName, project).subscribe(subscriber)
+        val subscriber = client.getProjectBuilds(userName, project).test()
         expect(subscriber.isFinished()).to.be.`true`
 
-        val builds = subscriber.onNextEvents.first()
+        val builds = subscriber.values().first()
         expect(builds).not.to.be.empty
 
         val build = builds.first()
@@ -67,11 +61,10 @@ class CircleCIAPIClientSpec: KSpec() {
       }
 
       it("#getBranchBuilds() should return response") {
-        val subscriber = TestSubscriber<List<Build>>()
-        client.getBranchBuilds(userName, project, branch).subscribe(subscriber)
+        val subscriber = client.getBranchBuilds(userName, project, branch).test()
         expect(subscriber.isFinished()).to.be.`true`
 
-        val builds = subscriber.onNextEvents.first()
+        val builds = subscriber.values().first()
         expect(builds).not.to.be.empty
 
         val build = builds.first()
@@ -79,11 +72,10 @@ class CircleCIAPIClientSpec: KSpec() {
       }
 
       it("#getRecentBuilds() should return response") {
-        val subscriber = TestSubscriber<List<Build>>()
-        client.getRecentBuilds().subscribe(subscriber)
+        val subscriber = client.getRecentBuilds().test()
         expect(subscriber.isFinished()).to.be.`true`
 
-        val builds = subscriber.onNextEvents.first()
+        val builds = subscriber.values().first()
         expect(builds).not.to.be.empty
 
         val build = builds.first()
@@ -91,11 +83,10 @@ class CircleCIAPIClientSpec: KSpec() {
       }
 
       it("#getBuild() should return response") {
-        val subscriber = TestSubscriber<Build>()
-        client.getBuild(userName, project, buildNum).subscribe(subscriber)
+        val subscriber = client.getBuild(userName, project, buildNum).test()
         expect(subscriber.isFinished()).to.be.`true`
 
-        val build = subscriber.onNextEvents.first()
+        val build = subscriber.values().first()
         expectNotNull(build)
 
         val commit = build.allCommitDetails!!.first()
@@ -109,11 +100,10 @@ class CircleCIAPIClientSpec: KSpec() {
       }
 
       it("#getArtifacts() should return response") {
-        val subscriber = TestSubscriber<List<Artifact>>()
-        client.getArtifacts(userName, project, buildNum).subscribe(subscriber)
+        val subscriber = client.getArtifacts(userName, project, buildNum).test()
         expect(subscriber.isFinished()).to.be.`true`
 
-        val artifacts = subscriber.onNextEvents.first()
+        val artifacts = subscriber.values().first()
         expect(artifacts).not.to.be.empty
 
         val artifact = artifacts.first()
@@ -121,63 +111,57 @@ class CircleCIAPIClientSpec: KSpec() {
       }
 
       it("#retryBuild() should return response") {
-        val subscriber = TestSubscriber<Build>()
-        client.retryBuild(userName, project, buildNum).subscribe(subscriber)
+        val subscriber = client.retryBuild(userName, project, buildNum).test()
         expect(subscriber.isFinished()).to.be.`true`
 
-        val build = subscriber.onNextEvents.first()
+        val build = subscriber.values().first()
         expectNotNull(build)
       }
 
       it("#cancelBuild() should return response") {
-        val subscriber = TestSubscriber<Build>()
-        client.cancelBuild(userName, project, buildNum).subscribe(subscriber)
+        val subscriber = client.cancelBuild(userName, project, buildNum).test()
         expect(subscriber.isFinished()).to.be.`true`
 
-        val build = subscriber.onNextEvents.first()
+        val build = subscriber.values().first()
         expectNotNull(build)
       }
 
       it("#addSSHUser() should return response") {
-        val subscriber = TestSubscriber<Build>()
-        client.addSSHUser(userName, project, buildNum).subscribe(subscriber)
+        val subscriber = client.addSSHUser(userName, project, buildNum).test()
         expect(subscriber.isFinished()).to.be.`true`
 
-        val build = subscriber.onNextEvents.first()
+        val build = subscriber.values().first()
         expectNotNull(build)
       }
 
       it("#triggerNewBuild() should return response") {
         val request = TriggerNewBuildRequest()
-        val subscriber = TestSubscriber<Build>()
-        client.triggerNewBuild(userName, project, request).subscribe(subscriber)
+        val subscriber = client.triggerNewBuild(userName, project, request).test()
         expect(subscriber.isFinished()).to.be.`true`
 
-        val build = subscriber.onNextEvents.first()
+        val build = subscriber.values().first()
         expectNotNull(build)
       }
 
       it("#triggerNewBuildWithBranch() should return response") {
         val request = TriggerNewBuildWithBranchRequest()
-        val subscriber = TestSubscriber<Build>()
-        client.triggerNewBuildWithBranch(userName, project, branch, request).subscribe(subscriber)
+        val subscriber = client.triggerNewBuildWithBranch(userName, project, branch, request).test()
         expect(subscriber.isFinished()).to.be.`true`
 
-        val build = subscriber.onNextEvents.first()
+        val build = subscriber.values().first()
         expectNotNull(build)
       }
 
       it("#deleteCache() should return response") {
-        val subscriber = TestSubscriber<Unit>()
-        client.deleteCache(userName, project).subscribe(subscriber)
+        val subscriber = client.deleteCache(userName, project).test()
         expect(subscriber.isFinished()).to.be.`true`
       }
     }
   }
 
-  private fun <T> TestSubscriber<T>.isFinished(): Boolean {
+  private fun <T> TestObserver<T>.isFinished(): Boolean {
     assertNoErrors()
-    assertCompleted()
+    assertComplete()
     return true
   }
 

@@ -6,8 +6,8 @@ import com.github.unhappychoice.circleci.response.Artifact
 import com.github.unhappychoice.circleci.response.Build
 import com.github.unhappychoice.circleci.response.Project
 import com.github.unhappychoice.circleci.response.User
-import retrofit.http.*
-import rx.Observable
+import io.reactivex.Observable
+import retrofit2.http.*
 
 interface CircleCIAPIClientV1 {
   /**
@@ -15,7 +15,7 @@ interface CircleCIAPIClientV1 {
    *
    * Provides information about the signed in user.
    */
-  @GET("/me")
+  @GET("me")
   fun getMe(): Observable<User>
 
   /**
@@ -23,7 +23,7 @@ interface CircleCIAPIClientV1 {
    *
    * List of all the projects you're following on CircleCI, with build information organized by branch.
    */
-  @GET("/projects")
+  @GET("projects")
   fun getProjects(): Observable<List<Project>>
 
   /**
@@ -31,7 +31,7 @@ interface CircleCIAPIClientV1 {
    *
    * Build summary for each of the last 30 builds for a single git repo.
    */
-  @GET("/project/{username}/{project}")
+  @GET("project/{username}/{project}")
   fun getProjectBuilds(
     @Path("username") userName: String,
     @Path("project") project: String,
@@ -44,7 +44,7 @@ interface CircleCIAPIClientV1 {
    *
    * Build summary for each of the last 30 builds for a single git repo.
    */
-  @GET("/project/{username}/{project}/tree/{branch}")
+  @GET("project/{username}/{project}/tree/{branch}")
   fun getBranchBuilds(
     @Path("username") userName: String,
     @Path("project") project: String,
@@ -58,7 +58,7 @@ interface CircleCIAPIClientV1 {
    *
    * Build summary for each of the last 30 recent builds, ordered by build_num.
    */
-  @GET("/recent-builds")
+  @GET("recent-builds")
   fun getRecentBuilds(@Query("offset") offset: Int = 0, @Query("limit") limit: Int = 20): Observable<List<Build>>
 
   /**
@@ -68,7 +68,7 @@ interface CircleCIAPIClientV1 {
    * This is also the payload for the [notification webhooks](/docs/configuration/#notify), in which case
    * this object is the value to a key named 'payload'.
    */
-  @GET("/project/{username}/{project}/{build_num}")
+  @GET("project/{username}/{project}/{build_num}")
   fun getBuild(
     @Path("username") userName: String,
     @Path("project") project: String,
@@ -80,7 +80,7 @@ interface CircleCIAPIClientV1 {
    *
    * List the artifacts produced by a given build.
    */
-  @GET("/project/{username}/{project}/{build_num}/artifacts")
+  @GET("project/{username}/{project}/{build_num}/artifacts")
   fun getArtifacts(
     @Path("username") userName: String,
     @Path("project") project: String,
@@ -92,7 +92,7 @@ interface CircleCIAPIClientV1 {
    *
    * Retries the build, returns a summary of the new build.
   */
-  @POST("/project/{username}/{project}/{build_num}/retry")
+  @POST("project/{username}/{project}/{build_num}/retry")
   fun retryBuild(
     @Path("username") userName: String,
     @Path("project") project: String,
@@ -104,7 +104,7 @@ interface CircleCIAPIClientV1 {
    *
    * Cancels the build, returns a summary of the build.
   */
-  @POST("/project/{username}/{project}/{build_num}/cancel")
+  @POST("project/{username}/{project}/{build_num}/cancel")
   fun cancelBuild(
     @Path("username") userName: String,
     @Path("project") project: String,
@@ -116,7 +116,7 @@ interface CircleCIAPIClientV1 {
    *
    * Adds a user to the build's SSH permissions.
   */
-  @POST("/project/{username}/{project}/{build_num}/ssh-users")
+  @POST("project/{username}/{project}/{build_num}/ssh-users")
   fun addSSHUser(
     @Path("username") userName: String,
     @Path("project") project: String,
@@ -128,7 +128,7 @@ interface CircleCIAPIClientV1 {
    *
    * Triggers a new build, returns a summary of the build. Optional build parameters can be set using an experimental API.
    */
-  @POST("/project/{username}/{project}")
+  @POST("project/{username}/{project}")
   fun triggerNewBuild(
     @Path("username") userName: String,
     @Path("project") project: String,
@@ -140,7 +140,7 @@ interface CircleCIAPIClientV1 {
    *
    * Triggers a new build, returns a summary of the build. Optional build parameters can be set using an experimental API.
    */
-  @POST("/project/{username}/{project}/tree/{branch}")
+  @POST("project/{username}/{project}/tree/{branch}")
   fun triggerNewBuildWithBranch(
     @Path("username") userName: String,
     @Path("project") project: String,
@@ -153,7 +153,7 @@ interface CircleCIAPIClientV1 {
    *
    * Clears the cache for a project.
    */
-  @DELETE("/project/{username}/{project}/build-cache")
+  @DELETE("project/{username}/{project}/build-cache")
   fun deleteCache(
     @Path("username") userName: String,
     @Path("project") project: String

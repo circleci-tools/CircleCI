@@ -9,7 +9,7 @@ import com.github.unhappychoice.circleci.response.User
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
-import rx.Observable
+import io.reactivex.Observable
 import java.io.File
 import java.lang.reflect.Type
 import java.util.*

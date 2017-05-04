@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '1.0.3'
+    ext.kotlin_version = '1.1.1'
     repositories {
         jcenter()
         mavenCentral()
@@ -28,8 +28,11 @@ scmVersion {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.squareup.retrofit:retrofit:1.9.0'
-    compile 'io.reactivex:rxkotlin:0.24.100'
+    compile 'com.squareup.retrofit2:retrofit:2.2.0'
+    compile 'com.squareup.retrofit2:adapter-rxjava2:2.2.0'
+    compile 'com.squareup.retrofit2:converter-gson:2.2.0'
+    compile 'commons-codec:commons-codec:1.9'
+    compile 'io.reactivex.rxjava2:rxkotlin:2.0.0'
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     testCompile 'junit:junit:4.12'
     testCompile "com.winterbe:expekt:0.4.0"
