@@ -5,5 +5,6 @@ data class User(
   val login: String,
   val name: String,
   val projects: Map<String, Map<String, Any>>,
-  val selectedEmail: String
+  val selectedEmail: String,
+  val pusherId: String
 )
