@@ -171,6 +171,7 @@ class CircleCIAPIClientSpec: KSpec() {
     expect(user.name).not.to.be.`null`
     expect(user.projects).not.to.be.`null`
     expect(user.selectedEmail).not.to.be.`null`
+    expect(user.pusherId).not.to.be.`null`
   }
 
   private fun expectNotNull(project: Project) {
