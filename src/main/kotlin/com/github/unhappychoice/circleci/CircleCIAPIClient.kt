@@ -9,7 +9,8 @@ import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 
 class CircleCIAPIClient(val token: String) {
-  fun client(): CircleCIAPIClientV1 = retrofit().create(CircleCIAPIClientV1::class.java)
+  fun client(): CircleCIAPIClientV1 = retrofit("https://circleci.com/api/v1/").create(CircleCIAPIClientV1::class.java)
+  fun clinet1_1(): CircleCIAPIClientV1_1 = retrofit("https://circleci.com/api/v1.1/").create(CircleCIAPIClientV1_1::class.java)
 
   private val okHttp = OkHttpClient.Builder().addInterceptor {
     val builder = it.request().newBuilder()
@@ -22,9 +23,9 @@ class CircleCIAPIClient(val token: String) {
 
   private fun encodedToken(): String = String(Base64.encodeBase64("$token:".toByteArray()))
 
-  private fun retrofit(): Retrofit = Retrofit.Builder()
+  private fun retrofit(baseUrl: String): Retrofit = Retrofit.Builder()
     .client(okHttp)
-    .baseUrl("https://circleci.com/api/v1/")
+    .baseUrl(baseUrl)
     .addConverterFactory(converter())
     .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
     .build()
