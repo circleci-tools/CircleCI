@@ -70,5 +70,12 @@
   "node" : null,
   "queued_at" : "2016-07-05T01:28:06.964Z",
   "canceled" : true,
-  "author_email" : "test@example.com"
+  "author_email" : "test@example.com",
+  "workflows": {
+    "job_id": "fasdk923kdf92nds83nd83n",
+    "jobName": "test",
+    "workflowId": "fasdk923kdf92nds83nd83n",
+    "workflowName": "test-and-deploy",
+    "workspaceId": "fasdk923kdf92nds83nd83n"
+  }
 } ]
