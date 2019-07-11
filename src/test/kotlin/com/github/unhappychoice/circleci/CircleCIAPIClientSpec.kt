@@ -16,13 +16,15 @@ import org.junit.runner.RunWith
 @RunWith(JUnitKSpecRunner::class)
 class CircleCIAPIClientSpec: KSpec() {
   lateinit var client: CircleCIAPIClientV1
+  lateinit var client1_1: CircleCIAPIClientV1_1
+  val vcsType = "github"
   val userName = "unhappychoice"
   val project = "circleci"
   val branch = "master"
   val buildNum = 1
 
   override fun spec() {
-    describe("CircleCIAPIClient") {
+    describe("CircleCIAPIClientV1") {
       before {
         client = MockCircleCIAPIClientV1()
         RxJavaPlugins.onComputationScheduler(TestScheduler())
@@ -154,6 +156,141 @@ class CircleCIAPIClientSpec: KSpec() {
 
       it("#deleteCache() should return response") {
         val subscriber = client.deleteCache(userName, project).test()
+        expect(subscriber.isFinished()).to.be.`true`
+      }
+    }
+    describe("CircleCIAPIClientV1") {
+      before {
+        client1_1 = MockCircleCIAPIClientV1_1()
+          RxJavaPlugins.onComputationScheduler(TestScheduler())
+          RxJavaPlugins.onIoScheduler(TestScheduler())
+          RxJavaPlugins.onNewThreadScheduler(TestScheduler())
+      }
+
+      it("#getMe() should return response") {
+        val subscriber = client1_1.getMe().test()
+        expect(subscriber.isFinished()).to.be.`true`
+
+        val user = subscriber.values().first()
+        expectNotNull(user)
+      }
+
+      it("#getProjects() should return response") {
+        val subscriber = client1_1.getProjects().test()
+        expect(subscriber.isFinished()).to.be.`true`
+
+        val projects = subscriber.values().first()
+        expect(projects).not.to.be.empty
+
+        val project = projects.first()
+        expectNotNull(project)
+      }
+
+      it("#getProjectBuilds() should return response") {
+        val subscriber = client1_1.getProjectBuilds(vcsType, userName, project).test()
+        expect(subscriber.isFinished()).to.be.`true`
+
+        val builds = subscriber.values().first()
+        expect(builds).not.to.be.empty
+
+        val build = builds.first()
+        expectNotNull(build)
+      }
+
+      it("#getBranchBuilds() should return response") {
+        val subscriber = client1_1.getBranchBuilds(vcsType, userName, project, branch).test()
+        expect(subscriber.isFinished()).to.be.`true`
+
+        val builds = subscriber.values().first()
+        expect(builds).not.to.be.empty
+
+        val build = builds.first()
+        expectNotNull(build)
+      }
+
+      it("#getRecentBuilds() should return response") {
+        val subscriber = client1_1.getRecentBuilds().test()
+        expect(subscriber.isFinished()).to.be.`true`
+
+        val builds = subscriber.values().first()
+        expect(builds).not.to.be.empty
+
+        val build = builds.first()
+        expectNotNull(build)
+      }
+
+      it("#getBuild() should return response") {
+        val subscriber = client1_1.getBuild(vcsType, userName, project, buildNum).test()
+        expect(subscriber.isFinished()).to.be.`true`
+
+        val build = subscriber.values().first()
+        expectNotNull(build)
+
+        val commit = build.allCommitDetails!!.first()
+        expectNotNull(commit)
+
+        val step = build.steps!!.first()
+        expectNotNull(step)
+
+        val action = step.actions.first()
+        expectNotNull(action)
+      }
+
+      it("#getArtifacts() should return response") {
+        val subscriber = client1_1.getArtifacts(vcsType, userName, project, buildNum).test()
+        expect(subscriber.isFinished()).to.be.`true`
+
+        val artifacts = subscriber.values().first()
+        expect(artifacts).not.to.be.empty
+
+        val artifact = artifacts.first()
+        expectNotNull(artifact)
+      }
+
+      it("#retryBuild() should return response") {
+        val subscriber = client1_1.retryBuild(vcsType, userName, project, buildNum).test()
+        expect(subscriber.isFinished()).to.be.`true`
+
+        val build = subscriber.values().first()
+        expectNotNull(build)
+      }
+
+      it("#cancelBuild() should return response") {
+        val subscriber = client1_1.cancelBuild(vcsType, userName, project, buildNum).test()
+        expect(subscriber.isFinished()).to.be.`true`
+
+        val build = subscriber.values().first()
+        expectNotNull(build)
+      }
+
+      it("#addSSHUser() should return response") {
+        val subscriber = client1_1.addSSHUser(vcsType, userName, project, buildNum).test()
+        expect(subscriber.isFinished()).to.be.`true`
+
+        val build = subscriber.values().first()
+        expectNotNull(build)
+      }
+
+      it("#triggerNewBuild() should return response") {
+        val request = TriggerNewBuildRequest()
+        val subscriber = client1_1.triggerNewBuild(vcsType, userName, project, request).test()
+        expect(subscriber.isFinished()).to.be.`true`
+
+        val build = subscriber.values().first()
+        expectNotNull(build)
+      }
+
+      it("#triggerNewBuildWithBranch() should return response") {
+        val request = TriggerNewBuildWithBranchRequest()
+        val subscriber = client1_1.triggerNewBuildWithBranch(vcsType, userName, project, branch, request).test()
+        expect(subscriber.isFinished()).to.be.`true`
+
+        val build = subscriber.values().first()
+        expectNotNull(build)
+      }
+
+      it("#deleteCache() should return response") {
+        val subscriber = client1_1.deleteCache(vcsType, userName, project).test()
         expect(subscriber.isFinished()).to.be.`true`
       }
     }

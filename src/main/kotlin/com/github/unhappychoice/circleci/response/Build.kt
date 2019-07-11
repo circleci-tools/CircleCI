@@ -43,5 +43,6 @@ data class Build(
   val vcsRevision: String?,
   val vcsTag: String?,
   val vcsUrl: String?,
-  val why: String?
+  val why: String?,
+  val workflows: Workflow?
 )
