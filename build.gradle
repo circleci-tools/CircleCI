@@ -28,7 +28,7 @@ scmVersion {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.squareup.retrofit2:retrofit:2.6.1'
+    compile 'com.squareup.retrofit2:retrofit:2.6.2'
     compile 'com.squareup.retrofit2:adapter-rxjava2:2.6.2'
     compile 'com.squareup.retrofit2:converter-gson:2.6.1'
     compile 'commons-codec:commons-codec:1.13'
