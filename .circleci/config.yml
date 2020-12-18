@@ -9,7 +9,7 @@ jobs:
   test:
     working_directory: ~/circieci
     docker:
-      - image: circleci/openjdk:8
+      - image: cimg/openjdk:17.0
     steps:
       - checkout
       - *restore_cache
