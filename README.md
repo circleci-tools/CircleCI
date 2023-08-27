@@ -1,10 +1,10 @@
 # CircleCI
 
-[![](https://jitpack.io/v/unhappychoice/circleci.svg)](https://jitpack.io/#unhappychoice/circleci)
-[![CircleCI](https://circleci.com/gh/unhappychoice/CircleCI.svg?style=shield)](https://circleci.com/gh/unhappychoice/CircleCI)
-[![codecov](https://codecov.io/gh/unhappychoice/circleci/branch/master/graph/badge.svg)](https://codecov.io/gh/unhappychoice/circleci)
-[![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/unhappychoice/CircleCI.svg)](https://libraries.io/github/unhappychoice/CircleCI)
-![GitHub](https://img.shields.io/github/license/unhappychoice/CircleCI.svg)
+[![](https://jitpack.io/v/circleci-tools/circleci.svg)](https://jitpack.io/#circleci-tools/circleci)
+[![CircleCI](https://circleci.com/gh/circleci-tools/CircleCI.svg?style=shield)](https://circleci.com/gh/circleci-tools/CircleCI)
+[![codecov](https://codecov.io/gh/circleci-tools/circleci/branch/master/graph/badge.svg)](https://codecov.io/gh/circleci-tools/circleci)
+[![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/circleci-tools/CircleCI.svg)](https://libraries.io/github/circleci-tools/CircleCI)
+![GitHub](https://img.shields.io/github/license/circleci-tools/CircleCI.svg)
 
 This is [CircleCI](https://circleci.com) API Client for Kotlin.
 
@@ -26,7 +26,7 @@ allprojects {
     }
 }
 dependencies {
-    compile 'com.github.unhappychoice:circleci:0.1.0'
+    compile 'com.github.circleci-tools:circleci:0.1.0'
 }
 ```
 
