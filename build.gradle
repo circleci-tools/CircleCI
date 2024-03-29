@@ -30,7 +30,7 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.squareup.retrofit2:retrofit:2.10.0'
     implementation 'com.squareup.retrofit2:adapter-rxjava2:2.11.0'
-    implementation 'com.squareup.retrofit2:converter-gson:2.10.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.11.0'
     implementation 'commons-codec:commons-codec:1.16.1'
     implementation 'io.reactivex.rxjava2:rxkotlin:2.4.0'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
