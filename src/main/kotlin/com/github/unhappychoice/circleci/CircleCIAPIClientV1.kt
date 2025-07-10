@@ -1,10 +1,15 @@
 package com.github.unhappychoice.circleci
 
+import com.github.unhappychoice.circleci.request.AddSshKeyRequest
+import com.github.unhappychoice.circleci.request.CreateCheckoutKeyRequest
+import com.github.unhappychoice.circleci.request.AddHerokuKeyRequest
 import com.github.unhappychoice.circleci.request.TriggerNewBuildRequest
 import com.github.unhappychoice.circleci.request.TriggerNewBuildWithBranchRequest
 import com.github.unhappychoice.circleci.response.Artifact
 import com.github.unhappychoice.circleci.response.Build
+import com.github.unhappychoice.circleci.response.CheckoutKey
 import com.github.unhappychoice.circleci.response.Project
+import com.github.unhappychoice.circleci.response.SSHKey
 import com.github.unhappychoice.circleci.response.User
 import io.reactivex.Observable
 import retrofit2.http.*
@@ -164,49 +169,76 @@ interface CircleCIAPIClientV1 {
    *
    * Create an ssh key used to access external systems that require SSH key-based authentication
   */
-  // TODO: Implement endpoint
+  @POST("project/{username}/{project}/ssh-key")
+  fun addSshKey(
+    @Path("username") userName: String,
+    @Path("project") project: String,
+    @Body request: AddSshKeyRequest
+  ): Observable<SSHKey>
 
   /**
    * GET: /project/:username/:project/checkout-key
    *
    * Lists checkout keys.
   */
-  // TODO: Implement endpoint
+  @GET("project/{username}/{project}/checkout-key")
+  fun getCheckoutKeys(
+    @Path("username") userName: String,
+    @Path("project") project: String
+  ): Observable<List<CheckoutKey>>
 
   /**
    * POST: /project/:username/:project/checkout-key
    *
    * Create a new checkout key.
   */
-  // TODO: Implement endpoint
+  @POST("project/{username}/{project}/checkout-key")
+  fun createCheckoutKey(
+    @Path("username") userName: String,
+    @Path("project") project: String,
+    @Body request: CreateCheckoutKeyRequest
+  ): Observable<CheckoutKey>
 
   /**
    * GET: /project/:username/:project/checkout-key/:fingerprint
    *
    * Get a checkout key.
   */
-  // TODO: Implement endpoint
+  @GET("project/{username}/{project}/checkout-key/{fingerprint}")
+  fun getCheckoutKey(
+    @Path("username") userName: String,
+    @Path("project") project: String,
+    @Path("fingerprint") fingerprint: String
+  ): Observable<CheckoutKey>
 
   /**
    * DELETE: /project/:username/:project/checkout-key/:fingerprint
    *
    * Delete a checkout key.
   */
-  // TODO: Implement endpoint
+  @DELETE("project/{username}/{project}/checkout-key/{fingerprint}")
+  fun deleteCheckoutKey(
+    @Path("username") userName: String,
+    @Path("project") project: String,
+    @Path("fingerprint") fingerprint: String
+  ): Observable<Unit>
 
   /**
    * POST: /user/ssh-key
    *
    * Adds a CircleCI key to your GitHub User account.
   */
-  // TODO: Implement endpoint
+  @POST("user/ssh-key")
+  fun addUserSshKey(@Body request: AddSshKeyRequest): Observable<Unit>
 
   /**
    * POST: /user/heroku-key
    *
    * Adds your Heroku API key to CircleCI, takes apikey as form param name.
    */
-  // TODO: Implement endpoint
+  @FormUrlEncoded
+  @POST("user/heroku-key")
+  fun addHerokuKey(@Field("apikey") apikey: String): Observable<Unit>
 }
 
 
