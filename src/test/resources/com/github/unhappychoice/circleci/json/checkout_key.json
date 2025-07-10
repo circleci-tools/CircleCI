@@ -1,0 +1,7 @@
+{
+  "type": "deploy-key",
+  "preferred": true,
+  "created_at": "2024-07-11T12:00:00Z",
+  "fingerprint": "xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx",
+  "public_key": "ssh-rsa AAAA..."
+}
