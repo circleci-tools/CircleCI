@@ -1,10 +1,15 @@
 package com.github.unhappychoice.circleci
 
+import com.github.unhappychoice.circleci.request.AddSshKeyRequest
+import com.github.unhappychoice.circleci.request.CreateCheckoutKeyRequest
+import com.github.unhappychoice.circleci.request.AddHerokuKeyRequest
 import com.github.unhappychoice.circleci.request.TriggerNewBuildRequest
 import com.github.unhappychoice.circleci.request.TriggerNewBuildWithBranchRequest
 import com.github.unhappychoice.circleci.response.Artifact
 import com.github.unhappychoice.circleci.response.Build
+import com.github.unhappychoice.circleci.response.CheckoutKey
 import com.github.unhappychoice.circleci.response.Project
+import com.github.unhappychoice.circleci.response.SSHKey
 import com.github.unhappychoice.circleci.response.User
 import io.reactivex.Observable
 import retrofit2.http.*
@@ -45,7 +50,7 @@ interface CircleCIAPIClientV1_1 {
      *
      * Build summary for each of the last 30 builds for a single git repo.
      */
-    @GET("project/{vcs-type/{username}/{project}/tree/{branch}")
+    @GET("project/{vcs-type}/{username}/{project}/tree/{branch}")
     fun getBranchBuilds(
         @Path("vcs-type") vcsType: String,
         @Path("username") userName: String,
@@ -108,7 +113,7 @@ interface CircleCIAPIClientV1_1 {
      *
      * Retries the build, returns a summary of the new build.
      */
-    @POST("project/{vcs-type/}{username}/{project}/{build_num}/retry")
+    @POST("project/{vcs-type}/{username}/{project}/{build_num}/retry")
     fun retryBuild(
         @Path("vcs-type") vcsType: String,
         @Path("username") userName: String,
@@ -186,35 +191,64 @@ interface CircleCIAPIClientV1_1 {
      *
      * Create an ssh key used to access external systems that require SSH key-based authentication
      */
-    // TODO: Implement endpoint
+    @POST("project/{vcs-type}/{username}/{project}/ssh-key")
+    fun addSshKey(
+        @Path("vcs-type") vcsType: String,
+        @Path("username") userName: String,
+        @Path("project") project: String,
+        @Body request: AddSshKeyRequest
+    ): Observable<SSHKey>
 
     /**
      * GET: /project/:vcs-type/:username/:project/checkout-key
      *
      * Lists checkout keys.
      */
-    // TODO: Implement endpoint
+    @GET("project/{vcs-type}/{username}/{project}/checkout-key")
+    fun getCheckoutKeys(
+        @Path("vcs-type") vcsType: String,
+        @Path("username") userName: String,
+        @Path("project") project: String
+    ): Observable<List<CheckoutKey>>
 
     /**
      * POST: /project/:vcs-type/:username/:project/checkout-key
      *
      * Create a new checkout key.
      */
-    // TODO: Implement endpoint
+    @POST("project/{vcs-type}/{username}/{project}/checkout-key")
+    fun createCheckoutKey(
+        @Path("vcs-type") vcsType: String,
+        @Path("username") userName: String,
+        @Path("project") project: String,
+        @Body request: CreateCheckoutKeyRequest
+    ): Observable<CheckoutKey>
 
     /**
      * GET: /project/:vcs-type/:username/:project/checkout-key/:fingerprint
      *
      * Get a checkout key.
      */
-    // TODO: Implement endpoint
+    @GET("project/{vcs-type}/{username}/{project}/checkout-key/{fingerprint}")
+    fun getCheckoutKey(
+        @Path("vcs-type") vcsType: String,
+        @Path("username") userName: String,
+        @Path("project") project: String,
+        @Path("fingerprint") fingerprint: String
+    ): Observable<CheckoutKey>
 
     /**
      * DELETE: /project/:vcs-type/:username/:project/checkout-key/:fingerprint
      *
      * Delete a checkout key.
      */
-    // TODO: Implement endpoint
+    @DELETE("project/{vcs-type}/{username}/{project}/checkout-key/{fingerprint}")
+    fun deleteCheckoutKey(
+        @Path("vcs-type") vcsType: String,
+        @Path("username") userName: String,
+        @Path("project") project: String,
+        @Path("fingerprint") fingerprint: String
+    ): Observable<Unit>
 
 
     /**
@@ -222,14 +256,17 @@ interface CircleCIAPIClientV1_1 {
      *
      * Adds a CircleCI key to your GitHub User account.
      */
-    // TODO: Implement endpoint
+    @POST("user/ssh-key")
+    fun addUserSshKey(@Body request: AddSshKeyRequest): Observable<Unit>
 
     /**
      * POST: /user/heroku-key
      *
      * Adds your Heroku API key to CircleCI, takes apikey as form param name.
      */
-    // TODO: Implement endpoint
+    @FormUrlEncoded
+    @POST("user/heroku-key")
+    fun addHerokuKey(@Field("apikey") apikey: String): Observable<Unit>
 }
 
 

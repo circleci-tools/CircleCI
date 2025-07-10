@@ -1,10 +1,14 @@
 package com.github.unhappychoice.circleci
 
+import com.github.unhappychoice.circleci.request.AddHerokuKeyRequest
+import com.github.unhappychoice.circleci.request.AddSshKeyRequest
+import com.github.unhappychoice.circleci.request.CreateCheckoutKeyRequest
 import com.github.unhappychoice.circleci.request.TriggerNewBuildRequest
 import com.github.unhappychoice.circleci.request.TriggerNewBuildWithBranchRequest
 import com.github.unhappychoice.circleci.response.Artifact
 import com.github.unhappychoice.circleci.response.Build
 import com.github.unhappychoice.circleci.response.Project
+import com.github.unhappychoice.circleci.response.SSHKey
 import com.github.unhappychoice.circleci.response.User
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
@@ -13,6 +17,7 @@ import io.reactivex.Observable
 import java.io.File
 import java.lang.reflect.Type
 import java.util.*
+import com.github.unhappychoice.circleci.response.CheckoutKey
 
 class MockCircleCIAPIClientV1_1: CircleCIAPIClientV1_1 {
     override fun getMe(): Observable<User> {
@@ -68,6 +73,34 @@ class MockCircleCIAPIClientV1_1: CircleCIAPIClientV1_1 {
     }
 
     override fun deleteCache(vcsType: String, userName: String, project: String): Observable<Unit> {
+        return Observable.just(Unit)
+    }
+
+    override fun addSshKey(vcsType: String, userName: String, project: String, request: AddSshKeyRequest): Observable<SSHKey> {
+        return mockResponse("json/ssh_key.json", SSHKey::class.java)
+    }
+
+    override fun getCheckoutKeys(vcsType: String, userName: String, project: String): Observable<List<CheckoutKey>> {
+        return mockResponse("json/checkout_keys.json", object: TypeToken<List<CheckoutKey>>(){}.type)
+    }
+
+    override fun createCheckoutKey(vcsType: String, userName: String, project: String, request: CreateCheckoutKeyRequest): Observable<CheckoutKey> {
+        return mockResponse("json/checkout_key.json", CheckoutKey::class.java)
+    }
+
+    override fun getCheckoutKey(vcsType: String, userName: String, project: String, fingerprint: String): Observable<CheckoutKey> {
+        return mockResponse("json/checkout_key.json", CheckoutKey::class.java)
+    }
+
+    override fun deleteCheckoutKey(vcsType: String, userName: String, project: String, fingerprint: String): Observable<Unit> {
+        return Observable.just(Unit)
+    }
+
+    override fun addUserSshKey(request: AddSshKeyRequest): Observable<Unit> {
+        return Observable.just(Unit)
+    }
+
+    override fun addHerokuKey(apikey: String): Observable<Unit> {
         return Observable.just(Unit)
     }
 

@@ -1,13 +1,13 @@
 package com.github.unhappychoice.circleci
 
-import com.github.unhappychoice.circleci.request.TriggerNewBuildRequest
-import com.github.unhappychoice.circleci.request.TriggerNewBuildWithBranchRequest
+import com.github.unhappychoice.circleci.request.*
 import com.github.unhappychoice.circleci.response.*
 import com.winterbe.expekt.expect
 import io.reactivex.observers.TestObserver
 import io.reactivex.plugins.RxJavaPlugins
 import io.reactivex.schedulers.TestScheduler
 import org.spekframework.spek2.Spek
+import com.github.unhappychoice.circleci.response.SSHKey
 
 object CircleCIAPIClientSpec: Spek({
   lateinit var client: CircleCIAPIClientV1
@@ -152,9 +152,60 @@ object CircleCIAPIClientSpec: Spek({
       val subscriber = client.deleteCache(userName, project).test()
       expect(subscriber.isFinished()).to.be.`true`
     }
+
+    test("#addSshKey() should return response") {
+      val request = AddSshKeyRequest("hostname", "private_key")
+      val subscriber = client.addSshKey(userName, project, request).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val sshKey = subscriber.values().first()
+      expectNotNull(sshKey)
+    }
+
+    test("#getCheckoutKeys() should return response") {
+      val subscriber = client.getCheckoutKeys(userName, project).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val checkoutKeys = subscriber.values().first()
+      expect(checkoutKeys).not.to.be.empty
+      expectNotNull(checkoutKeys.first())
+    }
+
+    test("#createCheckoutKey() should return response") {
+      val request = CreateCheckoutKeyRequest("deploy-key", true)
+      val subscriber = client.createCheckoutKey(userName, project, request).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val checkoutKey = subscriber.values().first()
+      expectNotNull(checkoutKey)
+    }
+
+    test("#getCheckoutKey() should return response") {
+      val subscriber = client.getCheckoutKey(userName, project, "fingerprint").test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val checkoutKey = subscriber.values().first()
+      expectNotNull(checkoutKey)
+    }
+
+    test("#deleteCheckoutKey() should return response") {
+      val subscriber = client.deleteCheckoutKey(userName, project, "fingerprint").test()
+      expect(subscriber.isFinished()).to.be.`true`
+    }
+
+    test("#addUserSshKey() should return response") {
+      val request = AddSshKeyRequest("hostname", "private_key")
+      val subscriber = client.addUserSshKey(request).test()
+      expect(subscriber.isFinished()).to.be.`true`
+    }
+
+    test("#addHerokuKey() should return response") {
+      val subscriber = client.addHerokuKey("apikey").test()
+      expect(subscriber.isFinished()).to.be.`true`
+    }
   }
 
-  group("CircleCIAPIClientV1") {
+  group("CircleCIAPIClientV1_1") {
     beforeEachTest {
       client1_1 = MockCircleCIAPIClientV1_1()
       RxJavaPlugins.onComputationScheduler(TestScheduler())
@@ -288,6 +339,57 @@ object CircleCIAPIClientSpec: Spek({
       val subscriber = client1_1.deleteCache(vcsType, userName, project).test()
       expect(subscriber.isFinished()).to.be.`true`
     }
+
+    test("#addSshKey() should return response") {
+      val request = AddSshKeyRequest("hostname", "private_key")
+      val subscriber = client1_1.addSshKey(vcsType, userName, project, request).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val build = subscriber.values().first()
+      expectNotNull(build)
+    }
+
+    test("#getCheckoutKeys() should return response") {
+      val subscriber = client1_1.getCheckoutKeys(vcsType, userName, project).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val checkoutKeys = subscriber.values().first()
+      expect(checkoutKeys).not.to.be.empty
+      expectNotNull(checkoutKeys.first())
+    }
+
+    test("#createCheckoutKey() should return response") {
+      val request = CreateCheckoutKeyRequest("deploy-key", true)
+      val subscriber = client1_1.createCheckoutKey(vcsType, userName, project, request).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val checkoutKey = subscriber.values().first()
+      expectNotNull(checkoutKey)
+    }
+
+    test("#getCheckoutKey() should return response") {
+      val subscriber = client1_1.getCheckoutKey(vcsType, userName, project, "fingerprint").test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val checkoutKey = subscriber.values().first()
+      expectNotNull(checkoutKey)
+    }
+
+    test("#deleteCheckoutKey() should return response") {
+      val subscriber = client1_1.deleteCheckoutKey(vcsType, userName, project, "fingerprint").test()
+      expect(subscriber.isFinished()).to.be.`true`
+    }
+
+    test("#addUserSshKey() should return response") {
+      val request = AddSshKeyRequest("hostname", "private_key")
+      val subscriber = client1_1.addUserSshKey(request).test()
+      expect(subscriber.isFinished()).to.be.`true`
+    }
+
+    test("#addHerokuKey() should return response") {
+      val subscriber = client1_1.addHerokuKey("apikey").test()
+      expect(subscriber.isFinished()).to.be.`true`
+    }
   }
 })
 
@@ -400,4 +502,17 @@ private fun expectNotNull(artifact: Artifact) {
   expect(artifact.path).not.to.be.`null`
   expect(artifact.prettyPath).not.to.be.`null`
   expect(artifact.url).not.to.be.`null`
+}
+
+private fun expectNotNull(checkoutKey: CheckoutKey) {
+  expect(checkoutKey.type).not.to.be.`null`
+  expect(checkoutKey.preferred).not.to.be.`null`
+  expect(checkoutKey.created_at).not.to.be.`null`
+  expect(checkoutKey.fingerprint).not.to.be.`null`
+  expect(checkoutKey.public_key).not.to.be.`null`
+}
+
+private fun expectNotNull(sshKey: SSHKey) {
+  expect(sshKey.fingerprint).not.to.be.`null`
+  expect(sshKey.public_key).not.to.be.`null`
 }
