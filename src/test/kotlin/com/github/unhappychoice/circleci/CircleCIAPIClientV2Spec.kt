@@ -1,457 +1,733 @@
 package com.github.unhappychoice.circleci
 
-
 import com.github.unhappychoice.circleci.v2.request.*
 import com.github.unhappychoice.circleci.v2.response.*
-import com.winterbe.expekt.expect
-import io.reactivex.observers.TestObserver
-import io.reactivex.plugins.RxJavaPlugins
-import io.reactivex.schedulers.TestScheduler
+import com.winterbe.expekt.should
 import org.spekframework.spek2.Spek
+import org.spekframework.spek2.style.specification.describe
 
-object CircleCIAPIClientV2Spec: Spek({
-  lateinit var clientV2: CircleCIAPIClientV2
+class CircleCIAPIClientV2Spec : Spek({
+    lateinit var client: CircleCIAPIClientV2
 
-  group("CircleCIAPIClientV2") {
     beforeEachTest {
-      clientV2 = MockCircleCIAPIClientV2()
-      RxJavaPlugins.onComputationScheduler(TestScheduler())
-      RxJavaPlugins.onIoScheduler(TestScheduler())
-      RxJavaPlugins.onNewThreadScheduler(TestScheduler())
+        client = MockCircleCIAPIClientV2()
     }
 
-    test("#getMe() should return response") {
-      val subscriber = clientV2.getMe().test()
-      expect(subscriber.isFinished()).to.be.`true`
+    describe("CircleCI API v2 client") {
+        it("gets current user") {
+            client.getMe().blockingGet().run {
+                id.should.not.be.empty
+                login.should.not.be.empty
+                name.should.not.be.empty
+            }
+        }
 
-      val user = subscriber.values().first()
-      expectNotNull(user)
+        it("gets user by id") {
+            client.getUser("id").blockingGet().run {
+                id.should.not.be.empty
+                login.should.not.be.empty
+                name.should.not.be.empty
+            }
+        }
+
+        it("gets user's collaborations") {
+            client.getCollaborations().blockingGet().first().run {
+                slug.should.not.be.empty
+                vcsType.should.not.be.empty
+                name.should.not.be.empty
+                avatarUrl.should.not.be.empty
+            }
+        }
+
+        it("gets a context") {
+            client.getContext("context-id").blockingGet().run {
+                id.should.not.be.empty
+                name.should.not.be.empty
+                createdAt.should.not.be.null
+            }
+        }
+
+        it("gets contexts") {
+            client.listContexts("owner-id", "owner-slug", "account").blockingGet().run {
+                items.first().run {
+                    id.should.not.be.empty
+                    name.should.not.be.empty
+                    createdAt.should.not.be.null
+                }
+                nextPageToken.should.not.be.empty
+            }
+        }
+
+        it("creates a context") {
+            val request = CreateContextRequest(
+                name = "name",
+                owner = CreateContextRequest.Owner(id = "id", type = "type")
+            )
+            client.createContext(request).blockingGet().run {
+                id.should.not.be.empty
+                name.should.not.be.empty
+                createdAt.should.not.be.null
+            }
+        }
+
+        it("deletes a context") {
+            client.deleteContext("context-id").blockingGet().run {
+                message.should.not.be.empty
+            }
+        }
+
+        it("gets environment variables from a context") {
+            client.listEnvironmentVariablesFromContext("context-id").blockingGet().run {
+                items.first().run {
+                    variable.should.not.be.empty
+                    contextId.should.not.be.empty
+                    createdAt.should.not.be.null
+                    updatedAt.should.not.be.null
+                }
+                nextPageToken.should.not.be.empty
+            }
+        }
+
+        it("adds or updates an environment variable") {
+            val request = AddEnvironmentVariableRequest(value = "value")
+            (client.addEnvironmentVariableToContext("context-id", "env-var-name", request).blockingGet() as EnvironmentVariable).run {
+                variable.should.not.be.empty
+                contextId.should.not.be.empty
+                createdAt.should.not.be.null
+                updatedAt.should.not.be.null
+            }
+        }
+
+        it("deletes an environment variable from a context") {
+            client.deleteEnvironmentVariableFromContext("context-id", "env-var-name").blockingGet().run {
+                message.should.not.be.empty
+            }
+        }
+
+        it("gets all insights branches") {
+            client.getAllInsightsBranches("project-slug", "workflow-name").blockingGet().run {
+                org_id.should.not.be.empty
+                project_id.should.not.be.empty
+                branches.first().should.not.be.empty
+            }
+        }
+
+        it("gets flaky tests") {
+            client.getFlakyTests("project-slug").blockingGet().run {
+                `flaky-tests`.first().run {
+                    `time-wasted`.should.be.above(0)
+                    `workflow-created-at`.should.not.be.empty
+                    `workflow-id`.should.not.be.empty
+                    `pipeline-number`.should.be.above(0)
+                    `workflow-name`.should.not.be.empty
+                    `test-name`.should.not.be.empty
+                    `job-name`.should.not.be.empty
+                    `job-number`.should.be.above(0)
+                    `pipeline-id`.should.not.be.empty
+                }
+            }
+        }
+
+        it("gets job timeseries") {
+            client.getJobTimeseries("project-slug", "workflow-name", "branch", "daily", "start-date", "end-date").blockingGet().run {
+                items.first().run {
+                    name.should.not.be.empty
+                    min_started_at.should.not.be.empty
+                    max_ended_at.should.not.be.empty
+                    timestamp.should.not.be.empty
+                    metrics.run {
+                        total_runs.should.be.above(0)
+                        failed_runs.should.be.above(0)
+                        successful_runs.should.be.above(0)
+                        throughput.should.be.above(0f)
+                        median_credits_used.should.be.above(0)
+                        total_credits_used.should.be.above(0)
+                        duration_metrics.run {
+                            min.should.be.above(0)
+                            median.should.be.above(0)
+                            max.should.be.above(0)
+                            p95.should.be.above(0)
+                            total.should.be.above(0)
+                        }
+                    }
+                }
+                next_page_token.should.not.be.empty
+            }
+        }
+
+        it("gets org summary data") {
+            client.getOrgSummaryData("org-slug", "reporting-window", null).blockingGet().run {
+                org_data.run {
+                    metrics.run {
+                        total_runs.should.be.above(0)
+                        total_duration_secs.should.be.above(0)
+                        total_credits_used.should.be.above(0)
+                        success_rate.should.be.above(0f)
+                        throughput.should.be.above(0f)
+                    }
+                    trends.run {
+                        total_runs.should.be.above(0f)
+                        total_duration_secs.should.be.above(0f)
+                        total_credits_used.should.be.above(0f)
+                        success_rate.should.be.above(0f)
+                        throughput.should.be.above(0f)
+                    }
+                }
+                org_project_data.first().run {
+                    project_name.should.not.be.empty
+                    metrics.run {
+                        total_runs.should.be.above(0)
+                        total_duration_secs.should.be.above(0)
+                        total_credits_used.should.be.above(0)
+                        success_rate.should.be.above(0f)
+                    }
+                    trends.run {
+                        total_runs.should.be.above(0f)
+                        total_duration_secs.should.be.above(0f)
+                        total_credits_used.should.be.above(0f)
+                        success_rate.should.be.above(0f)
+                    }
+                }
+                all_projects.first().should.not.be.empty
+            }
+        }
+
+        it("gets project workflows page data") {
+            client.getProjectWorkflowsPageData("project-slug", "reporting-window", null, null).blockingGet().run {
+                org_id.should.not.be.empty
+                project_id.should.not.be.empty
+                project_data.run {
+                    metrics.run {
+                        total_runs.should.be.above(0)
+                        total_duration_secs.should.be.above(0)
+                        total_credits_used.should.be.above(0)
+                        success_rate.should.be.above(0f)
+                        throughput.should.be.above(0f)
+                    }
+                    trends.run {
+                        total_runs.should.be.above(0f)
+                        total_duration_secs.should.be.above(0f)
+                        total_credits_used.should.be.above(0f)
+                        success_rate.should.be.above(0f)
+                        throughput.should.be.above(0f)
+                    }
+                }
+                project_workflow_data.first().run {
+                    workflow_name.should.not.be.empty
+                    metrics.run {
+                        total_runs.should.be.above(0)
+                        total_credits_used.should.be.above(0)
+                        success_rate.should.be.above(0f)
+                        p95_duration_secs.should.be.above(0f)
+                    }
+                    trends.run {
+                        total_runs.should.be.above(0f)
+                        total_credits_used.should.be.above(0f)
+                        success_rate.should.be.above(0f)
+                        p95_duration_secs.should.be.above(0f)
+                    }
+                }
+                project_workflow_branch_data.first().run {
+                    workflow_name.should.not.be.empty
+                    branch.should.not.be.empty
+                    metrics.run {
+                        total_runs.should.be.above(0)
+                        total_credits_used.should.be.above(0)
+                        success_rate.should.be.above(0f)
+                        p95_duration_secs.should.be.above(0f)
+                    }
+                    trends.run {
+                        total_runs.should.be.above(0f)
+                        total_credits_used.should.be.above(0f)
+                        success_rate.should.be.above(0f)
+                        p95_duration_secs.should.be.above(0f)
+                    }
+                }
+                all_branches.first().should.not.be.empty
+                all_workflows.first().should.not.be.empty
+            }
+        }
+
+        it("gets a job's details") {
+            client.getJobDetails("project-slug", "job-number").blockingGet().run {
+                name.should.not.be.empty
+            }
+        }
+
+        it("gets a job's artifacts") {
+            client.getJobArtifacts("project-slug", "job-number").blockingGet().run {
+                items.first().run {
+                    path.should.not.be.empty
+                    nodeIndex.should.be.above(-1)
+                    url.should.not.be.empty
+                }
+                nextPageToken.should.not.be.empty
+            }
+        }
+
+        it("gets a job's test metadata") {
+            client.getTests("project-slug", "job-number").blockingGet().run {
+                items.first().run {
+                    message.should.not.be.empty
+                    source.should.not.be.empty
+                    runTime.should.be.above(0.0)
+                    file.should.not.be.empty
+                    result.should.not.be.empty
+                    name.should.not.be.empty
+                    classname.should.not.be.empty
+                }
+                nextPageToken.should.not.be.empty
+            }
+        }
+
+        it("cancels a job") {
+            client.cancelJob("project-slug", "job-number").blockingGet().run {
+                message.should.not.be.empty
+            }
+        }
+
+        it("gets an organization") {
+            client.getOrganization("organization-id").blockingGet().run {
+                id.should.not.be.empty
+                name.should.not.be.empty
+                slug.should.not.be.empty
+                vcsType.should.not.be.empty
+            }
+        }
+
+        it("gets a pipeline by id") {
+            client.getPipelineById("pipeline-id").blockingGet().run {
+                id.should.not.be.empty
+                errors.should.be.empty
+                projectSlug.should.not.be.empty
+                number.should.be.above(0)
+                state.should.not.be.empty
+                createdAt.should.not.be.empty
+                trigger.run {
+                    type.should.not.be.empty
+                    receivedAt.should.not.be.empty
+                    actor.run {
+                        login.should.not.be.empty
+                    }
+                }
+                vcs?.run {
+                    providerName.should.not.be.empty
+                    targetRepositoryUrl.should.not.be.empty
+                    revision.should.not.be.empty
+                    originRepositoryUrl.should.not.be.empty
+                }
+            }
+        }
+
+        it("gets a pipeline by number") {
+            client.getPipelineByNumber("project-slug", 1).blockingGet().run {
+                id.should.not.be.empty
+                errors.should.be.empty
+                projectSlug.should.not.be.empty
+                number.should.be.above(0)
+                state.should.not.be.empty
+                createdAt.should.not.be.empty
+                trigger.run {
+                    type.should.not.be.empty
+                    receivedAt.should.not.be.empty
+                    actor.run {
+                        login.should.not.be.empty
+                    }
+                }
+                vcs?.run {
+                    providerName.should.not.be.empty
+                    targetRepositoryUrl.should.not.be.empty
+                    revision.should.not.be.empty
+                    originRepositoryUrl.should.not.be.empty
+                }
+            }
+        }
+
+        it("gets a pipeline's configuration") {
+            client.getPipelineConfigById("pipeline-id").blockingGet().run {
+                source.should.not.be.empty
+                compiled.should.not.be.empty
+            }
+        }
+
+        it("gets a pipeline's workflows") {
+            client.getPipelineWorkflows("pipeline-id").blockingGet().run {
+                items.first().run {
+                    id.should.not.be.empty
+                    name.should.not.be.empty
+                    projectSlug.should.not.be.empty
+                    status.should.not.be.empty
+                    createdAt.should.not.be.empty
+                    pipelineId.should.not.be.empty
+                    pipelineNumber.should.be.above(0)
+                    startedBy.should.not.be.empty
+                }
+                nextPageToken.should.not.be.empty
+            }
+        }
+
+        it("gets project's pipelines") {
+            client.getProjectPipelines("project-slug", "branch").blockingGet().run {
+                items.first().run {
+                    id.should.not.be.empty
+                    errors.should.be.empty
+                    projectSlug.should.not.be.empty
+                    number.should.be.above(0)
+                    state.should.not.be.empty
+                    createdAt.should.not.be.empty
+                    trigger.run {
+                        type.should.not.be.empty
+                        receivedAt.should.not.be.empty
+                        actor.run {
+                            login.should.not.be.empty
+                        }
+                    }
+                    vcs?.run {
+                        providerName.should.not.be.empty
+                        targetRepositoryUrl.should.not.be.empty
+                        revision.should.not.be.empty
+                        originRepositoryUrl.should.not.be.empty
+                    }
+                }
+                nextPageToken.should.not.be.empty
+            }
+        }
+
+        it("continues a pipeline") {
+            client.continuePipeline(null).blockingGet().run {
+                message.should.not.be.empty
+            }
+        }
+
+        it("triggers a new pipeline") {
+            client.triggerNewPipeline("project-slug", null).blockingGet().run {
+                number.should.be.above(0)
+                state.should.not.be.empty
+                id.should.not.be.empty
+                createdAt.should.not.be.empty
+            }
+        }
+
+        it("gets a project by slug") {
+            client.getProjectBySlug("project-slug").blockingGet().run {
+                slug.should.not.be.empty
+                name.should.not.be.empty
+                id.should.not.be.empty
+                organizationName.should.not.be.empty
+                organizationSlug.should.not.be.empty
+                organizationId.should.not.be.empty
+                vcsInfo.run {
+                    vcsUrl.should.not.be.empty
+                    provider.should.not.be.empty
+                    defaultBranch.should.not.be.empty
+                }
+            }
+        }
+
+        it("gets a project's checkout keys") {
+            client.getProjectCheckoutKeys("project-slug").blockingGet().run {
+                items?.first()?.run {
+                    publicKey.should.not.be.empty
+                    type.should.not.be.empty
+                    fingerprint.should.not.be.empty
+                    preferred.should.be.`false`
+                    createdAt.should.not.be.null
+                }
+                nextPageToken.should.not.be.empty
+            }
+        }
+
+        it("creates a project's checkout key") {
+            client.createProjectCheckoutKey("project-slug", null).blockingGet().run {
+                publicKey.should.not.be.empty
+                type.should.not.be.empty
+                fingerprint.should.not.be.empty
+                preferred.should.be.`false`
+                createdAt.should.not.be.null
+            }
+        }
+
+        it("gets a project's checkout key") {
+            client.getProjectCheckoutKey("project-slug", "fingerprint").blockingGet().run {
+                publicKey.should.not.be.empty
+                type.should.not.be.empty
+                fingerprint.should.not.be.empty
+                preferred.should.be.`false`
+                createdAt.should.not.be.null
+            }
+        }
+
+        it("deletes a project's checkout key") {
+            client.deleteProjectCheckoutKey("project-slug", "fingerprint").blockingGet().run {
+                message.should.not.be.empty
+            }
+        }
+
+        it("gets a project's environment variables") {
+            client.getProjectEnvironmentVariables("project-slug").blockingGet().run {
+                items.first().run {
+                    name.should.not.be.empty
+                    value.should.not.be.empty
+                }
+                nextPageToken.should.not.be.empty
+            }
+        }
+
+        it("creates a project's environment variable") {
+            client.createProjectEnvironmentVariable("project-slug", null).blockingGet().run {
+                name.should.not.be.empty
+                value.should.not.be.empty
+            }
+        }
+
+        it("deletes a project's environment variable") {
+            client.deleteProjectEnvironmentVariable("project-slug", "name").blockingGet().run {
+                message.should.not.be.empty
+            }
+        }
+
+        it("gets project settings") {
+            client.getProjectSettings("project-slug").blockingGet().run {
+                advanced.run {
+                    autocancelBuilds.should.not.be.null
+                    buildForkPrs.should.not.be.null
+                    buildPrsOnly.should.not.be.null
+                    disableSsh.should.not.be.null
+                    forksReceiveSecretEnvVars.should.not.be.null
+                    oss.should.not.be.null
+                    setGithubStatus.should.not.be.null
+                    setupWorkflows.should.not.be.null
+                    writeSettingsRequiresAdmin.should.not.be.null
+                    prOnlyBranchOverrides.should.not.be.null
+                }
+            }
+        }
+
+        it("gets a schedule by id") {
+            client.getScheduleById("schedule-id").blockingGet().run {
+                id.should.not.be.empty
+                name.should.not.be.empty
+                description.should.not.be.empty
+                createdAt.should.not.be.empty
+                updatedAt.should.not.be.empty
+                projectSlug.should.not.be.empty
+                parameters.should.not.be.empty
+                actor.run {
+                    id.should.not.be.empty
+                    login.should.not.be.empty
+                    name.should.not.be.empty
+                }
+                timetables.first().run {
+                    id.should.not.be.empty
+                    attribution.should.not.be.empty
+                    days.should.not.be.empty
+                    hours.should.not.be.empty
+                    minutes.should.not.be.empty
+                    perHour.should.be.above(-1)
+                }
+            }
+        }
+
+        it("gets project schedules") {
+            client.getProjectSchedules("project-slug", "page-token").blockingGet().run {
+                items.first().run {
+                    id.should.not.be.empty
+                    name.should.not.be.empty
+                    description.should.not.be.empty
+                    createdAt.should.not.be.empty
+                    updatedAt.should.not.be.empty
+                    projectSlug.should.not.be.empty
+                    parameters.should.not.be.empty
+                    actor.run {
+                        id.should.not.be.empty
+                        login.should.not.be.empty
+                        name.should.not.be.empty
+                    }
+                    timetables.first().run {
+                        id.should.not.be.empty
+                        attribution.should.not.be.empty
+                        days.should.not.be.empty
+                        hours.should.not.be.empty
+                        minutes.should.not.be.empty
+                        perHour.should.be.above(-1)
+                    }
+                }
+                nextPageToken.should.not.be.empty
+            }
+        }
+
+        it("creates a schedule") {
+            client.createSchedule("project-slug", null).blockingGet().run {
+                id.should.not.be.empty
+                name.should.not.be.empty
+                description.should.not.be.empty
+                createdAt.should.not.be.empty
+                updatedAt.should.not.be.empty
+                projectSlug.should.not.be.empty
+                parameters.should.not.be.empty
+                actor.run {
+                    id.should.not.be.empty
+                    login.should.not.be.empty
+                    name.should.not.be.empty
+                }
+                timetables.first().run {
+                    id.should.not.be.empty
+                    attribution.should.not.be.empty
+                    days.should.not.be.empty
+                    hours.should.not.be.empty
+                    minutes.should.not.be.empty
+                    perHour.should.be.above(-1)
+                }
+            }
+        }
+
+        it("updates a schedule") {
+            client.updateSchedule("schedule-id", null).blockingGet().run {
+                id.should.not.be.empty
+                name.should.not.be.empty
+                description.should.not.be.empty
+                createdAt.should.not.be.empty
+                updatedAt.should.not.be.empty
+                projectSlug.should.not.be.empty
+                parameters.should.not.be.empty
+                actor.run {
+                    id.should.not.be.empty
+                    login.should.not.be.empty
+                    name.should.not.be.empty
+                }
+                timetables.first().run {
+                    id.should.not.be.empty
+                    attribution.should.not.be.empty
+                    days.should.not.be.empty
+                    hours.should.not.be.empty
+                    minutes.should.not.be.empty
+                    perHour.should.be.above(-1)
+                }
+            }
+        }
+
+        it("deletes a schedule") {
+            client.deleteSchedule("schedule-id").blockingGet().run {
+                message.should.not.be.empty
+            }
+        }
+
+        it("gets a webhook by id") {
+            client.getWebhookById("webhook-id").blockingGet().run {
+                id.should.not.be.empty
+                name.should.not.be.empty
+                url.should.not.be.empty
+                createdAt.should.not.be.empty
+                updatedAt.should.not.be.empty
+                signingSecret.should.not.be.empty
+                scope.run {
+                    id.should.not.be.empty
+                    type.should.not.be.empty
+                }
+                events.should.not.be.empty
+            }
+        }
+
+        it("gets webhooks") {
+            client.getWebhooks("scope-id", "scope-type").blockingGet().run {
+                items.first().run {
+                    id.should.not.be.empty
+                    name.should.not.be.empty
+                    url.should.not.be.empty
+                    createdAt.should.not.be.empty
+                    updatedAt.should.not.be.empty
+                    signingSecret.should.not.be.empty
+                    scope.run {
+                        id.should.not.be.empty
+                        type.should.not.be.empty
+                    }
+                    events.should.not.be.empty
+                }
+                nextPageToken.should.not.be.empty
+            }
+        }
+
+        it("creates a webhook") {
+            client.createWebhook(null).blockingGet().run {
+                id.should.not.be.empty
+                name.should.not.be.empty
+                url.should.not.be.empty
+                createdAt.should.not.be.empty
+                updatedAt.should.not.be.empty
+                signingSecret.should.not.be.empty
+                scope.run {
+                    id.should.not.be.empty
+                    type.should.not.be.empty
+                }
+                events.should.not.be.empty
+            }
+        }
+
+        it("updates a webhook") {
+            client.updateWebhook("webhook-id", null).blockingGet().run {
+                id.should.not.be.empty
+                name.should.not.be.empty
+                url.should.not.be.empty
+                createdAt.should.not.be.empty
+                updatedAt.should.not.be.empty
+                signingSecret.should.not.be.empty
+                scope.run {
+                    id.should.not.be.empty
+                    type.should.not.be.empty
+                }
+                events.should.not.be.empty
+            }
+        }
+
+        it("deletes a webhook") {
+            client.deleteWebhook("webhook-id").blockingGet().run {
+                message.should.not.be.empty
+            }
+        }
+
+        it("gets a workflow by id") {
+            client.getWorkflowById("workflow-id").blockingGet().run {
+                id.should.not.be.empty
+                name.should.not.be.empty
+                projectSlug.should.not.be.empty
+                status.should.not.be.empty
+                createdAt.should.not.be.empty
+                pipelineId.should.not.be.empty
+                pipelineNumber.should.be.above(0)
+                startedBy.should.not.be.empty
+            }
+        }
+
+        it("gets a workflow's jobs") {
+            client.getWorkflowJobs("workflow-id").blockingGet().run {
+                items.first().run {
+                    id.should.not.be.empty
+                    name.should.not.be.empty
+                    type.should.not.be.empty
+                    status.should.not.be.empty
+                    startedAt.should.not.be.empty
+                    dependencies.should.not.be.empty
+                }
+                nextPageToken.should.not.be.empty
+            }
+        }
+
+        it("cancels a workflow") {
+            client.cancelWorkflow("workflow-id").blockingGet().run {
+                message.should.not.be.empty
+            }
+        }
+
+        it("reruns a workflow") {
+            client.rerunWorkflow("workflow-id", null).blockingGet().run {
+                workflowId.should.not.be.empty
+            }
+        }
+
+        it("approves a job") {
+            client.approveJob("workflow-id", "approval-request-id").blockingGet().run {
+                message.should.not.be.empty
+            }
+        }
     }
-
-    test("#getProjects() should return response") {
-      val subscriber = clientV2.getProjects().test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val projects = subscriber.values().first()
-      expect(projects).not.to.be.empty
-      expectNotNull(projects.first())
-    }
-
-    test("#getProject() should return response") {
-      val subscriber = clientV2.getProject("gh/unhappychoice/circleci").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val project = subscriber.values().first()
-      expectNotNull(project)
-    }
-
-    test("#getProjectByVcsType() should return response") {
-      val subscriber = clientV2.getProjectByVcsType("github", "unhappychoice", "circleci").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val project = subscriber.values().first()
-      expectNotNull(project)
-    }
-
-    test("#getProjectSettings() should return response") {
-      val subscriber = clientV2.getProjectSettings("gh/unhappychoice/circleci").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val settings = subscriber.values().first()
-      expectNotNull(settings)
-    }
-
-    test("#getWorkflow() should return response") {
-      val subscriber = clientV2.getWorkflow("workflow-id").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val workflow = subscriber.values().first()
-      expectNotNull(workflow)
-    }
-
-    test("#getWorkflowJobs() should return response") {
-      val subscriber = clientV2.getWorkflowJobs("workflow-id").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val jobs = subscriber.values().first()
-      expect(jobs).not.to.be.empty
-      expectNotNull(jobs.first())
-    }
-
-    test("#getPipelines() should return response") {
-      val subscriber = clientV2.getPipelines().test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val pipelines = subscriber.values().first()
-      expect(pipelines).not.to.be.empty
-      expectNotNull(pipelines.first())
-    }
-
-    test("#getPipelineById() should return response") {
-      val subscriber = clientV2.getPipelineById("pipeline-id").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val pipeline = subscriber.values().first()
-      expectNotNull(pipeline)
-    }
-
-    test("#getProjectPipelines() should return response") {
-      val subscriber = clientV2.getProjectPipelines("gh/unhappychoice/circleci").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val pipelines = subscriber.values().first()
-      expect(pipelines).not.to.be.empty
-      expectNotNull(pipelines.first())
-    }
-
-    test("#getPipelineWorkflows() should return response") {
-      val subscriber = clientV2.getPipelineWorkflows("pipeline-id").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val workflows = subscriber.values().first()
-      expect(workflows).not.to.be.empty
-      expectNotNull(workflows.first())
-    }
-
-    test("#triggerNewPipeline() should return response") {
-      val request = TriggerNewPipelineRequest()
-      val subscriber = clientV2.triggerNewPipeline("gh/unhappychoice/circleci", request).test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val pipeline = subscriber.values().first()
-      expectNotNull(pipeline)
-    }
-
-    test("#getPipelineByNumber() should return response") {
-      val subscriber = clientV2.getPipelineByNumber("gh/unhappychoice/circleci", 1).test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val pipeline = subscriber.values().first()
-      expectNotNull(pipeline)
-    }
-
-    test("#getJobDetails() should return response") {
-      val subscriber = clientV2.getJobDetails("job-id").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val job = subscriber.values().first()
-      expectNotNull(job)
-    }
-
-    test("#cancelJob() should return response") {
-      val subscriber = clientV2.cancelJob("job-id").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val job = subscriber.values().first()
-      expectNotNull(job)
-    }
-
-    test("#getJobArtifacts() should return response") {
-      val subscriber = clientV2.getJobArtifacts("job-id").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val artifacts = subscriber.values().first()
-      expect(artifacts).not.to.be.empty
-      expectNotNull(artifacts.first())
-    }
-
-    test("#getProjectWorkflowMetrics() should return response") {
-      val subscriber = clientV2.getProjectWorkflowMetrics("gh/unhappychoice/circleci").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val metrics = subscriber.values().first()
-      expectNotNull(metrics)
-    }
-
-    test("#getWorkflowMetrics() should return response") {
-      val subscriber = clientV2.getWorkflowMetrics("gh/unhappychoice/circleci", "workflow-name").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val metrics = subscriber.values().first()
-      expectNotNull(metrics)
-    }
-
-    test("#getWorkflowRuns() should return response") {
-      val subscriber = clientV2.getWorkflowRuns("gh/unhappychoice/circleci", "workflow-name").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val runs = subscriber.values().first()
-      expect(runs).not.to.be.empty
-      expectNotNull(runs.first())
-    }
-
-    test("#getProjectJobMetrics() should return response") {
-      val subscriber = clientV2.getProjectJobMetrics("gh/unhappychoice/circleci").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val metrics = subscriber.values().first()
-      expectNotNull(metrics)
-    }
-
-    test("#getJobMetrics() should return response") {
-      val subscriber = clientV2.getJobMetrics("gh/unhappychoice/circleci", "job-name").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val metrics = subscriber.values().first()
-      expectNotNull(metrics)
-    }
-
-    test("#getJobRuns() should return response") {
-      val subscriber = clientV2.getJobRuns("gh/unhappychoice/circleci", "job-name").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val runs = subscriber.values().first()
-      expect(runs).not.to.be.empty
-      expectNotNull(runs.first())
-    }
-
-    test("#getContexts() should return response") {
-      val subscriber = clientV2.getContexts().test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val contexts = subscriber.values().first()
-      expect(contexts).not.to.be.empty
-      expectNotNull(contexts.first())
-    }
-
-    test("#getContext() should return response") {
-      val subscriber = clientV2.getContext("context-id").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val context = subscriber.values().first()
-      expectNotNull(context)
-    }
-
-    test("#getContextEnvironmentVariables() should return response") {
-      val subscriber = clientV2.getContextEnvironmentVariables("context-id").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val envVars = subscriber.values().first()
-      expect(envVars).not.to.be.empty
-      expectNotNull(envVars.first())
-    }
-
-    test("#addContextEnvironmentVariable() should return response") {
-      val request = AddEnvironmentVariableRequest("ENV_VAR_NAME", "ENV_VAR_VALUE")
-      val subscriber = clientV2.addContextEnvironmentVariable("context-id", request).test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val envVar = subscriber.values().first()
-      expectNotNull(envVar)
-    }
-
-    test("#updateContextEnvironmentVariable() should return response") {
-      val request = AddEnvironmentVariableRequest("ENV_VAR_NAME", "NEW_ENV_VAR_VALUE")
-      val subscriber = clientV2.updateContextEnvironmentVariable("context-id", "ENV_VAR_NAME", request).test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val envVar = subscriber.values().first()
-      expectNotNull(envVar)
-    }
-
-    test("#deleteContextEnvironmentVariable() should return response") {
-      val subscriber = clientV2.deleteContextEnvironmentVariable("context-id", "ENV_VAR_NAME").test()
-      expect(subscriber.isFinished()).to.be.`true`
-    }
-
-    test("#getSchedules() should return response") {
-      val subscriber = clientV2.getSchedules().test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val schedules = subscriber.values().first()
-      expect(schedules).not.to.be.empty
-      expectNotNull(schedules.first())
-    }
-
-    test("#getScheduleById() should return response") {
-      val subscriber = clientV2.getScheduleById("schedule-id").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val schedule = subscriber.values().first()
-      expectNotNull(schedule)
-    }
-
-    test("#getProjectSchedules() should return response") {
-      val subscriber = clientV2.getProjectSchedules("gh/unhappychoice/circleci").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val schedules = subscriber.values().first()
-      expect(schedules).not.to.be.empty
-      expectNotNull(schedules.first())
-    }
-
-    test("#getWebhooks() should return response") {
-      val subscriber = clientV2.getWebhooks().test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val webhooks = subscriber.values().first()
-      expect(webhooks).not.to.be.empty
-      expectNotNull(webhooks.first())
-    }
-
-    test("#getWebhookById() should return response") {
-      val subscriber = clientV2.getWebhookById("webhook-id").test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val webhook = subscriber.values().first()
-      expectNotNull(webhook)
-    }
-
-    test("#createWebhook() should return response") {
-      val request = CreateWebhookRequest("webhook-name", "http://example.com/webhook", "signing-secret", WebhookScopeRequest("project", "webhook-scope-id"), listOf("workflow-completed"))
-      val subscriber = clientV2.createWebhook(request).test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val webhook = subscriber.values().first()
-      expectNotNull(webhook)
-    }
-
-    test("#updateWebhook() should return response") {
-      val request = CreateWebhookRequest("updated-webhook-name", "http://example.com/updated-webhook", "updated-signing-secret", WebhookScopeRequest("project", "webhook-scope-id"), listOf("workflow-completed"))
-      val subscriber = clientV2.updateWebhook("webhook-id", request).test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val webhook = subscriber.values().first()
-      expectNotNull(webhook)
-    }
-
-    test("#deleteWebhook() should return response") {
-      val subscriber = clientV2.deleteWebhook("webhook-id").test()
-      expect(subscriber.isFinished()).to.be.`true`
-    }
-
-    
-  }
 })
-
-private fun <T> TestObserver<T>.isFinished(): Boolean {
-  assertNoErrors()
-  assertComplete()
-  return true
-}
-
-private fun expectNotNull(user: User) {
-  expect(user.id).not.to.be.`null`
-  expect(user.name).not.to.be.`null`
-  expect(user.login).not.to.be.`null`
-  expect(user.avatarUrl).not.to.be.`null`
-  expect(user.createdAt).not.to.be.`null`
-}
-
-private fun expectNotNull(project: Project) {
-  expect(project.id).not.to.be.`null`
-  expect(project.name).not.to.be.`null`
-  expect(project.slug).not.to.be.`null`
-  expect(project.organizationSlug).not.to.be.`null`
-  expect(project.organizationName).not.to.be.`null`
-  expect(project.vcsInfo.vcsUrl).not.to.be.`null`
-}
-
-private fun expectNotNull(settings: ProjectSettings) {
-  expect(settings.advanced).not.to.be.`null`
-  expect(settings.advanced.oss).not.to.be.`null`
-  expect(settings.advanced.buildForkPrs).not.to.be.`null`
-  expect(settings.advanced.buildPrsOnly).not.to.be.`null`
-  expect(settings.advanced.disableSsh).not.to.be.`null`
-  expect(settings.advanced.forksReceiveSecretEnvVars).not.to.be.`null`
-  expect(settings.advanced.setGithubStatus).not.to.be.`null`
-  expect(settings.advanced.setupWorkflows).not.to.be.`null`
-  expect(settings.advanced.writeSettingsRequiresAdmin).not.to.be.`null`
-}
-
-private fun expectNotNull(workflow: Workflow) {
-  expect(workflow.id).not.to.be.`null`
-  expect(workflow.name).not.to.be.`null`
-  expect(workflow.projectSlug).not.to.be.`null`
-  expect(workflow.status).not.to.be.`null`
-  expect(workflow.createdAt).not.to.be.`null`
-  // expect(workflow.url).not.to.be.`null`
-}
-
-private fun expectNotNull(job: Job) {
-  expect(job.id).not.to.be.`null`
-  expect(job.name).not.to.be.`null`
-  expect(job.type).not.to.be.`null`
-  expect(job.status).not.to.be.`null`
-  expect(job.startedAt).not.to.be.`null`
-  expect(job.dependencies).not.to.be.`null`
-}
-
-private fun expectNotNull(pipeline: Pipeline) {
-  expect(pipeline.id).not.to.be.`null`
-  expect(pipeline.errors).not.to.be.`null`
-  expect(pipeline.projectSlug).not.to.be.`null`
-  expect(pipeline.createdAt).not.to.be.`null`
-  expect(pipeline.vcs).not.to.be.`null`
-  expect(pipeline.number).not.to.be.`null`
-  expect(pipeline.state).not.to.be.`null`
-  expect(pipeline.trigger).not.to.be.`null`
-}
-
-private fun expectNotNull(artifact: Artifact) {
-  expect(artifact.path).not.to.be.`null`
-  expect(artifact.url).not.to.be.`null`
-  expect(artifact.nodeIndex).not.to.be.`null`
-}
-
-private fun expectNotNull(metrics: ProjectMetricsTimeSeries) {
-  expect(metrics.metrics).not.to.be.`null`
-  expect(metrics.trends).not.to.be.`null`
-}
-
-private fun expectNotNull(run: WorkflowRun) {
-  expect(run.id).not.to.be.`null`
-  expect(run.status).not.to.be.`null`
-  expect(run.createdAt).not.to.be.`null`
-  expect(run.duration).not.to.be.`null`
-  expect(run.creditsUsed).not.to.be.`null`
-  expect(run.isRerun).not.to.be.`null`
-}
-
-private fun expectNotNull(run: JobRun) {
-  expect(run.id).not.to.be.`null`
-  expect(run.status).not.to.be.`null`
-  expect(run.startedAt).not.to.be.`null`
-  expect(run.duration).not.to.be.`null`
-  expect(run.creditsUsed).not.to.be.`null`
-  expect(run.isRerun).not.to.be.`null`
-}
-
-private fun expectNotNull(context: Context) {
-  expect(context.id).not.to.be.`null`
-  expect(context.name).not.to.be.`null`
-  expect(context.createdAt).not.to.be.`null`
-  expect(context.organizationId).not.to.be.`null`
-}
-
-private fun expectNotNull(envVar: EnvironmentVariable) {
-  expect(envVar.name).not.to.be.`null`
-  expect(envVar.value).not.to.be.`null`
-  expect(envVar.createdAt).not.to.be.`null`
-  // expect(envVar.updatedAt).not.to.be.`null`
-}
-
-private fun expectNotNull(schedule: Schedule) {
-  expect(schedule.id).not.to.be.`null`
-  expect(schedule.description).not.to.be.`null`
-  expect(schedule.name).not.to.be.`null`
-  expect(schedule.createdAt).not.to.be.`null`
-  
-  expect(schedule.projectSlug).not.to.be.`null`
-  expect(schedule.parameters).not.to.be.`null`
-  expect(schedule.actor).not.to.be.`null`
-  expect(schedule.timetables).not.to.be.`null`
-}
-
-private fun expectNotNull(webhook: Webhook) {
-  expect(webhook.id).not.to.be.`null`
-  expect(webhook.name).not.to.be.`null`
-  expect(webhook.url).not.to.be.`null`
-  expect(webhook.createdAt).not.to.be.`null`
-  expect(webhook.updatedAt).not.to.be.`null`
-  expect(webhook.signingSecret).not.to.be.`null`
-  expect(webhook.scope).not.to.be.`null`
-  expect(webhook.events).not.to.be.`null`
-}
-
-
