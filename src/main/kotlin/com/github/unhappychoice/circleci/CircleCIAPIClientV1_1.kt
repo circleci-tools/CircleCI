@@ -1,16 +1,8 @@
 package com.github.unhappychoice.circleci
 
-import com.github.unhappychoice.circleci.request.AddSshKeyRequest
-import com.github.unhappychoice.circleci.request.CreateCheckoutKeyRequest
-import com.github.unhappychoice.circleci.request.AddHerokuKeyRequest
-import com.github.unhappychoice.circleci.request.TriggerNewBuildRequest
-import com.github.unhappychoice.circleci.request.TriggerNewBuildWithBranchRequest
-import com.github.unhappychoice.circleci.response.Artifact
-import com.github.unhappychoice.circleci.response.Build
-import com.github.unhappychoice.circleci.response.CheckoutKey
-import com.github.unhappychoice.circleci.response.Project
-import com.github.unhappychoice.circleci.response.SSHKey
-import com.github.unhappychoice.circleci.response.User
+import com.github.unhappychoice.circleci.v1.request.*
+import com.github.unhappychoice.circleci.v1.response.*
+import com.github.unhappychoice.circleci.v2.response.CheckoutKey
 import io.reactivex.Observable
 import retrofit2.http.*
 
@@ -249,7 +241,6 @@ interface CircleCIAPIClientV1_1 {
         @Path("project") project: String,
         @Path("fingerprint") fingerprint: String
     ): Observable<Unit>
-
 
     /**
      * POST: /user/ssh-key

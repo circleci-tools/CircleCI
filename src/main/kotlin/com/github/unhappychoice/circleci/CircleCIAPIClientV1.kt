@@ -1,16 +1,8 @@
 package com.github.unhappychoice.circleci
 
-import com.github.unhappychoice.circleci.request.AddSshKeyRequest
-import com.github.unhappychoice.circleci.request.CreateCheckoutKeyRequest
-import com.github.unhappychoice.circleci.request.AddHerokuKeyRequest
-import com.github.unhappychoice.circleci.request.TriggerNewBuildRequest
-import com.github.unhappychoice.circleci.request.TriggerNewBuildWithBranchRequest
-import com.github.unhappychoice.circleci.response.Artifact
-import com.github.unhappychoice.circleci.response.Build
-import com.github.unhappychoice.circleci.response.CheckoutKey
-import com.github.unhappychoice.circleci.response.Project
-import com.github.unhappychoice.circleci.response.SSHKey
-import com.github.unhappychoice.circleci.response.User
+import com.github.unhappychoice.circleci.v1.request.*
+import com.github.unhappychoice.circleci.v1.response.*
+import com.github.unhappychoice.circleci.v2.response.CheckoutKey
 import io.reactivex.Observable
 import retrofit2.http.*
 
@@ -168,7 +160,7 @@ interface CircleCIAPIClientV1 {
    * POST: /project/:username/:project/ssh-key
    *
    * Create an ssh key used to access external systems that require SSH key-based authentication
-  */
+   */
   @POST("project/{username}/{project}/ssh-key")
   fun addSshKey(
     @Path("username") userName: String,
@@ -180,7 +172,7 @@ interface CircleCIAPIClientV1 {
    * GET: /project/:username/:project/checkout-key
    *
    * Lists checkout keys.
-  */
+   */
   @GET("project/{username}/{project}/checkout-key")
   fun getCheckoutKeys(
     @Path("username") userName: String,
@@ -191,7 +183,7 @@ interface CircleCIAPIClientV1 {
    * POST: /project/:username/:project/checkout-key
    *
    * Create a new checkout key.
-  */
+   */
   @POST("project/{username}/{project}/checkout-key")
   fun createCheckoutKey(
     @Path("username") userName: String,
@@ -203,7 +195,7 @@ interface CircleCIAPIClientV1 {
    * GET: /project/:username/:project/checkout-key/:fingerprint
    *
    * Get a checkout key.
-  */
+   */
   @GET("project/{username}/{project}/checkout-key/{fingerprint}")
   fun getCheckoutKey(
     @Path("username") userName: String,
@@ -215,7 +207,7 @@ interface CircleCIAPIClientV1 {
    * DELETE: /project/:username/:project/checkout-key/:fingerprint
    *
    * Delete a checkout key.
-  */
+   */
   @DELETE("project/{username}/{project}/checkout-key/{fingerprint}")
   fun deleteCheckoutKey(
     @Path("username") userName: String,
@@ -227,7 +219,7 @@ interface CircleCIAPIClientV1 {
    * POST: /user/ssh-key
    *
    * Adds a CircleCI key to your GitHub User account.
-  */
+   */
   @POST("user/ssh-key")
   fun addUserSshKey(@Body request: AddSshKeyRequest): Observable<Unit>
 
