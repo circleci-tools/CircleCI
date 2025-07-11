@@ -1,15 +1,11 @@
 package com.github.unhappychoice.circleci
 
-import com.github.unhappychoice.circleci.request.AddHerokuKeyRequest
-import com.github.unhappychoice.circleci.request.AddSshKeyRequest
-import com.github.unhappychoice.circleci.request.CreateCheckoutKeyRequest
-import com.github.unhappychoice.circleci.request.TriggerNewBuildRequest
-import com.github.unhappychoice.circleci.request.TriggerNewBuildWithBranchRequest
-import com.github.unhappychoice.circleci.response.Artifact
-import com.github.unhappychoice.circleci.response.Build
-import com.github.unhappychoice.circleci.response.Project
-import com.github.unhappychoice.circleci.response.SSHKey
-import com.github.unhappychoice.circleci.response.User
+import com.github.unhappychoice.circleci.v1.request.AddSshKeyRequest
+import com.github.unhappychoice.circleci.v1.request.CreateCheckoutKeyRequest
+import com.github.unhappychoice.circleci.v1.request.TriggerNewBuildRequest
+import com.github.unhappychoice.circleci.v1.request.TriggerNewBuildWithBranchRequest
+import com.github.unhappychoice.circleci.v1.response.*
+import com.github.unhappychoice.circleci.v2.response.CheckoutKey
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
@@ -17,7 +13,6 @@ import io.reactivex.Observable
 import java.io.File
 import java.lang.reflect.Type
 import java.util.*
-import com.github.unhappychoice.circleci.response.CheckoutKey
 
 class MockCircleCIAPIClientV1_1: CircleCIAPIClientV1_1 {
     override fun getMe(): Observable<User> {
