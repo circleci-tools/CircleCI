@@ -1,4 +1,4 @@
-package com.github.unhappychoice.circleci.response
+package com.github.unhappychoice.circleci.v1.response
 
 data class User(
   val avatarUrl: String,

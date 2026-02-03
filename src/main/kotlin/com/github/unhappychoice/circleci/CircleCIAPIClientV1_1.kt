@@ -1,16 +1,7 @@
 package com.github.unhappychoice.circleci
 
-import com.github.unhappychoice.circleci.request.AddSshKeyRequest
-import com.github.unhappychoice.circleci.request.CreateCheckoutKeyRequest
-import com.github.unhappychoice.circleci.request.AddHerokuKeyRequest
-import com.github.unhappychoice.circleci.request.TriggerNewBuildRequest
-import com.github.unhappychoice.circleci.request.TriggerNewBuildWithBranchRequest
-import com.github.unhappychoice.circleci.response.Artifact
-import com.github.unhappychoice.circleci.response.Build
-import com.github.unhappychoice.circleci.response.CheckoutKey
-import com.github.unhappychoice.circleci.response.Project
-import com.github.unhappychoice.circleci.response.SSHKey
-import com.github.unhappychoice.circleci.response.User
+import com.github.unhappychoice.circleci.v1.request.*
+import com.github.unhappychoice.circleci.v1.response.*
 import io.reactivex.Observable
 import retrofit2.http.*
 
@@ -250,7 +241,6 @@ interface CircleCIAPIClientV1_1 {
         @Path("fingerprint") fingerprint: String
     ): Observable<Unit>
 
-
     /**
      * POST: /user/ssh-key
      *
@@ -267,6 +257,110 @@ interface CircleCIAPIClientV1_1 {
     @FormUrlEncoded
     @POST("user/heroku-key")
     fun addHerokuKey(@Field("apikey") apikey: String): Observable<Unit>
+
+    /**
+     * GET: /project/:vcs-type/:username/:project/:build_num/tests
+     *
+     * Provides test metadata for a job.
+     */
+    @GET("project/{vcs-type}/{username}/{project}/{build_num}/tests")
+    fun getTestMetadata(
+        @Path("vcs-type") vcsType: String,
+        @Path("username") userName: String,
+        @Path("project") project: String,
+        @Path("build_num") buildNumber: Int
+    ): Observable<TestMetadataResponse>
+
+    /**
+     * GET: /project/:vcs-type/:username/:project/envvar
+     *
+     * Lists the environment variables for a project.
+     */
+    @GET("project/{vcs-type}/{username}/{project}/envvar")
+    fun getEnvironmentVariables(
+        @Path("vcs-type") vcsType: String,
+        @Path("username") userName: String,
+        @Path("project") project: String
+    ): Observable<List<EnvironmentVariable>>
+
+    /**
+     * GET: /project/:vcs-type/:username/:project/envvar/:name
+     *
+     * Gets the hidden value of an environment variable.
+     */
+    @GET("project/{vcs-type}/{username}/{project}/envvar/{name}")
+    fun getEnvironmentVariable(
+        @Path("vcs-type") vcsType: String,
+        @Path("username") userName: String,
+        @Path("project") project: String,
+        @Path("name") name: String
+    ): Observable<EnvironmentVariable>
+
+    /**
+     * GET: /project/:vcs-type/:username/:project/latest/artifacts
+     *
+     * Returns an array of artifacts produced by the latest job run on a given branch.
+     */
+    @GET("project/{vcs-type}/{username}/{project}/latest/artifacts")
+    fun getLatestArtifacts(
+        @Path("vcs-type") vcsType: String,
+        @Path("username") userName: String,
+        @Path("project") project: String,
+        @Query("branch") branch: String? = null,
+        @Query("filter") filter: String? = null
+    ): Observable<List<Artifact>>
+
+    /**
+     * POST: /project/:vcs-type/:username/:project/build
+     *
+     * Triggers a pipeline of the specified project, by branch, revision, or tag.
+     */
+    @POST("project/{vcs-type}/{username}/{project}/build")
+    fun triggerPipeline(
+        @Path("vcs-type") vcsType: String,
+        @Path("username") userName: String,
+        @Path("project") project: String,
+        @Body request: TriggerPipelineRequest
+    ): Observable<TriggerPipelineResponse>
+
+    /**
+     * POST: /project/:vcs-type/:username/:project/envvar
+     *
+     * Creates a new environment variable.
+     */
+    @POST("project/{vcs-type}/{username}/{project}/envvar")
+    fun addEnvironmentVariable(
+        @Path("vcs-type") vcsType: String,
+        @Path("username") userName: String,
+        @Path("project") project: String,
+        @Body request: AddEnvironmentVariableRequest
+    ): Observable<EnvironmentVariable>
+
+    /**
+     * DELETE: /project/:vcs-type/:username/:project/ssh-key
+     *
+     * Deletes an SSH key from the system by fingerprint.
+     */
+    @HTTP(method = "DELETE", path = "project/{vcs-type}/{username}/{project}/ssh-key", hasBody = true)
+    fun deleteSshKey(
+        @Path("vcs-type") vcsType: String,
+        @Path("username") userName: String,
+        @Path("project") project: String,
+        @Body request: DeleteSshKeyRequest
+    ): Observable<Unit>
+
+    /**
+     * DELETE: /project/:vcs-type/:username/:project/envvar/:name
+     *
+     * Deletes an environment variable.
+     */
+    @DELETE("project/{vcs-type}/{username}/{project}/envvar/{name}")
+    fun deleteEnvironmentVariable(
+        @Path("vcs-type") vcsType: String,
+        @Path("username") userName: String,
+        @Path("project") project: String,
+        @Path("name") name: String
+    ): Observable<Unit>
 }
 
 
