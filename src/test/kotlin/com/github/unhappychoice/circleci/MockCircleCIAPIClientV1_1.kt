@@ -1,15 +1,7 @@
 package com.github.unhappychoice.circleci
 
-import com.github.unhappychoice.circleci.request.AddHerokuKeyRequest
-import com.github.unhappychoice.circleci.request.AddSshKeyRequest
-import com.github.unhappychoice.circleci.request.CreateCheckoutKeyRequest
-import com.github.unhappychoice.circleci.request.TriggerNewBuildRequest
-import com.github.unhappychoice.circleci.request.TriggerNewBuildWithBranchRequest
-import com.github.unhappychoice.circleci.response.Artifact
-import com.github.unhappychoice.circleci.response.Build
-import com.github.unhappychoice.circleci.response.Project
-import com.github.unhappychoice.circleci.response.SSHKey
-import com.github.unhappychoice.circleci.response.User
+import com.github.unhappychoice.circleci.v1.request.*
+import com.github.unhappychoice.circleci.v1.response.*
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
@@ -17,7 +9,6 @@ import io.reactivex.Observable
 import java.io.File
 import java.lang.reflect.Type
 import java.util.*
-import com.github.unhappychoice.circleci.response.CheckoutKey
 
 class MockCircleCIAPIClientV1_1: CircleCIAPIClientV1_1 {
     override fun getMe(): Observable<User> {
@@ -81,16 +72,24 @@ class MockCircleCIAPIClientV1_1: CircleCIAPIClientV1_1 {
     }
 
     override fun getCheckoutKeys(vcsType: String, userName: String, project: String): Observable<List<CheckoutKey>> {
-        return mockResponse("json/checkout_keys.json", object: TypeToken<List<CheckoutKey>>(){}.type)
+        return Observable.just(listOf(createMockCheckoutKey()))
     }
 
     override fun createCheckoutKey(vcsType: String, userName: String, project: String, request: CreateCheckoutKeyRequest): Observable<CheckoutKey> {
-        return mockResponse("json/checkout_key.json", CheckoutKey::class.java)
+        return Observable.just(createMockCheckoutKey())
     }
 
     override fun getCheckoutKey(vcsType: String, userName: String, project: String, fingerprint: String): Observable<CheckoutKey> {
-        return mockResponse("json/checkout_key.json", CheckoutKey::class.java)
+        return Observable.just(createMockCheckoutKey())
     }
+
+    private fun createMockCheckoutKey() = CheckoutKey(
+        type = "deploy-key",
+        preferred = true,
+        created_at = "2024-07-11T12:00:00Z",
+        fingerprint = "xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx",
+        public_key = "ssh-rsa AAAA..."
+    )
 
     override fun deleteCheckoutKey(vcsType: String, userName: String, project: String, fingerprint: String): Observable<Unit> {
         return Observable.just(Unit)
@@ -101,6 +100,52 @@ class MockCircleCIAPIClientV1_1: CircleCIAPIClientV1_1 {
     }
 
     override fun addHerokuKey(apikey: String): Observable<Unit> {
+        return Observable.just(Unit)
+    }
+
+    override fun getTestMetadata(vcsType: String, userName: String, project: String, buildNumber: Int): Observable<TestMetadataResponse> {
+        return Observable.just(TestMetadataResponse(
+            tests = listOf(
+                TestMetadata(
+                    message = "",
+                    file = "spec/example_spec.rb",
+                    source = "rspec",
+                    run_time = 0.123,
+                    result = "success",
+                    name = "Example test",
+                    classname = "ExampleSpec"
+                )
+            )
+        ))
+    }
+
+    override fun getEnvironmentVariables(vcsType: String, userName: String, project: String): Observable<List<EnvironmentVariable>> {
+        return Observable.just(listOf(
+            EnvironmentVariable(name = "MY_VAR", value = "xxxx1234")
+        ))
+    }
+
+    override fun getEnvironmentVariable(vcsType: String, userName: String, project: String, name: String): Observable<EnvironmentVariable> {
+        return Observable.just(EnvironmentVariable(name = name, value = "xxxx"))
+    }
+
+    override fun getLatestArtifacts(vcsType: String, userName: String, project: String, branch: String?, filter: String?): Observable<List<Artifact>> {
+        return mockResponse("json/artifacts.json", object: TypeToken<List<Artifact>>(){}.type)
+    }
+
+    override fun triggerPipeline(vcsType: String, userName: String, project: String, request: TriggerPipelineRequest): Observable<TriggerPipelineResponse> {
+        return Observable.just(TriggerPipelineResponse(status = 200, body = "Build created"))
+    }
+
+    override fun addEnvironmentVariable(vcsType: String, userName: String, project: String, request: AddEnvironmentVariableRequest): Observable<EnvironmentVariable> {
+        return Observable.just(EnvironmentVariable(name = request.name, value = "xxxx"))
+    }
+
+    override fun deleteSshKey(vcsType: String, userName: String, project: String, request: DeleteSshKeyRequest): Observable<Unit> {
+        return Observable.just(Unit)
+    }
+
+    override fun deleteEnvironmentVariable(vcsType: String, userName: String, project: String, name: String): Observable<Unit> {
         return Observable.just(Unit)
     }
 
