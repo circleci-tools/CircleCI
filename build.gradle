@@ -2,7 +2,6 @@ buildscript {
     ext.kotlin_version = '2.3.0'
     ext.spek_version = '2.0.19'
     repositories {
-        jcenter()
         mavenCentral()
     }
     dependencies {
@@ -37,6 +36,8 @@ dependencies {
     implementation 'com.squareup.retrofit2:retrofit:3.0.0'
     implementation 'com.squareup.retrofit2:adapter-rxjava2:3.0.0'
     implementation 'com.squareup.retrofit2:converter-gson:3.0.0'
+    implementation 'com.squareup.retrofit2:converter-moshi:2.9.0'
+    implementation 'com.squareup.moshi:moshi-kotlin:1.15.0'
     implementation 'commons-codec:commons-codec:1.21.0'
     implementation 'io.reactivex.rxjava2:rxkotlin:2.4.0'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
@@ -47,6 +48,7 @@ dependencies {
 
     testRuntimeOnly "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     testRuntimeOnly "org.spekframework.spek2:spek-runner-junit5:$spek_version"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher:1.10.2"
 }
 
 test {
@@ -67,7 +69,6 @@ jacocoTestReport {
 }
 
 repositories {
-    jcenter()
     mavenCentral()
 }
 
