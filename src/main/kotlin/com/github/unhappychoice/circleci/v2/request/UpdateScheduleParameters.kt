@@ -1,6 +1,6 @@
 package com.github.unhappychoice.circleci.v2.request
 
-import com.squareup.moshi.Json
+import com.github.unhappychoice.circleci.v2.response.Timetable
 
 data class UpdateScheduleParameters(
     val name: String?,

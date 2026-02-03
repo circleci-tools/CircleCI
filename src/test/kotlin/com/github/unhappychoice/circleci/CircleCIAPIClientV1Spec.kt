@@ -1,15 +1,14 @@
 package com.github.unhappychoice.circleci
 
-import com.github.unhappychoice.circleci.request.*
-import com.github.unhappychoice.circleci.response.*
+import com.github.unhappychoice.circleci.v1.request.*
+import com.github.unhappychoice.circleci.v1.response.*
 import com.winterbe.expekt.expect
 import io.reactivex.observers.TestObserver
 import io.reactivex.plugins.RxJavaPlugins
 import io.reactivex.schedulers.TestScheduler
 import org.spekframework.spek2.Spek
-import com.github.unhappychoice.circleci.response.SSHKey
 
-object CircleCIAPIClientSpec: Spek({
+object CircleCIAPIClientV1Spec: Spek({
   lateinit var client: CircleCIAPIClientV1
   lateinit var client1_1: CircleCIAPIClientV1_1
   val vcsType = "github"
@@ -203,6 +202,70 @@ object CircleCIAPIClientSpec: Spek({
       val subscriber = client.addHerokuKey("apikey").test()
       expect(subscriber.isFinished()).to.be.`true`
     }
+
+    test("#getTestMetadata() should return response") {
+      val subscriber = client.getTestMetadata(userName, project, buildNum).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val response = subscriber.values().first()
+      expect(response.tests).not.to.be.empty
+      expectNotNull(response.tests.first())
+    }
+
+    test("#getEnvironmentVariables() should return response") {
+      val subscriber = client.getEnvironmentVariables(userName, project).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val envVars = subscriber.values().first()
+      expect(envVars).not.to.be.empty
+      expectNotNull(envVars.first())
+    }
+
+    test("#getEnvironmentVariable() should return response") {
+      val subscriber = client.getEnvironmentVariable(userName, project, "MY_VAR").test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val envVar = subscriber.values().first()
+      expectNotNull(envVar)
+    }
+
+    test("#getLatestArtifacts() should return response") {
+      val subscriber = client.getLatestArtifacts(userName, project).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val artifacts = subscriber.values().first()
+      expect(artifacts).not.to.be.empty
+      expectNotNull(artifacts.first())
+    }
+
+    test("#triggerPipeline() should return response") {
+      val request = TriggerPipelineRequest(branch = "main")
+      val subscriber = client.triggerPipeline(userName, project, request).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val response = subscriber.values().first()
+      expectNotNull(response)
+    }
+
+    test("#addEnvironmentVariable() should return response") {
+      val request = AddEnvironmentVariableRequest("MY_VAR", "my_value")
+      val subscriber = client.addEnvironmentVariable(userName, project, request).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val envVar = subscriber.values().first()
+      expectNotNull(envVar)
+    }
+
+    test("#deleteSshKey() should return response") {
+      val request = DeleteSshKeyRequest("fingerprint", "hostname")
+      val subscriber = client.deleteSshKey(userName, project, request).test()
+      expect(subscriber.isFinished()).to.be.`true`
+    }
+
+    test("#deleteEnvironmentVariable() should return response") {
+      val subscriber = client.deleteEnvironmentVariable(userName, project, "MY_VAR").test()
+      expect(subscriber.isFinished()).to.be.`true`
+    }
   }
 
   group("CircleCIAPIClientV1_1") {
@@ -340,13 +403,26 @@ object CircleCIAPIClientSpec: Spek({
       expect(subscriber.isFinished()).to.be.`true`
     }
 
+    test("#addUserSshKey() should return response") {
+      val request = AddSshKeyRequest("hostname", "private_key")
+      val subscriber = client1_1.addUserSshKey(request).test()
+      expect(subscriber.isFinished()).to.be.`true`
+    }
+
+    test("#addHerokuKey() should return response") {
+      val subscriber = client1_1.addHerokuKey("apikey").test()
+      expect(subscriber.isFinished()).to.be.`true`
+    }
+
+    test("#followProject() should return response") {
+      val subscriber = client1_1.followProject(vcsType, userName, project).test()
+      expect(subscriber.isFinished()).to.be.`true`
+    }
+
     test("#addSshKey() should return response") {
       val request = AddSshKeyRequest("hostname", "private_key")
       val subscriber = client1_1.addSshKey(vcsType, userName, project, request).test()
       expect(subscriber.isFinished()).to.be.`true`
-
-      val build = subscriber.values().first()
-      expectNotNull(build)
     }
 
     test("#getCheckoutKeys() should return response") {
@@ -380,19 +456,71 @@ object CircleCIAPIClientSpec: Spek({
       expect(subscriber.isFinished()).to.be.`true`
     }
 
-    test("#addUserSshKey() should return response") {
-      val request = AddSshKeyRequest("hostname", "private_key")
-      val subscriber = client1_1.addUserSshKey(request).test()
+    test("#getTestMetadata() should return response") {
+      val subscriber = client1_1.getTestMetadata(vcsType, userName, project, buildNum).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val response = subscriber.values().first()
+      expect(response.tests).not.to.be.empty
+      expectNotNull(response.tests.first())
+    }
+
+    test("#getEnvironmentVariables() should return response") {
+      val subscriber = client1_1.getEnvironmentVariables(vcsType, userName, project).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val envVars = subscriber.values().first()
+      expect(envVars).not.to.be.empty
+      expectNotNull(envVars.first())
+    }
+
+    test("#getEnvironmentVariable() should return response") {
+      val subscriber = client1_1.getEnvironmentVariable(vcsType, userName, project, "MY_VAR").test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val envVar = subscriber.values().first()
+      expectNotNull(envVar)
+    }
+
+    test("#getLatestArtifacts() should return response") {
+      val subscriber = client1_1.getLatestArtifacts(vcsType, userName, project).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val artifacts = subscriber.values().first()
+      expect(artifacts).not.to.be.empty
+      expectNotNull(artifacts.first())
+    }
+
+    test("#triggerPipeline() should return response") {
+      val request = TriggerPipelineRequest(branch = "main")
+      val subscriber = client1_1.triggerPipeline(vcsType, userName, project, request).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val response = subscriber.values().first()
+      expectNotNull(response)
+    }
+
+    test("#addEnvironmentVariable() should return response") {
+      val request = AddEnvironmentVariableRequest("MY_VAR", "my_value")
+      val subscriber = client1_1.addEnvironmentVariable(vcsType, userName, project, request).test()
+      expect(subscriber.isFinished()).to.be.`true`
+
+      val envVar = subscriber.values().first()
+      expectNotNull(envVar)
+    }
+
+    test("#deleteSshKey() should return response") {
+      val request = DeleteSshKeyRequest("fingerprint", "hostname")
+      val subscriber = client1_1.deleteSshKey(vcsType, userName, project, request).test()
       expect(subscriber.isFinished()).to.be.`true`
     }
 
-    test("#addHerokuKey() should return response") {
-      val subscriber = client1_1.addHerokuKey("apikey").test()
+    test("#deleteEnvironmentVariable() should return response") {
+      val subscriber = client1_1.deleteEnvironmentVariable(vcsType, userName, project, "MY_VAR").test()
       expect(subscriber.isFinished()).to.be.`true`
     }
   }
 })
-
 
 private fun <T> TestObserver<T>.isFinished(): Boolean {
   assertNoErrors()
@@ -515,4 +643,22 @@ private fun expectNotNull(checkoutKey: CheckoutKey) {
 private fun expectNotNull(sshKey: SSHKey) {
   expect(sshKey.fingerprint).not.to.be.`null`
   expect(sshKey.public_key).not.to.be.`null`
+}
+
+private fun expectNotNull(testMetadata: TestMetadata) {
+  expect(testMetadata.file).not.to.be.`null`
+  expect(testMetadata.source).not.to.be.`null`
+  expect(testMetadata.result).not.to.be.`null`
+  expect(testMetadata.name).not.to.be.`null`
+  expect(testMetadata.classname).not.to.be.`null`
+}
+
+private fun expectNotNull(envVar: EnvironmentVariable) {
+  expect(envVar.name).not.to.be.`null`
+  expect(envVar.value).not.to.be.`null`
+}
+
+private fun expectNotNull(response: TriggerPipelineResponse) {
+  expect(response.status).not.to.be.`null`
+  expect(response.body).not.to.be.`null`
 }

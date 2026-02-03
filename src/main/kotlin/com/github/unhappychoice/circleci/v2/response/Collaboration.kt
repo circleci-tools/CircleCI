@@ -1,11 +1,11 @@
 package com.github.unhappychoice.circleci.v2.response
 
-import com.squareup.moshi.Json
+import com.google.gson.annotations.SerializedName
 
 data class Collaboration(
     val id: String,
-    @Json(name = "vcs-type") val vcsType: String,
+    @SerializedName("vcs-type") val vcsType: String,
     val name: String,
-    @Json(name = "avatar_url") val avatarUrl: String,
+    @SerializedName("avatar_url") val avatarUrl: String,
     val slug: String
 )
