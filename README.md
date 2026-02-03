@@ -1,7 +1,7 @@
 # CircleCI
 
 [![](https://jitpack.io/v/circleci-tools/circleci.svg)](https://jitpack.io/#circleci-tools/circleci)
-[![CircleCI](https://circleci.com/gh/circleci-tools/CircleCI.svg?style=shield)](https://circleci.com/gh/circleci-tools/CircleCI)
+[![CI](https://github.com/circleci-tools/CircleCI/actions/workflows/ci.yml/badge.svg)](https://github.com/circleci-tools/CircleCI/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/circleci-tools/circleci/branch/master/graph/badge.svg)](https://codecov.io/gh/circleci-tools/circleci)
 [![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/circleci-tools/CircleCI.svg)](https://libraries.io/github/circleci-tools/CircleCI)
 ![GitHub](https://img.shields.io/github/license/circleci-tools/CircleCI.svg)
