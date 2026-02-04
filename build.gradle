@@ -46,7 +46,7 @@ dependencies {
 
     testRuntimeOnly "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     testRuntimeOnly "org.spekframework.spek2:spek-runner-junit5:$spek_version"
-    testRuntimeOnly "org.junit.platform:junit-platform-launcher:1.10.2"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher:6.0.2"
 }
 
 test {
