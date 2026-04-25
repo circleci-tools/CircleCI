@@ -568,7 +568,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
 
     override fun getWorkflowJobs(workflowId: String): Observable<JobListResponse> = Observable.just(
         JobListResponse(
-            items = listOf(Job(id = "id", name = "name", type = "type", status = "status", startedAt = "started_at", stoppedAt = "stopped_at", approvalRequestId = "approval_request_id", dependencies = listOf("dependency"))),
+            items = listOf(Job(id = "id", name = "name", type = "type", status = "status", jobNumber = 1, projectSlug = "project_slug", startedAt = "started_at", stoppedAt = "stopped_at", approvalRequestId = "approval_request_id", dependencies = listOf("dependency"))),
             nextPageToken = "next_page_token"
         )
     )
