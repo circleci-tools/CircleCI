@@ -10,7 +10,7 @@ buildscript {
 }
 
 plugins {
-    id 'pl.allegro.tech.build.axion-release' version '1.21.1'
+    id 'pl.allegro.tech.build.axion-release' version '1.21.2'
 }
 
 apply plugin: 'kotlin'
