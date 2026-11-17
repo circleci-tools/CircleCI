@@ -366,15 +366,11 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
     // Policy Management endpoints
     override fun getDecisionLogs(
         ownerId: String, context: String, status: String?, after: String?, before: String?, branch: String?, projectId: String?, buildNumber: String?, offset: Int?
-    ): Observable<DecisionLogListResponse> = Observable.just(
-        DecisionLogListResponse(
-            items = listOf(DecisionLog(id = "id", createdAt = "2024-01-01T00:00:00Z", decision = "PASS", metadata = mapOf("key" to "value"), policies = mapOf("policy" to "rego"), timeTakenMs = 100)),
-            nextPageToken = "next_page_token"
-        )
-    )
+    ): Observable<List<DecisionLog>> =
+        getDecisionLog(ownerId, context, "id").map { listOf(it) }
 
     override fun makeDecision(ownerId: String, context: String, request: MakeDecisionRequest): Observable<Decision> = Observable.just(
-        Decision(decision = "PASS")
+        Decision(status = "PASS")
     )
 
     override fun getDecisionSettings(ownerId: String, context: String): Observable<DecisionSettings> = Observable.just(
@@ -386,7 +382,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
     )
 
     override fun getDecisionLog(ownerId: String, context: String, decisionId: String): Observable<DecisionLog> = Observable.just(
-        DecisionLog(id = decisionId, createdAt = "2024-01-01T00:00:00Z", decision = "PASS", metadata = mapOf("key" to "value"), policies = mapOf("policy" to "rego"), timeTakenMs = 100)
+        DecisionLog(id = decisionId, createdAt = "2024-01-01T00:00:00Z", decision = Decision(status = "PASS"), metadata = mapOf("key" to "value"), policies = mapOf("policy" to "rego"), timeTakenMs = 100)
     )
 
     override fun getDecisionLogPolicyBundle(ownerId: String, context: String, decisionId: String): Observable<PolicyBundle> = Observable.just(
