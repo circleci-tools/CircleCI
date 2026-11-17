@@ -17,23 +17,21 @@ class CircleCIAPIClient(val token: String) {
   fun client1_1(): CircleCIAPIClientV1_1 = retrofitV1("https://circleci.com/api/v1.1/").create(CircleCIAPIClientV1_1::class.java)
   fun clientV2(): CircleCIAPIClientV2 = retrofitV2("https://circleci.com/api/v2/").create(CircleCIAPIClientV2::class.java)
 
-  private val okHttpV1 = OkHttpClient.Builder().addInterceptor {
-    val builder = it.request().newBuilder()
-      .addHeader("Content-Type", "application/json")
-      .addHeader("Accept", "application/json")
-      .addHeader("Authorization", "Basic ${encodedToken()}")
-      .build()
-    it.proceed(builder)
-  }.build()
+  internal val okHttpV1 = authenticatedClient("Authorization", "Basic ${encodedToken()}")
+  internal val okHttpV2 = authenticatedClient("Circle-Token", token)
 
-  private val okHttpV2 = OkHttpClient.Builder().addInterceptor {
-    val builder = it.request().newBuilder()
-      .addHeader("Content-Type", "application/json")
-      .addHeader("Accept", "application/json")
-      .addHeader("Circle-Token", token)
-      .build()
-    it.proceed(builder)
-  }.build()
+  private fun authenticatedClient(header: String, value: String): OkHttpClient = OkHttpClient.Builder()
+    .followRedirects(false)
+    .addInterceptor {
+      val request = it.request().newBuilder()
+        .addHeader("Content-Type", "application/json")
+        .addHeader("Accept", "application/json")
+        .addHeader(header, value)
+        .build()
+      it.proceed(request)
+    }
+    .addInterceptor(SameOriginRedirectInterceptor)
+    .build()
 
   private fun encodedToken(): String = String(Base64.encodeBase64("$token:".toByteArray()))
 
