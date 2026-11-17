@@ -1,7 +1,10 @@
 package com.github.unhappychoice.circleci
 
+import com.github.unhappychoice.circleci.v2.response.PipelineValues
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonDeserializer
+import com.google.gson.reflect.TypeToken
 import okhttp3.OkHttpClient
 import org.apache.commons.codec.binary.Base64
 import retrofit2.Retrofit
@@ -15,7 +18,10 @@ class CircleCIAPIClient(val token: String) {
   fun clinet1_1(): CircleCIAPIClientV1_1 = client1_1()
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
   fun client1_1(): CircleCIAPIClientV1_1 = retrofitV1("https://circleci.com/api/v1.1/").create(CircleCIAPIClientV1_1::class.java)
-  fun clientV2(): CircleCIAPIClientV2 = retrofitV2("https://circleci.com/api/v2/").create(CircleCIAPIClientV2::class.java)
+  fun clientV2(): CircleCIAPIClientV2 = clientV2("https://circleci.com/api/v2/")
+
+  internal fun clientV2(baseUrl: String): CircleCIAPIClientV2 =
+    retrofitV2(baseUrl).create(CircleCIAPIClientV2::class.java)
 
   private val okHttpV1 = OkHttpClient.Builder().addInterceptor {
     val builder = it.request().newBuilder()
@@ -61,6 +67,12 @@ class CircleCIAPIClient(val token: String) {
   private fun converterV2() = GsonConverterFactory.create(
     GsonBuilder()
       .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'")
+      .registerTypeAdapter(PipelineValues::class.java, pipelineValuesDeserializer)
       .create()
   )
+}
+
+private val pipelineValuesMapType = object : TypeToken<Map<String, Any>>() {}.type
+private val pipelineValuesDeserializer = JsonDeserializer<PipelineValues> { json, _, context ->
+  PipelineValues(context.deserialize(json.asJsonObject, pipelineValuesMapType))
 }
