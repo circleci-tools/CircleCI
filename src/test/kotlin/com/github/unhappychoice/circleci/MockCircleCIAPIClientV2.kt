@@ -440,8 +440,8 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
         TriggerNewPipelineResponse(number = 1, state = "state", id = "id", createdAt = "created_at")
     )
 
-    override fun triggerPipelineRun(provider: String, organization: String, project: String, request: TriggerPipelineRunRequest?): Observable<Pipeline> =
-        Observable.just(createMockPipeline())
+    override fun triggerPipelineRun(provider: String, organization: String, project: String, request: TriggerPipelineRunRequest?): Observable<PipelineRunResult> =
+        Observable.just(PipelineRunResult.Created("pipeline-id"))
 
     // Pipeline Definition endpoints
     override fun listPipelineDefinitions(projectId: String, pageToken: String?): Observable<PipelineDefinitionList> = Observable.just(

@@ -427,7 +427,7 @@ interface CircleCIAPIClientV2 {
         @Path("organization") organization: String,
         @Path("project") project: String,
         @Body request: TriggerPipelineRunRequest?
-    ): Observable<Pipeline>
+    ): Observable<PipelineRunResult>
 
     // Pipeline Definition endpoints
     @GET("projects/{project-id}/pipeline-definitions")
