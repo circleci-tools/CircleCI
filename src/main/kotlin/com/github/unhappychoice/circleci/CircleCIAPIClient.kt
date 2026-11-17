@@ -10,12 +10,24 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 class CircleCIAPIClient(val token: String) {
   @Deprecated("V1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
-  fun client(): CircleCIAPIClientV1 = retrofitV1("https://circleci.com/api/v1/").create(CircleCIAPIClientV1::class.java)
+  fun client(): CircleCIAPIClientV1 = serviceV1
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
   fun clinet1_1(): CircleCIAPIClientV1_1 = client1_1()
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
-  fun client1_1(): CircleCIAPIClientV1_1 = retrofitV1("https://circleci.com/api/v1.1/").create(CircleCIAPIClientV1_1::class.java)
-  fun clientV2(): CircleCIAPIClientV2 = retrofitV2("https://circleci.com/api/v2/").create(CircleCIAPIClientV2::class.java)
+  fun client1_1(): CircleCIAPIClientV1_1 = serviceV1_1
+  fun clientV2(): CircleCIAPIClientV2 = serviceV2
+
+  private val serviceV1 by lazy {
+    retrofitV1("https://circleci.com/api/v1/").create(CircleCIAPIClientV1::class.java)
+  }
+
+  private val serviceV1_1 by lazy {
+    retrofitV1("https://circleci.com/api/v1.1/").create(CircleCIAPIClientV1_1::class.java)
+  }
+
+  private val serviceV2 by lazy {
+    retrofitV2("https://circleci.com/api/v2/").create(CircleCIAPIClientV2::class.java)
+  }
 
   private val okHttpV1 = OkHttpClient.Builder().addInterceptor {
     val builder = it.request().newBuilder()
