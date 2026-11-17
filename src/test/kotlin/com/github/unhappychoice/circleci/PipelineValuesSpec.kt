@@ -2,10 +2,15 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.response.PipelineValues
 import com.sun.net.httpserver.HttpServer
+import org.junit.Assert.assertNotNull
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
 
 object PipelineValuesSpec : Spek({
+    test("clientV2 creates a client without a custom base URL") {
+        assertNotNull(CircleCIAPIClient("test-token").clientV2())
+    }
+
     test("getPipelineValuesById decodes top-level keys and their value types") {
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         try {
