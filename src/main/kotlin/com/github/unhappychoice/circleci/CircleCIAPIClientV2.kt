@@ -640,7 +640,7 @@ interface CircleCIAPIClientV2 {
     @POST("workflow/{id}/rerun")
     fun rerunWorkflow(
         @Path("id") workflowId: String,
-        @Body request: RerunWorkflowRequest?
+        @Body request: RerunWorkflowRequest = RerunWorkflowRequest()
     ): Observable<WorkflowId>
 
     @POST("workflow/{id}/approve/{approval-request-id}")
