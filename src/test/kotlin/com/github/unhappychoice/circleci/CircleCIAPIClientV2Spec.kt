@@ -3,9 +3,9 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v2.request.*
 import com.github.unhappychoice.circleci.v2.response.*
 import com.winterbe.expekt.expect
-import io.reactivex.observers.TestObserver
-import io.reactivex.plugins.RxJavaPlugins
-import io.reactivex.schedulers.TestScheduler
+import io.reactivex.rxjava3.observers.TestObserver
+import io.reactivex.rxjava3.plugins.RxJavaPlugins
+import io.reactivex.rxjava3.schedulers.TestScheduler
 import org.spekframework.spek2.Spek
 
 object CircleCIAPIClientV2Spec : Spek({
@@ -1099,7 +1099,7 @@ object CircleCIAPIClientV2Spec : Spek({
     }
 })
 
-private fun <T> TestObserver<T>.isFinished(): Boolean {
+private fun <T : Any> TestObserver<T>.isFinished(): Boolean {
     assertNoErrors()
     assertComplete()
     return true

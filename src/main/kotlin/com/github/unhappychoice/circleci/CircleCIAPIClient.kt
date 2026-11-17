@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
 import org.apache.commons.codec.binary.Base64
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
+import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 
 class CircleCIAPIClient(val token: String) {
@@ -41,14 +41,14 @@ class CircleCIAPIClient(val token: String) {
     .client(okHttpV1)
     .baseUrl(baseUrl)
     .addConverterFactory(converterV1())
-    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+    .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
     .build()
 
-  private fun retrofitV2(baseUrl: String): Retrofit = Retrofit.Builder()
+  internal fun retrofitV2(baseUrl: String): Retrofit = Retrofit.Builder()
     .client(okHttpV2)
     .baseUrl(baseUrl)
     .addConverterFactory(converterV2())
-    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+    .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
     .build()
 
   private fun converterV1() = GsonConverterFactory.create(

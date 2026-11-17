@@ -8,13 +8,14 @@
 
 This is [CircleCI](https://circleci.com) API Client for Kotlin.
 
-Only RxAdapter is supported for now.
+The client returns RxJava 3 observables (`io.reactivex.rxjava3.core.Observable`).
+Existing RxJava 2 callers must update their imports and reactive integrations to RxJava 3.
 
 ## Usage
 ```kotlin
 val token = "your-api-token"
-val client = CircleCIAPIClient(token).client()
-client.getMe().subscribe() // will returns response
+val client = CircleCIAPIClient(token).clientV2()
+client.getMe().subscribe { user -> println(user.login) }
 ```
 
 ## Installation
