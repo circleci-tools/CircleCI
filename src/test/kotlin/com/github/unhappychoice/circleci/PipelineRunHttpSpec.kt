@@ -2,12 +2,18 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.request.TriggerPipelineRunRequest
 import com.github.unhappychoice.circleci.v2.response.PipelineRunResult
+import com.google.gson.JsonParseException
 import com.sun.net.httpserver.HttpServer
 import io.reactivex.observers.TestObserver
+import org.junit.Assert.assertNotNull
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
 
 object PipelineRunHttpSpec : Spek({
+    test("clientV2 can be created with the default endpoint") {
+        assertNotNull(CircleCIAPIClient("test-token").clientV2())
+    }
+
     test("triggerPipelineRun returns the skip message for HTTP 200") {
         val message = "Ignoring pipeline due to CI skip in the commit"
         triggerPipelineRun(200, """{"message":"$message"}""")
@@ -20,6 +26,17 @@ object PipelineRunHttpSpec : Spek({
         val body = """{"id":"$id","number":25,"state":"created","created_at":"$createdAt"}"""
         triggerPipelineRun(201, body)
             .assertResult(PipelineRunResult.Created(id, 25, "created", createdAt))
+    }
+
+    test("triggerPipelineRun accepts a created pipeline with only an ID") {
+        val id = "5034460f-c7c4-4c43-9457-de07e2029e7b"
+        triggerPipelineRun(201, """{"id":"$id"}""")
+            .assertResult(PipelineRunResult.Created(id))
+    }
+
+    test("triggerPipelineRun rejects a response without an ID or skip message") {
+        triggerPipelineRun(200, "{}")
+            .assertFailureAndMessage(JsonParseException::class.java, "Expected a pipeline ID or skip message")
     }
 })
 

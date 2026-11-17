@@ -32,11 +32,11 @@ internal class PipelineRunResultDeserializer : JsonDeserializer<PipelineRunResul
             ?: throw JsonParseException("Expected a pipeline ID or skip message")
     }
 
-    private data class PipelineRunBody(
-        val id: String?,
-        val message: String?,
-        val number: Int?,
-        val state: String?,
-        @SerializedName("created_at") val createdAt: String?
-    )
+    private class PipelineRunBody {
+        var id: String? = null
+        var message: String? = null
+        var number: Int? = null
+        var state: String? = null
+        @SerializedName("created_at") var createdAt: String? = null
+    }
 }
