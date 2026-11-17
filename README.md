@@ -13,9 +13,12 @@ Only RxAdapter is supported for now.
 ## Usage
 ```kotlin
 val token = "your-api-token"
-val client = CircleCIAPIClient(token).client()
-client.getMe().subscribe() // will returns response
+val client = CircleCIAPIClient.async(token).clientV2()
+client.getMe().subscribe({ user -> println(user) }, { error -> error.printStackTrace() })
 ```
+
+With `CircleCIAPIClient.async(token)`, `subscribe()` returns without waiting for the HTTP response.
+Use `CircleCIAPIClient(token)` to keep synchronous subscriptions.
 
 ## Installation
 

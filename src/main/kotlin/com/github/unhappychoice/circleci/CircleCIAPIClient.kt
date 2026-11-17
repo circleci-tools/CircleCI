@@ -8,14 +8,29 @@ import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 
-class CircleCIAPIClient(val token: String) {
+class CircleCIAPIClient private constructor(
+  val token: String,
+  private val baseUrl: String,
+  private val callAdapterFactory: RxJava2CallAdapterFactory
+) {
+  constructor(token: String) : this(token, BASE_URL, RxJava2CallAdapterFactory.create())
+
+  companion object {
+    private const val BASE_URL = "https://circleci.com/api/"
+
+    fun async(token: String): CircleCIAPIClient = async(token, BASE_URL)
+
+    internal fun async(token: String, baseUrl: String): CircleCIAPIClient =
+      CircleCIAPIClient(token, baseUrl, RxJava2CallAdapterFactory.createAsync())
+  }
+
   @Deprecated("V1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
-  fun client(): CircleCIAPIClientV1 = retrofitV1("https://circleci.com/api/v1/").create(CircleCIAPIClientV1::class.java)
+  fun client(): CircleCIAPIClientV1 = retrofitV1("${baseUrl}v1/").create(CircleCIAPIClientV1::class.java)
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
   fun clinet1_1(): CircleCIAPIClientV1_1 = client1_1()
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
-  fun client1_1(): CircleCIAPIClientV1_1 = retrofitV1("https://circleci.com/api/v1.1/").create(CircleCIAPIClientV1_1::class.java)
-  fun clientV2(): CircleCIAPIClientV2 = retrofitV2("https://circleci.com/api/v2/").create(CircleCIAPIClientV2::class.java)
+  fun client1_1(): CircleCIAPIClientV1_1 = retrofitV1("${baseUrl}v1.1/").create(CircleCIAPIClientV1_1::class.java)
+  fun clientV2(): CircleCIAPIClientV2 = retrofitV2("${baseUrl}v2/").create(CircleCIAPIClientV2::class.java)
 
   private val okHttpV1 = OkHttpClient.Builder().addInterceptor {
     val builder = it.request().newBuilder()
@@ -41,14 +56,14 @@ class CircleCIAPIClient(val token: String) {
     .client(okHttpV1)
     .baseUrl(baseUrl)
     .addConverterFactory(converterV1())
-    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+    .addCallAdapterFactory(callAdapterFactory)
     .build()
 
   private fun retrofitV2(baseUrl: String): Retrofit = Retrofit.Builder()
     .client(okHttpV2)
     .baseUrl(baseUrl)
     .addConverterFactory(converterV2())
-    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+    .addCallAdapterFactory(callAdapterFactory)
     .build()
 
   private fun converterV1() = GsonConverterFactory.create(
