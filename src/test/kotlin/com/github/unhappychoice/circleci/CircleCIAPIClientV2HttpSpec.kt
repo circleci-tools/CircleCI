@@ -6,6 +6,7 @@ import com.google.gson.JsonParser
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpServer
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
 import java.net.URI
@@ -13,6 +14,10 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit.SECONDS
 
 object CircleCIAPIClientV2HttpSpec : Spek({
+    test("creates a V2 client with the default base URL") {
+        assertNotNull(CircleCIAPIClient("test-token").clientV2())
+    }
+
     test("deletes a context") {
         withResponse("""{"message":"Context deleted"}""", "DELETE", "/context/context-id") { client ->
             assertEquals("Context deleted", client.deleteContext("context-id").blockingSingle().message)
