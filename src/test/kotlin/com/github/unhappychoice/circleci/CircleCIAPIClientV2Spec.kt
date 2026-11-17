@@ -923,7 +923,12 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#createSchedule() should return response") {
-                val params = CreateScheduleParameters("name", "description", projectSlug, mapOf(), listOf())
+                val params = CreateScheduleParameters(
+                    name = "name",
+                    timetable = CreateScheduleTimetable(1, listOf(9), daysOfWeek = listOf("MON")),
+                    attributionActor = ScheduleAttributionActor.CURRENT,
+                    parameters = mapOf("branch" to "main")
+                )
                 val subscriber = client.createSchedule(projectSlug, params).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
@@ -940,7 +945,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#updateSchedule() should return response") {
-                val params = UpdateScheduleParameters("name", "description", null, null)
+                val params = UpdateScheduleParameters(name = "name", description = "description")
                 val subscriber = client.updateSchedule("schedule-id", params).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
