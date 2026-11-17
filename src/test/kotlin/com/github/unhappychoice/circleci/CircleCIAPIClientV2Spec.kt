@@ -689,7 +689,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#triggerPipelineRun() should return response") {
-                val request = TriggerPipelineRunRequest("definition-id", "config", null, null)
+                val request = TriggerPipelineRunRequest(definitionId = "definition-id")
                 val subscriber = client.triggerPipelineRun("gh", "unhappychoice", "circleci", request).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
