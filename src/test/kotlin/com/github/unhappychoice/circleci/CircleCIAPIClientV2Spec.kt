@@ -138,7 +138,7 @@ object CircleCIAPIClientV2Spec : Spek({
         // Deploy endpoints (5)
         group("Deploy") {
             test("#listComponents() should return response") {
-                val subscriber = client.listComponents(null).test()
+                val subscriber = client.listComponents("org-id", 25).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val response = subscriber.values().first()
@@ -166,7 +166,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#listEnvironments() should return response") {
-                val subscriber = client.listEnvironments(null).test()
+                val subscriber = client.listEnvironments("org-id", 25).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val response = subscriber.values().first()
