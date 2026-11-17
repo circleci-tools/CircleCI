@@ -617,7 +617,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
         id = "id", name = "name", description = "description", createdAt = "created_at", updatedAt = "updated_at",
         projectSlug = "project_slug", parameters = emptyMap(),
         actor = Actor(id = "id", login = "login", name = "name"),
-        timetables = listOf(com.github.unhappychoice.circleci.v2.response.Timetable(id = "id", attribution = "attribution", days = listOf("day"), hours = listOf(1), minutes = listOf(1), perHour = 1))
+        timetable = ScheduleTimetable(1, listOf(1), listOf("TUE"), null, null)
     )
 
     private fun createMockWebhook() = Webhook(
