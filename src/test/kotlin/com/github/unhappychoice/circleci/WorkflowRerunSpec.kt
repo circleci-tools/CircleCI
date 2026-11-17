@@ -5,10 +5,15 @@ import com.github.unhappychoice.circleci.v2.response.WorkflowId
 import com.google.gson.JsonParser
 import com.sun.net.httpserver.HttpServer
 import io.reactivex.Observable
+import org.junit.Assert.assertNotNull
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
 
 object WorkflowRerunSpec : Spek({
+    test("creates a V2 client with the default endpoint") {
+        assertNotNull(CircleCIAPIClient("test-token").clientV2())
+    }
+
     test("reruns a workflow with an empty JSON object when options are omitted") {
         assertRerun("{}") { it.rerunWorkflow("workflow-id") }
     }
