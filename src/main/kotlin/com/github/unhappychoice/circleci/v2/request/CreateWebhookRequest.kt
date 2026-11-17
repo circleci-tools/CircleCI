@@ -8,7 +8,10 @@ data class CreateWebhookRequest(
     @SerializedName("signing_secret") val signingSecret: String,
     @SerializedName("scope") val scope: WebhookScopeRequest,
     val events: List<String>
-)
+) {
+    override fun toString() =
+        "CreateWebhookRequest(name=$name, url=$url, signingSecret=[REDACTED], scope=$scope, events=$events)"
+}
 
 data class WebhookScopeRequest(
     val type: String,
