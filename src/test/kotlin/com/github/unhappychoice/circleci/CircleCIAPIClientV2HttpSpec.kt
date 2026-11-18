@@ -74,6 +74,22 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertEquals("Restriction deleted", result.message)
         }
     }
+
+    test("lists all webhooks when the enabled filter is omitted") {
+        val path = "/webhook?scope-id=project-id&scope-type=project"
+        withResponse("""{"items":[]}""", "GET", path) { client ->
+            client.getWebhooks("project-id", "project").blockingSingle()
+        }
+    }
+
+    listOf(true, false).forEach { isEnabled ->
+        test("lists webhooks with is-enabled=$isEnabled") {
+            val path = "/webhook?scope-id=project-id&scope-type=project&is-enabled=$isEnabled"
+            withResponse("""{"items":[]}""", "GET", path) { client ->
+                client.getWebhooks("project-id", "project", isEnabled).blockingSingle()
+            }
+        }
+    }
 })
 
 private data class RecordedRequest(val method: String, val uri: URI, val headers: Headers, val body: String)
