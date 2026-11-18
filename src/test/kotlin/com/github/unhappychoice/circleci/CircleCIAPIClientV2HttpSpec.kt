@@ -40,6 +40,13 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
     }
 
+    test("lists project checkout keys with an MD5 fingerprint digest") {
+        val path = "/project/gh%2Fmy-org%2Fmy-repo/checkout-key?digest=md5"
+        withResponse("""{"items":[]}""", "GET", path) { client ->
+            client.getProjectCheckoutKeys("gh/my-org/my-repo", digest = "md5").blockingSingle()
+        }
+    }
+
     test("deletes a context") {
         withResponse("""{"message":"Context deleted"}""", "DELETE", "/context/context-id") { client ->
             assertEquals("Context deleted", client.deleteContext("context-id").blockingSingle().message)
