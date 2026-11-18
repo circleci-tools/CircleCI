@@ -36,7 +36,7 @@ allprojects {
     }
 }
 dependencies {
-    implementation 'com.github.circleci-tools:circleci:0.1.0'
+    implementation 'com.github.circleci-tools:circleci:2.1.2'
 }
 ```
 
