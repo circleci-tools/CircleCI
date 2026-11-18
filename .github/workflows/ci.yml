@@ -21,8 +21,28 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
 
-      - name: Run tests
-        run: ./gradlew test
+      - name: Reject a distribution with a mismatched checksum
+        shell: bash
+        run: |
+          test_dir=$(mktemp -d)
+          trap 'rm -rf "$test_dir"' EXIT
+          mkdir -p "$test_dir/gradle"
+          cp gradlew "$test_dir/"
+          cp -r gradle/wrapper "$test_dir/gradle/"
+          printf 'Substituted distribution\n' > "$test_dir/substitute.zip"
+          sed -i "s|^distributionUrl=.*|distributionUrl=file:$test_dir/substitute.zip|" \
+            "$test_dir/gradle/wrapper/gradle-wrapper.properties"
+
+          if GRADLE_USER_HOME="$test_dir/gradle-home" "$test_dir/gradlew" --version \
+            > "$test_dir/wrapper.log" 2>&1; then
+            echo "Gradle started with an unexpected distribution"
+            exit 1
+          fi
+          cat "$test_dir/wrapper.log"
+          grep -F 'Verification of Gradle distribution failed!' "$test_dir/wrapper.log"
+
+      - name: Build and test
+        run: ./gradlew build
 
       - name: Generate coverage report
         run: ./gradlew jacocoTestReport

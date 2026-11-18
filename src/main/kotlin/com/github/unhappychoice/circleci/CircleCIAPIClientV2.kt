@@ -2,7 +2,7 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.request.*
 import com.github.unhappychoice.circleci.v2.response.*
-import io.reactivex.Observable
+import io.reactivex.rxjava3.core.Observable
 import retrofit2.http.*
 
 interface CircleCIAPIClientV2 {
@@ -218,7 +218,10 @@ interface CircleCIAPIClientV2 {
     ): Observable<OidcClaims>
 
     @DELETE("org/{orgID}/oidc-custom-claims")
-    fun deleteOrgClaims(@Path("orgID") orgId: String): Observable<OidcClaims>
+    fun deleteOrgClaims(
+        @Path("orgID") orgId: String,
+        @Query("claims") claims: String
+    ): Observable<OidcClaims>
 
     @GET("org/{orgID}/project/{projectID}/oidc-custom-claims")
     fun getProjectClaims(
@@ -236,7 +239,8 @@ interface CircleCIAPIClientV2 {
     @DELETE("org/{orgID}/project/{projectID}/oidc-custom-claims")
     fun deleteProjectClaims(
         @Path("orgID") orgId: String,
-        @Path("projectID") projectId: String
+        @Path("projectID") projectId: String,
+        @Query("claims") claims: String
     ): Observable<OidcClaims>
 
     // Organization endpoints
@@ -431,7 +435,7 @@ interface CircleCIAPIClientV2 {
         @Path("organization") organization: String,
         @Path("project") project: String,
         @Body request: TriggerPipelineRunRequest?
-    ): Observable<Pipeline>
+    ): Observable<PipelineRunResult>
 
     // Pipeline Definition endpoints
     @GET("projects/{project-id}/pipeline-definitions")
