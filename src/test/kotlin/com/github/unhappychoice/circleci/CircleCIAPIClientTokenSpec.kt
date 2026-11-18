@@ -10,14 +10,20 @@ import java.util.concurrent.atomic.AtomicReference
 
 object CircleCIAPIClientTokenSpec : Spek({
     group("V2 API token") {
-        test("rejects a token with a trailing newline without revealing the token") {
-            val error = assertThrows(IllegalArgumentException::class.java) {
-                CircleCIAPIClient("secret-test-token\n").clientV2()
-            }
+        mapOf("a trailing newline" to '\n', "a non-ASCII character" to '\u00E9').forEach { (description, character) ->
+            test("rejects a token with $description without revealing the token") {
+                val error = assertThrows(IllegalArgumentException::class.java) {
+                    CircleCIAPIClient("secret-test-token$character").clientV2()
+                }
 
-            assertEquals("CircleCI API token contains invalid header characters", error.message)
-            assertNull(error.cause)
-            assertEquals(0, error.suppressed.size)
+                assertEquals("CircleCI API token contains invalid header characters", error.message)
+                assertNull(error.cause)
+                assertEquals(0, error.suppressed.size)
+            }
+        }
+
+        test("accepts a token with an embedded tab through the public V2 client factory") {
+            CircleCIAPIClient("secret\ttest-token").clientV2()
         }
 
         test("sends a valid token unchanged in the Circle-Token header") {
