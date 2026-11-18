@@ -1,6 +1,6 @@
 package com.github.unhappychoice.circleci
 
-import io.reactivex.Observable
+import io.reactivex.rxjava3.core.Observable
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
@@ -10,7 +10,7 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.spekframework.spek2.Spek
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
+import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 
 object DeployListingRequestSpec : Spek({
@@ -56,7 +56,7 @@ private fun captureRequest(list: (CircleCIAPIClientV2) -> Observable<*>): Reques
     val client = Retrofit.Builder()
         .baseUrl("https://circleci.com/api/v2/")
         .client(httpClient)
-        .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+        .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
         .addConverterFactory(GsonConverterFactory.create())
         .build()
         .create(CircleCIAPIClientV2::class.java)

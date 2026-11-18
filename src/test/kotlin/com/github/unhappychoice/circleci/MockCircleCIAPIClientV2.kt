@@ -2,7 +2,7 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.request.*
 import com.github.unhappychoice.circleci.v2.response.*
-import io.reactivex.Observable
+import io.reactivex.rxjava3.core.Observable
 import java.lang.reflect.Proxy
 import java.time.OffsetDateTime
 
