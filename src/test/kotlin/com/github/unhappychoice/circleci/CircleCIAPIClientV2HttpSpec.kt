@@ -2,6 +2,7 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.request.AddEnvironmentVariableRequest
 import com.github.unhappychoice.circleci.v2.request.CreateContextRestrictionRequest
+import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
 import com.google.gson.JsonParser
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpServer
@@ -16,6 +17,35 @@ import java.util.concurrent.TimeUnit.SECONDS
 object CircleCIAPIClientV2HttpSpec : Spek({
     test("creates a V2 client with the default base URL") {
         assertNotNull(CircleCIAPIClient("test-token").clientV2())
+    }
+
+    val rollbackRequest = RollbackProjectRequest("production", "frontend", "1.1.0", "1.0.0")
+    val rollbackResponse = """{"id":"123e4567-e89b-12d3-a456-426614174000","rollback_type":"PIPELINE"}"""
+    val rollbackPath = "/projects/project-id/rollback"
+    val rollbackBody = """
+        {
+            "environment_name": "production",
+            "component_name": "frontend",
+            "current_version": "1.1.0",
+            "target_version": "1.0.0"
+        }
+    """.trimIndent()
+
+    test("rolls back a project with a reason") {
+        val body = withResponse(rollbackResponse, "POST", rollbackPath, 202) { client ->
+            client.rollbackProject("project-id", rollbackRequest.copy(reason = "Restore the previous release"))
+                .blockingSingle()
+        }
+        val expected = JsonParser.parseString(rollbackBody).asJsonObject
+        expected.addProperty("reason", "Restore the previous release")
+        assertEquals(expected, JsonParser.parseString(body))
+    }
+
+    test("rolls back a project without a reason") {
+        val body = withResponse(rollbackResponse, "POST", rollbackPath, 202) { client ->
+            client.rollbackProject("project-id", rollbackRequest).blockingSingle()
+        }
+        assertEquals(JsonParser.parseString(rollbackBody), JsonParser.parseString(body))
     }
 
     test("deletes a context") {
@@ -78,7 +108,13 @@ object CircleCIAPIClientV2HttpSpec : Spek({
 
 private data class RecordedRequest(val method: String, val uri: URI, val headers: Headers, val body: String)
 
-private fun withResponse(json: String, method: String, path: String, call: (CircleCIAPIClientV2) -> Unit): String {
+private fun withResponse(
+    json: String,
+    method: String,
+    path: String,
+    status: Int = 200,
+    call: (CircleCIAPIClientV2) -> Unit
+): String {
     val request = CompletableFuture<RecordedRequest>()
     val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
     server.createContext("/") { exchange ->
@@ -87,7 +123,7 @@ private fun withResponse(json: String, method: String, path: String, call: (Circ
             request.complete(RecordedRequest(exchange.requestMethod, exchange.requestURI, exchange.requestHeaders, body))
             val response = json.toByteArray(Charsets.UTF_8)
             exchange.responseHeaders.set("Content-Type", "application/json")
-            exchange.sendResponseHeaders(200, response.size.toLong())
+            exchange.sendResponseHeaders(status, response.size.toLong())
             exchange.responseBody.use { it.write(response) }
         }
     }
