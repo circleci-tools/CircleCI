@@ -17,6 +17,13 @@ val client = CircleCIAPIClient(token).client()
 client.getMe().subscribe() // will returns response
 ```
 
+### V2 context restrictions
+
+`getContextRestrictions` returns a `ContextProjectRestrictionsList` whose `items` are now
+`List<ContextRestriction>`. Replace map casts and key lookups with the `id`, `contextId`,
+`restrictionType`, `restrictionValue`, and nullable `name` properties. For project restrictions,
+read the project ID from `restrictionValue`. Use `nextPageToken` to retrieve the next page.
+
 ## Installation
 
 ```groovy
