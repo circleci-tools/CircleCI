@@ -41,8 +41,8 @@ jobs:
           cat "$test_dir/wrapper.log"
           grep -F 'Verification of Gradle distribution failed!' "$test_dir/wrapper.log"
 
-      - name: Run tests
-        run: ./gradlew test
+      - name: Build and test
+        run: ./gradlew build
 
       - name: Generate coverage report
         run: ./gradlew jacocoTestReport
