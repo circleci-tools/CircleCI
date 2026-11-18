@@ -14,12 +14,24 @@ import java.time.OffsetDateTime
 
 class CircleCIAPIClient(val token: String) {
   @Deprecated("V1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
-  fun client(): CircleCIAPIClientV1 = retrofitV1("https://circleci.com/api/v1/").create(CircleCIAPIClientV1::class.java)
+  fun client(): CircleCIAPIClientV1 = serviceV1
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
   fun clinet1_1(): CircleCIAPIClientV1_1 = client1_1()
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
-  fun client1_1(): CircleCIAPIClientV1_1 = client1_1("https://circleci.com/api/v1.1/")
-  fun clientV2(): CircleCIAPIClientV2 = clientV2("https://circleci.com/api/v2/")
+  fun client1_1(): CircleCIAPIClientV1_1 = serviceV1_1
+  fun clientV2(): CircleCIAPIClientV2 = serviceV2
+
+  private val serviceV1 by lazy {
+    retrofitV1("https://circleci.com/api/v1/").create(CircleCIAPIClientV1::class.java)
+  }
+
+  private val serviceV1_1 by lazy {
+    client1_1("https://circleci.com/api/v1.1/")
+  }
+
+  private val serviceV2 by lazy {
+    clientV2("https://circleci.com/api/v2/")
+  }
 
   internal fun client1_1(baseUrl: String): CircleCIAPIClientV1_1 =
     retrofitV1(baseUrl).create(CircleCIAPIClientV1_1::class.java)
