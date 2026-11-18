@@ -4,7 +4,7 @@ import com.github.unhappychoice.circleci.v2.request.RerunWorkflowRequest
 import com.github.unhappychoice.circleci.v2.response.WorkflowId
 import com.google.gson.JsonParser
 import com.sun.net.httpserver.HttpServer
-import io.reactivex.Observable
+import io.reactivex.rxjava3.core.Observable
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
 

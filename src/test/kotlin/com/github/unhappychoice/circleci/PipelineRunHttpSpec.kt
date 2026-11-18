@@ -4,7 +4,7 @@ import com.github.unhappychoice.circleci.v2.request.TriggerPipelineRunRequest
 import com.github.unhappychoice.circleci.v2.response.PipelineRunResult
 import com.google.gson.JsonParseException
 import com.sun.net.httpserver.HttpServer
-import io.reactivex.observers.TestObserver
+import io.reactivex.rxjava3.observers.TestObserver
 import org.junit.Assert.assertNotNull
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
@@ -36,7 +36,11 @@ object PipelineRunHttpSpec : Spek({
 
     test("triggerPipelineRun rejects a response without an ID or skip message") {
         triggerPipelineRun(200, "{}")
-            .assertFailureAndMessage(JsonParseException::class.java, "Expected a pipeline ID or skip message")
+            .assertNoValues()
+            .assertNotComplete()
+            .assertError { error ->
+                error is JsonParseException && error.message == "Expected a pipeline ID or skip message"
+            }
     }
 })
 
