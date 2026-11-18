@@ -10,11 +10,21 @@ This is [CircleCI](https://circleci.com) API Client for Kotlin.
 
 Only RxAdapter is supported for now.
 
-## Usage
+## Quick start
+
+Use version `2.1.2` in the dependency declaration below.
+Set `CIRCLECI_TOKEN` to your CircleCI personal API token, then run the following in your Kotlin application to print the authenticated user's login.
+
 ```kotlin
-val token = "your-api-token"
-val client = CircleCIAPIClient(token).client()
-client.getMe().subscribe() // will returns response
+import com.github.unhappychoice.circleci.CircleCIAPIClient
+
+fun main() {
+    val token = requireNotNull(System.getenv("CIRCLECI_TOKEN")) {
+        "Set CIRCLECI_TOKEN to your CircleCI personal API token."
+    }
+    val user = CircleCIAPIClient(token).clientV2().getMe().blockingFirst()
+    println(user.login)
+}
 ```
 
 ## Installation
