@@ -10,12 +10,34 @@ import org.junit.Assert.assertNotNull
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
 import java.net.URI
+import java.time.OffsetDateTime
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit.SECONDS
 
 object CircleCIAPIClientV2HttpSpec : Spek({
     test("creates a V2 client with the default base URL") {
         assertNotNull(CircleCIAPIClient("test-token").clientV2())
+    }
+
+    test("lists project checkout keys with a SHA-256 fingerprint digest") {
+        val path = "/project/gh%2Fmy-org%2Fmy-repo/checkout-key?digest=sha256"
+        val response = """
+            {"items":[{"public-key":"ssh-rsa ...","type":"deploy-key",
+                "fingerprint":"SHA256:example","preferred":true,"created-at":"2025-01-02T03:04:05Z"}]}
+        """.trimIndent()
+        withResponse(response, "GET", path) { client ->
+            val key = client.getProjectCheckoutKeys("gh/my-org/my-repo", digest = "sha256")
+                .blockingSingle().items!!.single()
+            assertEquals("SHA256:example", key.fingerprint)
+            assertEquals(OffsetDateTime.parse("2025-01-02T03:04:05Z"), key.createdAt)
+        }
+    }
+
+    test("lists project checkout keys without a digest query by default") {
+        val path = "/project/gh%2Fmy-org%2Fmy-repo/checkout-key"
+        withResponse("""{"items":[]}""", "GET", path) { client ->
+            client.getProjectCheckoutKeys("gh/my-org/my-repo").blockingSingle()
+        }
     }
 
     test("deletes a context") {

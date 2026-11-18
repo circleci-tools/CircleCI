@@ -483,7 +483,10 @@ interface CircleCIAPIClientV2 {
     ): Observable<Project>
 
     @GET("project/{project-slug}/checkout-key")
-    fun getProjectCheckoutKeys(@Path("project-slug") projectSlug: String): Observable<CheckoutKeyListResponse>
+    fun getProjectCheckoutKeys(
+        @Path("project-slug") projectSlug: String,
+        @Query("digest") digest: String? = null
+    ): Observable<CheckoutKeyListResponse>
 
     @POST("project/{project-slug}/checkout-key")
     fun createProjectCheckoutKey(

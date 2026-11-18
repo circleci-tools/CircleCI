@@ -450,7 +450,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     override fun createProject(provider: String, organization: String, project: String, request: CreateProjectRequest?): Observable<Project> = Observable.just(createMockProject())
 
-    override fun getProjectCheckoutKeys(projectSlug: String): Observable<CheckoutKeyListResponse> = Observable.just(
+    override fun getProjectCheckoutKeys(projectSlug: String, digest: String?): Observable<CheckoutKeyListResponse> = Observable.just(
         CheckoutKeyListResponse(
             items = listOf(CheckoutKey(publicKey = "public_key", type = "type", fingerprint = "fingerprint", preferred = false, createdAt = OffsetDateTime.now())),
             nextPageToken = "next_page_token"
