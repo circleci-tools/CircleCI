@@ -317,7 +317,7 @@ interface CircleCIAPIClientV2 {
         @Query("project_id") projectId: String? = null,
         @Query("build_number") buildNumber: String? = null,
         @Query("offset") offset: Int? = null
-    ): Observable<DecisionLogListResponse>
+    ): Observable<List<DecisionLog>>
 
     @POST("owner/{ownerID}/context/{context}/decision")
     fun makeDecision(
