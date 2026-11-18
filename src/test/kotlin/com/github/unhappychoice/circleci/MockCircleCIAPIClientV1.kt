@@ -5,7 +5,7 @@ import com.github.unhappychoice.circleci.v1.response.*
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
-import io.reactivex.Observable
+import io.reactivex.rxjava3.core.Observable
 import java.io.File
 import java.lang.reflect.Type
 import java.util.*
@@ -148,7 +148,7 @@ class MockCircleCIAPIClientV1: CircleCIAPIClientV1 {
     return Observable.just(Unit)
   }
 
-  private fun <T> mockResponse(fileName: String, type: Type): Observable<T> {
+  private fun <T : Any> mockResponse(fileName: String, type: Type): Observable<T> {
     return Observable.just(converter().fromJson(readJson(fileName), type))
   }
 

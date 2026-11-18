@@ -2,7 +2,7 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.request.*
 import com.github.unhappychoice.circleci.v2.response.*
-import io.reactivex.Observable
+import io.reactivex.rxjava3.core.Observable
 import retrofit2.http.*
 
 interface CircleCIAPIClientV2 {
@@ -74,6 +74,8 @@ interface CircleCIAPIClientV2 {
     // Deploy endpoints
     @GET("deploy/components")
     fun listComponents(
+        @Query("org-id") orgId: String,
+        @Query("page-size") pageSize: Int,
         @Query("page-token") pageToken: String? = null
     ): Observable<ComponentListResponse>
 
@@ -88,6 +90,8 @@ interface CircleCIAPIClientV2 {
 
     @GET("deploy/environments")
     fun listEnvironments(
+        @Query("org-id") orgId: String,
+        @Query("page-size") pageSize: Int,
         @Query("page-token") pageToken: String? = null
     ): Observable<DeployEnvironmentListResponse>
 
@@ -214,7 +218,10 @@ interface CircleCIAPIClientV2 {
     ): Observable<OidcClaims>
 
     @DELETE("org/{orgID}/oidc-custom-claims")
-    fun deleteOrgClaims(@Path("orgID") orgId: String): Observable<OidcClaims>
+    fun deleteOrgClaims(
+        @Path("orgID") orgId: String,
+        @Query("claims") claims: String
+    ): Observable<OidcClaims>
 
     @GET("org/{orgID}/project/{projectID}/oidc-custom-claims")
     fun getProjectClaims(
@@ -232,7 +239,8 @@ interface CircleCIAPIClientV2 {
     @DELETE("org/{orgID}/project/{projectID}/oidc-custom-claims")
     fun deleteProjectClaims(
         @Path("orgID") orgId: String,
-        @Path("projectID") projectId: String
+        @Path("projectID") projectId: String,
+        @Query("claims") claims: String
     ): Observable<OidcClaims>
 
     // Organization endpoints
@@ -313,7 +321,7 @@ interface CircleCIAPIClientV2 {
         @Query("project_id") projectId: String? = null,
         @Query("build_number") buildNumber: String? = null,
         @Query("offset") offset: Int? = null
-    ): Observable<DecisionLogListResponse>
+    ): Observable<List<DecisionLog>>
 
     @POST("owner/{ownerID}/context/{context}/decision")
     fun makeDecision(
@@ -427,7 +435,7 @@ interface CircleCIAPIClientV2 {
         @Path("organization") organization: String,
         @Path("project") project: String,
         @Body request: TriggerPipelineRunRequest?
-    ): Observable<Pipeline>
+    ): Observable<PipelineRunResult>
 
     // Pipeline Definition endpoints
     @GET("projects/{project-id}/pipeline-definitions")
@@ -640,7 +648,7 @@ interface CircleCIAPIClientV2 {
     @POST("workflow/{id}/rerun")
     fun rerunWorkflow(
         @Path("id") workflowId: String,
-        @Body request: RerunWorkflowRequest?
+        @Body request: RerunWorkflowRequest = RerunWorkflowRequest()
     ): Observable<WorkflowId>
 
     @POST("workflow/{id}/approve/{approval-request-id}")
