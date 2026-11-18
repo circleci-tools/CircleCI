@@ -2,6 +2,8 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.request.AddEnvironmentVariableRequest
 import com.github.unhappychoice.circleci.v2.request.CreateContextRestrictionRequest
+import com.github.unhappychoice.circleci.v2.request.CreateTriggerRequest
+import com.github.unhappychoice.circleci.v2.request.CreateTriggerRequest.EventSource
 import com.google.gson.JsonParser
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpServer
@@ -74,7 +76,56 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertEquals("Restriction deleted", result.message)
         }
     }
+    group("creates a pipeline trigger") {
+        mapOf(
+            "github_app" to "all-pushes",
+            "github_server" to "all-pushes",
+            "github_oauth" to "only-build-prs"
+        ).forEach { (provider, preset) ->
+            test("sends the repository for $provider") {
+                val source = EventSource(provider, repo = EventSource.Repo("repo-id"))
+                assertTriggerRequest(
+                    CreateTriggerRequest(source, eventPreset = preset),
+                    """{"event_source":{"provider":"$provider","repo":{"external_id":"repo-id"}},"event_preset":"$preset"}"""
+                )
+            }
+        }
+
+        test("sends webhook settings") {
+            val source = EventSource("webhook", webhook = EventSource.Webhook("monitor"))
+            assertTriggerRequest(
+                CreateTriggerRequest(source, eventName = "alert", checkoutRef = "main", configRef = "main"),
+                """{
+                    "event_source":{"provider":"webhook","webhook":{"sender":"monitor"}},
+                    "event_name":"alert","checkout_ref":"main","config_ref":"main"
+                }"""
+            )
+        }
+
+        test("sends schedule settings and pipeline parameters") {
+            val source = EventSource("schedule", schedule = EventSource.Schedule("0 9 * * 1-5", "system"))
+            assertTriggerRequest(
+                CreateTriggerRequest(
+                    source, eventName = "weekday-build", checkoutRef = "main", configRef = "main",
+                    disabled = false, parameters = mapOf("deploy_env" to "staging")
+                ),
+                """{
+                    "event_source":{"provider":"schedule","schedule":{"cron_expression":"0 9 * * 1-5","attribution_actor":"system"}},
+                    "event_name":"weekday-build","checkout_ref":"main","config_ref":"main",
+                    "disabled":false,"parameters":{"deploy_env":"staging"}
+                }"""
+            )
+        }
+    }
 })
+
+private fun assertTriggerRequest(request: CreateTriggerRequest, expected: String) {
+    val path = "/projects/project-id/pipeline-definitions/definition-id/triggers"
+    val body = withResponse("""{"id":"trigger-id"}""", "POST", path) { client ->
+        assertEquals("trigger-id", client.createTrigger("project-id", "definition-id", request).blockingSingle().id)
+    }
+    assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+}
 
 private data class RecordedRequest(val method: String, val uri: URI, val headers: Headers, val body: String)
 
