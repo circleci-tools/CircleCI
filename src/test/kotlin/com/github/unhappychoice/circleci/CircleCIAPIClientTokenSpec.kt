@@ -22,6 +22,15 @@ object CircleCIAPIClientTokenSpec : Spek({
             }
         }
 
+        test("rejects an invalid token when accessing the internal V2 transport") {
+            val api = CircleCIAPIClient("secret-test-token\n")
+            val error = assertThrows(IllegalArgumentException::class.java) {
+                api.okHttpV2
+            }
+
+            assertEquals("CircleCI API token contains invalid header characters", error.message)
+        }
+
         test("accepts a token with an embedded tab through the public V2 client factory") {
             CircleCIAPIClient("secret\ttest-token").clientV2()
         }
