@@ -53,7 +53,7 @@ private fun triggerPipelineRun(status: Int, body: String): TestObserver<Pipeline
     server.start()
     try {
         val client = CircleCIAPIClient("test-token").clientV2("http://127.0.0.1:${server.address.port}/api/v2/")
-        val request = TriggerPipelineRunRequest("definition-id", "config", null, null)
+        val request = TriggerPipelineRunRequest(definitionId = "definition-id")
         return client.triggerPipelineRun("gh", "unhappychoice", "circleci", request).test()
     } finally {
         server.stop(0)

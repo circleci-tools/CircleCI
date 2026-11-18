@@ -48,7 +48,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
         }
 
-        // Context endpoints (10)
+        // Context endpoints (4)
         group("Context") {
             test("#getContext() should return response") {
                 val subscriber = client.getContext("context-id").test()
@@ -77,14 +77,6 @@ object CircleCIAPIClientV2Spec : Spek({
                 expectNotNull(context)
             }
 
-            test("#deleteContext() should return response") {
-                val subscriber = client.deleteContext("context-id").test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val response = subscriber.values().first()
-                expect(response.message).not.to.be.`null`
-            }
-
             test("#listEnvironmentVariablesFromContext() should return response") {
                 val subscriber = client.listEnvironmentVariablesFromContext("context-id", null).test()
                 expect(subscriber.isFinished()).to.be.`true`
@@ -94,51 +86,12 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(response.nextPageToken).not.to.be.`null`
                 expectNotNull(response.items.first())
             }
-
-            test("#addEnvironmentVariableToContext() should return response") {
-                val subscriber = client.addEnvironmentVariableToContext("context-id", "VAR", AddEnvironmentVariableRequest("value")).test()
-                expect(subscriber.isFinished()).to.be.`true`
-            }
-
-            test("#deleteEnvironmentVariableFromContext() should return response") {
-                val subscriber = client.deleteEnvironmentVariableFromContext("context-id", "VAR").test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val response = subscriber.values().first()
-                expect(response.message).not.to.be.`null`
-            }
-
-            test("#getContextRestrictions() should return response") {
-                val subscriber = client.getContextRestrictions("context-id", null).test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val response = subscriber.values().first()
-                expect(response.items).not.to.be.`null`
-                expect(response.nextPageToken).not.to.be.`null`
-            }
-
-            test("#createContextRestriction() should return response") {
-                val subscriber = client.createContextRestriction("context-id", CreateContextRestrictionRequest("project-id")).test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val response = subscriber.values().first()
-                expect(response.id).not.to.be.`null`
-                expect(response.message).not.to.be.`null`
-            }
-
-            test("#deleteContextRestriction() should return response") {
-                val subscriber = client.deleteContextRestriction("context-id", "restriction-id").test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val response = subscriber.values().first()
-                expect(response.message).not.to.be.`null`
-            }
         }
 
         // Deploy endpoints (5)
         group("Deploy") {
             test("#listComponents() should return response") {
-                val subscriber = client.listComponents(null).test()
+                val subscriber = client.listComponents("org-id", 25).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val response = subscriber.values().first()
@@ -166,7 +119,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#listEnvironments() should return response") {
-                val subscriber = client.listEnvironments(null).test()
+                val subscriber = client.listEnvironments("org-id", 25).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val response = subscriber.values().first()
@@ -534,8 +487,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val response = subscriber.values().first()
-                expect(response.items).not.to.be.empty
-                expect(response.nextPageToken).not.to.be.`null`
+                expect(response.single().decision.status).to.equal("PASS")
             }
 
             test("#makeDecision() should return response") {
@@ -544,7 +496,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val decision = subscriber.values().first()
-                expect(decision.decision).not.to.be.`null`
+                expect(decision.status).to.equal("PASS")
             }
 
             test("#getDecisionSettings() should return response") {
@@ -570,7 +522,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 val log = subscriber.values().first()
                 expect(log.id).not.to.be.`null`
                 expect(log.createdAt).not.to.be.`null`
-                expect(log.decision).not.to.be.`null`
+                expect(log.decision.status).to.equal("PASS")
                 expect(log.metadata).not.to.be.`null`
                 expect(log.policies).not.to.be.`null`
                 expect(log.timeTakenMs).not.to.be.`null`
@@ -688,6 +640,12 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(response.createdAt).not.to.be.`null`
             }
 
+            test("#triggerPipelineRun() should return the created pipeline") {
+                val request = TriggerPipelineRunRequest(definitionId = "definition-id")
+                client.triggerPipelineRun("gh", "unhappychoice", "circleci", request).test()
+                    .assertResult(PipelineRunResult.Created("pipeline-id"))
+            }
+
             test("#getPipelineByNumber() should return response") {
                 val subscriber = client.getPipelineByNumber(projectSlug, 1).test()
                 expect(subscriber.isFinished()).to.be.`true`
@@ -718,7 +676,11 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#createPipelineDefinition() should return response") {
-                val request = CreatePipelineDefinitionRequest("name", "config")
+                val request = CreatePipelineDefinitionRequest(
+                    "name",
+                    CreatePipelineDefinitionRequest.ConfigSource("circleci", ".circleci/config.yml"),
+                    CreatePipelineDefinitionRequest.CheckoutSource("github_app", PipelineDefinitionRepository("repo-id"))
+                )
                 val subscriber = client.createPipelineDefinition(projectSlug, request).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
@@ -735,7 +697,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#updatePipelineDefinition() should return response") {
-                val request = UpdatePipelineDefinitionRequest("name", "config")
+                val request = UpdatePipelineDefinitionRequest(name = "name")
                 val subscriber = client.updatePipelineDefinition(projectSlug, "definition-id", request).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
@@ -914,7 +876,12 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#createSchedule() should return response") {
-                val params = CreateScheduleParameters("name", "description", projectSlug, mapOf(), listOf())
+                val params = CreateScheduleParameters(
+                    name = "name",
+                    timetable = CreateScheduleTimetable(1, listOf(9), daysOfWeek = listOf("MON")),
+                    attributionActor = ScheduleAttributionActor.CURRENT,
+                    parameters = mapOf("branch" to "main")
+                )
                 val subscriber = client.createSchedule(projectSlug, params).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
@@ -931,7 +898,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#updateSchedule() should return response") {
-                val params = UpdateScheduleParameters("name", "description", null, null)
+                val params = UpdateScheduleParameters(name = "name", description = "description")
                 val subscriber = client.updateSchedule("schedule-id", params).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
@@ -1301,23 +1268,13 @@ private fun expectNotNull(schedule: Schedule) {
     expect(schedule.parameters).not.to.be.`null`
     expect(schedule.actor).not.to.be.`null`
     expectNotNull(schedule.actor)
-    expect(schedule.timetables).not.to.be.empty
-    schedule.timetables.forEach { expectNotNull(it) }
+    expect(schedule.timetable.hoursOfDay).not.to.be.empty
 }
 
 private fun expectNotNull(actor: Actor) {
     expect(actor.id).not.to.be.`null`
     expect(actor.login).not.to.be.`null`
     expect(actor.name).not.to.be.`null`
-}
-
-private fun expectNotNull(timetable: Timetable) {
-    expect(timetable.id).not.to.be.`null`
-    expect(timetable.attribution).not.to.be.`null`
-    expect(timetable.days).not.to.be.empty
-    expect(timetable.hours).not.to.be.empty
-    expect(timetable.minutes).not.to.be.empty
-    expect(timetable.perHour).not.to.be.`null`
 }
 
 // Trigger types
