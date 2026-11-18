@@ -74,6 +74,8 @@ interface CircleCIAPIClientV2 {
     // Deploy endpoints
     @GET("deploy/components")
     fun listComponents(
+        @Query("org-id") orgId: String,
+        @Query("page-size") pageSize: Int,
         @Query("page-token") pageToken: String? = null
     ): Observable<ComponentListResponse>
 
@@ -88,6 +90,8 @@ interface CircleCIAPIClientV2 {
 
     @GET("deploy/environments")
     fun listEnvironments(
+        @Query("org-id") orgId: String,
+        @Query("page-size") pageSize: Int,
         @Query("page-token") pageToken: String? = null
     ): Observable<DeployEnvironmentListResponse>
 

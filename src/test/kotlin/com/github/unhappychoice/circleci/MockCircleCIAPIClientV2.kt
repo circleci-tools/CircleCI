@@ -75,7 +75,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     )
 
     // Deploy endpoints
-    override fun listComponents(pageToken: String?): Observable<ComponentListResponse> = Observable.just(
+    override fun listComponents(orgId: String, pageSize: Int, pageToken: String?): Observable<ComponentListResponse> = Observable.just(
         ComponentListResponse(
             items = listOf(Component(id = "id", name = "name", projectId = "project_id", createdAt = "created_at", updatedAt = "updated_at")),
             nextPageToken = "next_page_token"
@@ -93,7 +93,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         )
     )
 
-    override fun listEnvironments(pageToken: String?): Observable<DeployEnvironmentListResponse> = Observable.just(
+    override fun listEnvironments(orgId: String, pageSize: Int, pageToken: String?): Observable<DeployEnvironmentListResponse> = Observable.just(
         DeployEnvironmentListResponse(
             items = listOf(DeployEnvironment(id = "id", name = "name", organizationId = "org_id", createdAt = "created_at", updatedAt = "updated_at")),
             nextPageToken = "next_page_token"
