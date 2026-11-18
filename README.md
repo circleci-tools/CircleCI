@@ -8,7 +8,9 @@
 
 This is [CircleCI](https://circleci.com) API Client for Kotlin.
 
-Only RxAdapter is supported for now.
+The master branch returns RxJava 3 observables (`io.reactivex.rxjava3.core.Observable`).
+Version `2.1.2`, used below, returns RxJava 2 observables. When upgrading to a version
+that uses RxJava 3, update your imports and reactive integrations to RxJava 3.
 
 ## Quick start
 

@@ -2,7 +2,7 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v1.request.*
 import com.github.unhappychoice.circleci.v1.response.*
-import io.reactivex.Observable
+import io.reactivex.rxjava3.core.Observable
 import retrofit2.http.*
 
 interface CircleCIAPIClientV1 {

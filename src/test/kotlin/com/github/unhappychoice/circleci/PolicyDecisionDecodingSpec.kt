@@ -11,7 +11,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.spekframework.spek2.Spek
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
+import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 
 object PolicyDecisionDecodingSpec : Spek({
@@ -81,6 +81,6 @@ private fun decisionClient(json: String): CircleCIAPIClientV2 = Retrofit.Builder
             .build()
     }.build())
     .addConverterFactory(GsonConverterFactory.create())
-    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+    .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
     .build()
     .create(CircleCIAPIClientV2::class.java)
