@@ -1,24 +1,42 @@
 package com.github.unhappychoice.circleci
 
+import com.github.unhappychoice.circleci.v2.response.PipelineValues
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializer
+import com.google.gson.reflect.TypeToken
 import okhttp3.OkHttpClient
 import org.apache.commons.codec.binary.Base64
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
+import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import java.time.OffsetDateTime
 
 class CircleCIAPIClient(val token: String) {
   @Deprecated("V1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
-  fun client(): CircleCIAPIClientV1 = retrofitV1("https://circleci.com/api/v1/").create(CircleCIAPIClientV1::class.java)
+  fun client(): CircleCIAPIClientV1 = serviceV1
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
   fun clinet1_1(): CircleCIAPIClientV1_1 = client1_1()
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
-  fun client1_1(): CircleCIAPIClientV1_1 = client1_1("https://circleci.com/api/v1.1/")
-  fun clientV2(): CircleCIAPIClientV2 = clientV2("https://circleci.com/api/v2/")
-  fun clientV3(): CircleCIAPIClientV3 = clientV3("https://circleci.com/api/v3/")
+  fun client1_1(): CircleCIAPIClientV1_1 = serviceV1_1
+  fun clientV2(): CircleCIAPIClientV2 = serviceV2
+  fun clientV3(): CircleCIAPIClientV3 = serviceV3
+
+  private val serviceV1 by lazy {
+    retrofitV1("https://circleci.com/api/v1/").create(CircleCIAPIClientV1::class.java)
+  }
+
+  private val serviceV1_1 by lazy {
+    client1_1("https://circleci.com/api/v1.1/")
+  }
+
+  private val serviceV2 by lazy {
+    clientV2("https://circleci.com/api/v2/")
+  }
+
+  private val serviceV3 by lazy {
+    clientV3("https://circleci.com/api/v3/")
+  }
 
   internal fun client1_1(baseUrl: String): CircleCIAPIClientV1_1 =
     retrofitV1(baseUrl).create(CircleCIAPIClientV1_1::class.java)
@@ -30,13 +48,20 @@ class CircleCIAPIClient(val token: String) {
     .client(okHttpV3)
     .baseUrl(baseUrl)
     .addConverterFactory(GsonConverterFactory.create())
-    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+    .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
     .build()
     .create(CircleCIAPIClientV3::class.java)
 
   internal val okHttpV1 = authenticatedClient("Authorization", "Basic ${encodedToken()}")
-  internal val okHttpV2 = authenticatedClient("Circle-Token", token)
-  private val okHttpV3 by lazy { authenticatedClient("Authorization", "Bearer $token") }
+  internal val okHttpV2 by lazy { authenticatedClient("Circle-Token", headerToken()) }
+  private val okHttpV3 by lazy { authenticatedClient("Authorization", "Bearer ${headerToken()}") }
+
+  private fun headerToken(): String {
+    require(token.all { it == '\t' || it in ' '..'~' }) {
+      "CircleCI API token contains invalid header characters"
+    }
+    return token
+  }
 
   private fun authenticatedClient(header: String, value: String): OkHttpClient = OkHttpClient.Builder()
     .followRedirects(false)
@@ -57,14 +82,14 @@ class CircleCIAPIClient(val token: String) {
     .client(okHttpV1)
     .baseUrl(baseUrl)
     .addConverterFactory(converterV1())
-    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+    .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
     .build()
 
   internal fun retrofitV2(baseUrl: String): Retrofit = Retrofit.Builder()
     .client(okHttpV2)
     .baseUrl(baseUrl)
     .addConverterFactory(converterV2())
-    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+    .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
     .build()
 
   private fun converterV1() = GsonConverterFactory.create(
@@ -77,10 +102,16 @@ class CircleCIAPIClient(val token: String) {
   private fun converterV2() = GsonConverterFactory.create(
     GsonBuilder()
       .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'")
+      .registerTypeAdapter(PipelineValues::class.java, pipelineValuesDeserializer)
       .registerTypeAdapter(
         OffsetDateTime::class.java,
         JsonDeserializer<OffsetDateTime> { json, _, _ -> OffsetDateTime.parse(json.asString) }
       )
       .create()
   )
+}
+
+private val pipelineValuesMapType = object : TypeToken<Map<String, Any>>() {}.type
+private val pipelineValuesDeserializer = JsonDeserializer<PipelineValues> { json, _, context ->
+  PipelineValues(context.deserialize(json.asJsonObject, pipelineValuesMapType))
 }

@@ -1,19 +1,23 @@
 package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v3.request.TriggerRunRequest
+import com.github.unhappychoice.circleci.v3.response.RunResponse
 import com.google.gson.JsonParser
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.spekframework.spek2.Spek
 import java.util.concurrent.TimeUnit.SECONDS
 
 object CircleCIAPIClientV3HttpSpec : Spek({
-    test("creates a V3 client with the default base URL") {
-        assertNotNull(CircleCIAPIClient("test-token").clientV3())
+    test("rejects an invalid bearer token without revealing it") {
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            CircleCIAPIClient("secret-test-token\n").clientV3()
+        }
+        assertEquals("CircleCI API token contains invalid header characters", error.message)
     }
 
     test("triggers a run with only a known pipeline ID") {
@@ -58,9 +62,8 @@ object CircleCIAPIClientV3HttpSpec : Spek({
             server.enqueue(run("ended", "\"succeeded\""))
             val response = server.client().getRun(runId).blockingSingle()
 
-            assertEquals(runId, response.data.id)
-            assertEquals("ended", response.data.attributes.phase)
-            assertEquals("succeeded", response.data.attributes.currentOutcome)
+            val expected = RunResponse(RunResponse.Data(runId, RunResponse.Attributes("ended", "succeeded")))
+            assertEquals(expected, response)
             assertRequest(server.takeRequest(5, SECONDS)!!, "GET", "/api/v3/runs/$runId")
         }
     }

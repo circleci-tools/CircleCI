@@ -3,9 +3,9 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v2.request.*
 import com.github.unhappychoice.circleci.v2.response.*
 import com.winterbe.expekt.expect
-import io.reactivex.observers.TestObserver
-import io.reactivex.plugins.RxJavaPlugins
-import io.reactivex.schedulers.TestScheduler
+import io.reactivex.rxjava3.observers.TestObserver
+import io.reactivex.rxjava3.plugins.RxJavaPlugins
+import io.reactivex.rxjava3.schedulers.TestScheduler
 import org.spekframework.spek2.Spek
 
 object CircleCIAPIClientV2Spec : Spek({
@@ -321,7 +321,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#patchOrgClaims() should return response") {
-                val subscriber = client.patchOrgClaims("org-id", PatchClaimsRequest(mapOf())).test()
+                val subscriber = client.patchOrgClaims("org-id", PatchClaimsRequest(ttl = "1h")).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val claims = subscriber.values().first()
@@ -329,7 +329,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#deleteOrgClaims() should return response") {
-                val subscriber = client.deleteOrgClaims("org-id").test()
+                val subscriber = client.deleteOrgClaims("org-id", "ttl").test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val claims = subscriber.values().first()
@@ -346,7 +346,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#patchProjectClaims() should return response") {
-                val subscriber = client.patchProjectClaims("org-id", projectSlug, PatchClaimsRequest(mapOf())).test()
+                val subscriber = client.patchProjectClaims("org-id", projectSlug, PatchClaimsRequest(ttl = "1h")).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val claims = subscriber.values().first()
@@ -354,7 +354,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#deleteProjectClaims() should return response") {
-                val subscriber = client.deleteProjectClaims("org-id", projectSlug).test()
+                val subscriber = client.deleteProjectClaims("org-id", projectSlug, "ttl").test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val claims = subscriber.values().first()
@@ -487,8 +487,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val response = subscriber.values().first()
-                expect(response.items).not.to.be.empty
-                expect(response.nextPageToken).not.to.be.`null`
+                expect(response.single().decision.status).to.equal("PASS")
             }
 
             test("#makeDecision() should return response") {
@@ -497,7 +496,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val decision = subscriber.values().first()
-                expect(decision.decision).not.to.be.`null`
+                expect(decision.status).to.equal("PASS")
             }
 
             test("#getDecisionSettings() should return response") {
@@ -523,7 +522,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 val log = subscriber.values().first()
                 expect(log.id).not.to.be.`null`
                 expect(log.createdAt).not.to.be.`null`
-                expect(log.decision).not.to.be.`null`
+                expect(log.decision.status).to.equal("PASS")
                 expect(log.metadata).not.to.be.`null`
                 expect(log.policies).not.to.be.`null`
                 expect(log.timeTakenMs).not.to.be.`null`
@@ -641,13 +640,10 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(response.createdAt).not.to.be.`null`
             }
 
-            test("#triggerPipelineRun() should return response") {
+            test("#triggerPipelineRun() should return the created pipeline") {
                 val request = TriggerPipelineRunRequest(definitionId = "definition-id")
-                val subscriber = client.triggerPipelineRun("gh", "unhappychoice", "circleci", request).test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val pipeline = subscriber.values().first()
-                expectNotNull(pipeline)
+                client.triggerPipelineRun("gh", "unhappychoice", "circleci", request).test()
+                    .assertResult(PipelineRunResult.Created("pipeline-id"))
             }
 
             test("#getPipelineByNumber() should return response") {
@@ -1061,7 +1057,7 @@ object CircleCIAPIClientV2Spec : Spek({
     }
 })
 
-private fun <T> TestObserver<T>.isFinished(): Boolean {
+private fun <T : Any> TestObserver<T>.isFinished(): Boolean {
     assertNoErrors()
     assertComplete()
     return true

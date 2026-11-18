@@ -3,7 +3,7 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v3.request.TriggerRunRequest
 import com.github.unhappychoice.circleci.v3.response.RunResponse
 import com.github.unhappychoice.circleci.v3.response.TriggerRunResponse
-import io.reactivex.Observable
+import io.reactivex.rxjava3.core.Observable
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
