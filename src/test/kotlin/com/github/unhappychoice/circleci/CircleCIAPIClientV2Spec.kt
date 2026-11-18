@@ -3,9 +3,9 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v2.request.*
 import com.github.unhappychoice.circleci.v2.response.*
 import com.winterbe.expekt.expect
-import io.reactivex.observers.TestObserver
-import io.reactivex.plugins.RxJavaPlugins
-import io.reactivex.schedulers.TestScheduler
+import io.reactivex.rxjava3.observers.TestObserver
+import io.reactivex.rxjava3.plugins.RxJavaPlugins
+import io.reactivex.rxjava3.schedulers.TestScheduler
 import org.spekframework.spek2.Spek
 
 object CircleCIAPIClientV2Spec : Spek({
@@ -91,7 +91,7 @@ object CircleCIAPIClientV2Spec : Spek({
         // Deploy endpoints (5)
         group("Deploy") {
             test("#listComponents() should return response") {
-                val subscriber = client.listComponents(null).test()
+                val subscriber = client.listComponents("org-id", 25).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val response = subscriber.values().first()
@@ -119,7 +119,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#listEnvironments() should return response") {
-                val subscriber = client.listEnvironments(null).test()
+                val subscriber = client.listEnvironments("org-id", 25).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val response = subscriber.values().first()
@@ -321,7 +321,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#patchOrgClaims() should return response") {
-                val subscriber = client.patchOrgClaims("org-id", PatchClaimsRequest(mapOf())).test()
+                val subscriber = client.patchOrgClaims("org-id", PatchClaimsRequest(ttl = "1h")).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val claims = subscriber.values().first()
@@ -329,7 +329,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#deleteOrgClaims() should return response") {
-                val subscriber = client.deleteOrgClaims("org-id").test()
+                val subscriber = client.deleteOrgClaims("org-id", "ttl").test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val claims = subscriber.values().first()
@@ -346,7 +346,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#patchProjectClaims() should return response") {
-                val subscriber = client.patchProjectClaims("org-id", projectSlug, PatchClaimsRequest(mapOf())).test()
+                val subscriber = client.patchProjectClaims("org-id", projectSlug, PatchClaimsRequest(ttl = "1h")).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val claims = subscriber.values().first()
@@ -354,7 +354,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#deleteProjectClaims() should return response") {
-                val subscriber = client.deleteProjectClaims("org-id", projectSlug).test()
+                val subscriber = client.deleteProjectClaims("org-id", projectSlug, "ttl").test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val claims = subscriber.values().first()
@@ -487,8 +487,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val response = subscriber.values().first()
-                expect(response.items).not.to.be.empty
-                expect(response.nextPageToken).not.to.be.`null`
+                expect(response.single().decision.status).to.equal("PASS")
             }
 
             test("#makeDecision() should return response") {
@@ -497,7 +496,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val decision = subscriber.values().first()
-                expect(decision.decision).not.to.be.`null`
+                expect(decision.status).to.equal("PASS")
             }
 
             test("#getDecisionSettings() should return response") {
@@ -523,7 +522,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 val log = subscriber.values().first()
                 expect(log.id).not.to.be.`null`
                 expect(log.createdAt).not.to.be.`null`
-                expect(log.decision).not.to.be.`null`
+                expect(log.decision.status).to.equal("PASS")
                 expect(log.metadata).not.to.be.`null`
                 expect(log.policies).not.to.be.`null`
                 expect(log.timeTakenMs).not.to.be.`null`
@@ -641,13 +640,10 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(response.createdAt).not.to.be.`null`
             }
 
-            test("#triggerPipelineRun() should return response") {
-                val request = TriggerPipelineRunRequest("definition-id", "config", null, null)
-                val subscriber = client.triggerPipelineRun("gh", "unhappychoice", "circleci", request).test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val pipeline = subscriber.values().first()
-                expectNotNull(pipeline)
+            test("#triggerPipelineRun() should return the created pipeline") {
+                val request = TriggerPipelineRunRequest(definitionId = "definition-id")
+                client.triggerPipelineRun("gh", "unhappychoice", "circleci", request).test()
+                    .assertResult(PipelineRunResult.Created("pipeline-id"))
             }
 
             test("#getPipelineByNumber() should return response") {
@@ -680,7 +676,11 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#createPipelineDefinition() should return response") {
-                val request = CreatePipelineDefinitionRequest("name", "config")
+                val request = CreatePipelineDefinitionRequest(
+                    "name",
+                    CreatePipelineDefinitionRequest.ConfigSource("circleci", ".circleci/config.yml"),
+                    CreatePipelineDefinitionRequest.CheckoutSource("github_app", PipelineDefinitionRepository("repo-id"))
+                )
                 val subscriber = client.createPipelineDefinition(projectSlug, request).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
@@ -697,7 +697,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#updatePipelineDefinition() should return response") {
-                val request = UpdatePipelineDefinitionRequest("name", "config")
+                val request = UpdatePipelineDefinitionRequest(name = "name")
                 val subscriber = client.updatePipelineDefinition(projectSlug, "definition-id", request).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
@@ -876,7 +876,12 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#createSchedule() should return response") {
-                val params = CreateScheduleParameters("name", "description", projectSlug, mapOf(), listOf())
+                val params = CreateScheduleParameters(
+                    name = "name",
+                    timetable = CreateScheduleTimetable(1, listOf(9), daysOfWeek = listOf("MON")),
+                    attributionActor = ScheduleAttributionActor.CURRENT,
+                    parameters = mapOf("branch" to "main")
+                )
                 val subscriber = client.createSchedule(projectSlug, params).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
@@ -893,7 +898,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#updateSchedule() should return response") {
-                val params = UpdateScheduleParameters("name", "description", null, null)
+                val params = UpdateScheduleParameters(name = "name", description = "description")
                 val subscriber = client.updateSchedule("schedule-id", params).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
@@ -1052,7 +1057,7 @@ object CircleCIAPIClientV2Spec : Spek({
     }
 })
 
-private fun <T> TestObserver<T>.isFinished(): Boolean {
+private fun <T : Any> TestObserver<T>.isFinished(): Boolean {
     assertNoErrors()
     assertComplete()
     return true
@@ -1263,23 +1268,13 @@ private fun expectNotNull(schedule: Schedule) {
     expect(schedule.parameters).not.to.be.`null`
     expect(schedule.actor).not.to.be.`null`
     expectNotNull(schedule.actor)
-    expect(schedule.timetables).not.to.be.empty
-    schedule.timetables.forEach { expectNotNull(it) }
+    expect(schedule.timetable.hoursOfDay).not.to.be.empty
 }
 
 private fun expectNotNull(actor: Actor) {
     expect(actor.id).not.to.be.`null`
     expect(actor.login).not.to.be.`null`
     expect(actor.name).not.to.be.`null`
-}
-
-private fun expectNotNull(timetable: Timetable) {
-    expect(timetable.id).not.to.be.`null`
-    expect(timetable.attribution).not.to.be.`null`
-    expect(timetable.days).not.to.be.empty
-    expect(timetable.hours).not.to.be.empty
-    expect(timetable.minutes).not.to.be.empty
-    expect(timetable.perHour).not.to.be.`null`
 }
 
 // Trigger types

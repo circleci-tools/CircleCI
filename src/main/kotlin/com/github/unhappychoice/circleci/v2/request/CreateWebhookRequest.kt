@@ -5,10 +5,15 @@ import com.google.gson.annotations.SerializedName
 data class CreateWebhookRequest(
     val name: String,
     val url: String,
-    @SerializedName("signing_secret") val signingSecret: String,
+    @SerializedName("signing-secret") val signingSecret: String,
     @SerializedName("scope") val scope: WebhookScopeRequest,
-    val events: List<String>
-)
+    val events: List<String>,
+    @SerializedName("verify-tls") val verifyTls: Boolean = true
+) {
+    override fun toString() =
+        "CreateWebhookRequest(name=$name, url=$url, signingSecret=[REDACTED], scope=$scope, " +
+            "events=$events, verifyTls=$verifyTls)"
+}
 
 data class WebhookScopeRequest(
     val type: String,
