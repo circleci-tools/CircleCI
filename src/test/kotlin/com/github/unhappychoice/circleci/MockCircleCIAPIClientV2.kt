@@ -276,7 +276,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         OidcClaims(audience = listOf("aud1"), audienceUpdatedAt = "2024-01-01T00:00:00Z", orgId = orgId, projectId = null, ttl = "1h")
     )
 
-    override fun deleteOrgClaims(orgId: String): Observable<OidcClaims> = Observable.just(
+    override fun deleteOrgClaims(orgId: String, claims: String): Observable<OidcClaims> = Observable.just(
         OidcClaims(audience = null, audienceUpdatedAt = null, orgId = orgId, projectId = null, ttl = null)
     )
 
@@ -288,7 +288,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         OidcClaims(audience = listOf("aud1"), audienceUpdatedAt = "2024-01-01T00:00:00Z", orgId = orgId, projectId = projectId, ttl = "1h")
     )
 
-    override fun deleteProjectClaims(orgId: String, projectId: String): Observable<OidcClaims> = Observable.just(
+    override fun deleteProjectClaims(orgId: String, projectId: String, claims: String): Observable<OidcClaims> = Observable.just(
         OidcClaims(audience = null, audienceUpdatedAt = null, orgId = orgId, projectId = projectId, ttl = null)
     )
 
