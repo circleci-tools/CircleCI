@@ -40,7 +40,7 @@ class CircleCIAPIClient(val token: String) {
 
   private fun encodedToken(): String = String(Base64.encodeBase64("$token:".toByteArray()))
 
-  private fun retrofitV1(baseUrl: String): Retrofit = Retrofit.Builder()
+  internal fun retrofitV1(baseUrl: String): Retrofit = Retrofit.Builder()
     .client(okHttpV1)
     .baseUrl(baseUrl)
     .addConverterFactory(converterV1())
@@ -57,7 +57,7 @@ class CircleCIAPIClient(val token: String) {
   private fun converterV1() = GsonConverterFactory.create(
     GsonBuilder()
       .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-      .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+      .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
       .create()
   )
 
