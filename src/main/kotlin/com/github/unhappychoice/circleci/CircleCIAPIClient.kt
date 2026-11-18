@@ -16,8 +16,11 @@ class CircleCIAPIClient(val token: String) {
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
   fun clinet1_1(): CircleCIAPIClientV1_1 = client1_1()
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
-  fun client1_1(): CircleCIAPIClientV1_1 = retrofitV1("https://circleci.com/api/v1.1/").create(CircleCIAPIClientV1_1::class.java)
+  fun client1_1(): CircleCIAPIClientV1_1 = client1_1("https://circleci.com/api/v1.1/")
   fun clientV2(): CircleCIAPIClientV2 = clientV2("https://circleci.com/api/v2/")
+
+  internal fun client1_1(baseUrl: String): CircleCIAPIClientV1_1 =
+    retrofitV1(baseUrl).create(CircleCIAPIClientV1_1::class.java)
 
   internal fun clientV2(baseUrl: String): CircleCIAPIClientV2 =
     retrofitV2(baseUrl).create(CircleCIAPIClientV2::class.java)
