@@ -680,7 +680,11 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#createPipelineDefinition() should return response") {
-                val request = CreatePipelineDefinitionRequest("name", "config")
+                val request = CreatePipelineDefinitionRequest(
+                    "name",
+                    CreatePipelineDefinitionRequest.ConfigSource("circleci", ".circleci/config.yml"),
+                    CreatePipelineDefinitionRequest.CheckoutSource("github_app", PipelineDefinitionRepository("repo-id"))
+                )
                 val subscriber = client.createPipelineDefinition(projectSlug, request).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
@@ -697,7 +701,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#updatePipelineDefinition() should return response") {
-                val request = UpdatePipelineDefinitionRequest("name", "config")
+                val request = UpdatePipelineDefinitionRequest(name = "name")
                 val subscriber = client.updatePipelineDefinition(projectSlug, "definition-id", request).test()
                 expect(subscriber.isFinished()).to.be.`true`
 

@@ -426,7 +426,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     )
 
     override fun createPipelineDefinition(projectId: String, request: CreatePipelineDefinitionRequest): Observable<PipelineDefinition> = Observable.just(
-        PipelineDefinition(id = "id", projectId = projectId, name = request.name, createdAt = "created_at", updatedAt = "updated_at", definition = request.definition)
+        PipelineDefinition(id = "id", projectId = projectId, name = request.name, createdAt = "created_at", updatedAt = "updated_at", definition = "definition")
     )
 
     override fun getPipelineDefinition(projectId: String, pipelineDefinitionId: String): Observable<PipelineDefinition> = Observable.just(
@@ -434,7 +434,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     )
 
     override fun updatePipelineDefinition(projectId: String, pipelineDefinitionId: String, request: UpdatePipelineDefinitionRequest): Observable<PipelineDefinition> = Observable.just(
-        PipelineDefinition(id = pipelineDefinitionId, projectId = projectId, name = request.name ?: "name", createdAt = "created_at", updatedAt = "updated_at", definition = request.definition ?: "definition")
+        PipelineDefinition(id = pipelineDefinitionId, projectId = projectId, name = request.name ?: "name", createdAt = "created_at", updatedAt = "updated_at", definition = "definition")
     )
 
     override fun deletePipelineDefinition(projectId: String, pipelineDefinitionId: String): Observable<PipelineDefinitionDeleted> = Observable.just(
