@@ -5,8 +5,8 @@ import com.github.unhappychoice.circleci.v2.request.CreateContextRestrictionRequ
 import com.google.gson.JsonParser
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpServer
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
 import java.net.URI
