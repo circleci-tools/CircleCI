@@ -2,6 +2,7 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.request.AddEnvironmentVariableRequest
 import com.github.unhappychoice.circleci.v2.request.CreateContextRestrictionRequest
+import com.github.unhappychoice.circleci.v2.request.PatchClaimsRequest
 import com.google.gson.JsonParser
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpServer
@@ -72,6 +73,41 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         withResponse("""{"message":"Restriction deleted"}""", "DELETE", path) { client ->
             val result = client.deleteContextRestriction("context-id", "restriction-id").blockingSingle()
             assertEquals("Restriction deleted", result.message)
+        }
+    }
+
+    test("patches organization OIDC claims with a top-level audience array and TTL") {
+        val response = """{"org_id":"org-id"}"""
+        val path = "/org/org-id/oidc-custom-claims"
+        val body = withResponse(response, "PATCH", path) { client ->
+            val request = PatchClaimsRequest(audience = listOf("service-a", "service-b"), ttl = "1h")
+            client.patchOrgClaims("org-id", request).blockingSingle()
+        }
+        val expected = """{"audience":["service-a","service-b"],"ttl":"1h"}"""
+        assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+    }
+
+    test("patches only the selected project OIDC claim") {
+        val response = """{"org_id":"org-id","project_id":"project-id"}"""
+        val path = "/org/org-id/project/project-id/oidc-custom-claims"
+        val body = withResponse(response, "PATCH", path) { client ->
+            val request = PatchClaimsRequest(audience = listOf("service-a"))
+            client.patchProjectClaims("org-id", "project-id", request).blockingSingle()
+        }
+        assertEquals(JsonParser.parseString("""{"audience":["service-a"]}"""), JsonParser.parseString(body))
+    }
+
+    test("deletes selected organization OIDC claims in a single query parameter") {
+        val path = "/org/org-id/oidc-custom-claims?claims=audience%2Cttl"
+        withResponse("""{"org_id":"org-id"}""", "DELETE", path) { client ->
+            client.deleteOrgClaims("org-id", "audience,ttl").blockingSingle()
+        }
+    }
+
+    test("deletes selected project OIDC claims in a single query parameter") {
+        val path = "/org/org-id/project/project-id/oidc-custom-claims?claims=audience%2Cttl"
+        withResponse("""{"org_id":"org-id","project_id":"project-id"}""", "DELETE", path) { client ->
+            client.deleteProjectClaims("org-id", "project-id", "audience,ttl").blockingSingle()
         }
     }
 })

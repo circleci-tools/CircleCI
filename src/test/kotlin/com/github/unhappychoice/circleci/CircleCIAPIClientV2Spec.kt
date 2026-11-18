@@ -321,7 +321,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#patchOrgClaims() should return response") {
-                val subscriber = client.patchOrgClaims("org-id", PatchClaimsRequest(mapOf())).test()
+                val subscriber = client.patchOrgClaims("org-id", PatchClaimsRequest(ttl = "1h")).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val claims = subscriber.values().first()
@@ -329,7 +329,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#deleteOrgClaims() should return response") {
-                val subscriber = client.deleteOrgClaims("org-id").test()
+                val subscriber = client.deleteOrgClaims("org-id", "ttl").test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val claims = subscriber.values().first()
@@ -346,7 +346,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#patchProjectClaims() should return response") {
-                val subscriber = client.patchProjectClaims("org-id", projectSlug, PatchClaimsRequest(mapOf())).test()
+                val subscriber = client.patchProjectClaims("org-id", projectSlug, PatchClaimsRequest(ttl = "1h")).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val claims = subscriber.values().first()
@@ -354,7 +354,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#deleteProjectClaims() should return response") {
-                val subscriber = client.deleteProjectClaims("org-id", projectSlug).test()
+                val subscriber = client.deleteProjectClaims("org-id", projectSlug, "ttl").test()
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val claims = subscriber.values().first()
