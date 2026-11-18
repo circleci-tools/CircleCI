@@ -527,6 +527,9 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     // Webhook endpoints
     override fun getWebhookById(webhookId: String): Observable<Webhook> = Observable.just(createMockWebhook())
 
+    override fun getWebhooks(scopeId: String, scopeType: String): Observable<WebhookListResponse> =
+        super.getWebhooks(scopeId, scopeType)
+
     override fun getWebhooks(scopeId: String, scopeType: String, isEnabled: Boolean?): Observable<WebhookListResponse> = Observable.just(
         WebhookListResponse(items = listOf(createMockWebhook()), nextPageToken = "next_page_token")
     )

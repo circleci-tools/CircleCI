@@ -82,6 +82,13 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
     }
 
+    test("lists all webhooks when the enabled filter is null") {
+        val path = "/webhook?scope-id=project-id&scope-type=project"
+        withResponse("""{"items":[]}""", "GET", path) { client ->
+            client.getWebhooks("project-id", "project", null).blockingSingle()
+        }
+    }
+
     listOf(true, false).forEach { isEnabled ->
         test("lists webhooks with is-enabled=$isEnabled") {
             val path = "/webhook?scope-id=project-id&scope-type=project&is-enabled=$isEnabled"

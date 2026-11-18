@@ -609,11 +609,14 @@ interface CircleCIAPIClientV2 {
     @GET("webhook/{webhook-id}")
     fun getWebhookById(@Path("webhook-id") webhookId: String): Observable<Webhook>
 
+    fun getWebhooks(scopeId: String, scopeType: String): Observable<WebhookListResponse> =
+        getWebhooks(scopeId, scopeType, null)
+
     @GET("webhook")
     fun getWebhooks(
         @Query("scope-id") scopeId: String,
         @Query("scope-type") scopeType: String,
-        @Query("is-enabled") isEnabled: Boolean? = null
+        @Query("is-enabled") isEnabled: Boolean?
     ): Observable<WebhookListResponse>
 
     @POST("webhook")
