@@ -3,9 +3,10 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v2.request.*
 import com.github.unhappychoice.circleci.v2.response.*
 import io.reactivex.Observable
+import java.lang.reflect.Proxy
 import java.time.OffsetDateTime
 
-class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
+class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     override fun getMe(): Observable<User> = Observable.just(User("id", "login", "name"))
 
     override fun getUser(id: String): Observable<User> = Observable.just(User("id", "login", "name"))
@@ -56,8 +57,6 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
         )
     )
 
-    override fun deleteContext(contextId: String): Observable<MessageResponse> = Observable.just(MessageResponse("message"))
-
     override fun listEnvironmentVariablesFromContext(
         contextId: String,
         pageToken: String?
@@ -75,33 +74,8 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
         )
     )
 
-    override fun addEnvironmentVariableToContext(
-        contextId: String,
-        envVarName: String,
-        request: AddEnvironmentVariableRequest
-    ): Observable<Any> = Observable.just(
-        EnvironmentVariable(
-            variable = "variable",
-            createdAt = OffsetDateTime.now(),
-            updatedAt = OffsetDateTime.now(),
-            contextId = "context_id"
-        )
-    )
-
-    override fun deleteEnvironmentVariableFromContext(contextId: String, envVarName: String): Observable<MessageResponse> =
-        Observable.just(MessageResponse("message"))
-
-    override fun getContextRestrictions(contextId: String, pageToken: String?): Observable<ContextProjectRestrictionsList> =
-        Observable.just(ContextProjectRestrictionsList(items = emptyList(), nextPageToken = "next_page_token"))
-
-    override fun createContextRestriction(contextId: String, request: CreateContextRestrictionRequest): Observable<RestrictionCreated> =
-        Observable.just(RestrictionCreated(id = "id", message = "message"))
-
-    override fun deleteContextRestriction(contextId: String, restrictionId: String): Observable<MessageResponse> =
-        Observable.just(MessageResponse("message"))
-
     // Deploy endpoints
-    override fun listComponents(pageToken: String?): Observable<ComponentListResponse> = Observable.just(
+    override fun listComponents(orgId: String, pageSize: Int, pageToken: String?): Observable<ComponentListResponse> = Observable.just(
         ComponentListResponse(
             items = listOf(Component(id = "id", name = "name", projectId = "project_id", createdAt = "created_at", updatedAt = "updated_at")),
             nextPageToken = "next_page_token"
@@ -119,7 +93,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
         )
     )
 
-    override fun listEnvironments(pageToken: String?): Observable<DeployEnvironmentListResponse> = Observable.just(
+    override fun listEnvironments(orgId: String, pageSize: Int, pageToken: String?): Observable<DeployEnvironmentListResponse> = Observable.just(
         DeployEnvironmentListResponse(
             items = listOf(DeployEnvironment(id = "id", name = "name", organizationId = "org_id", createdAt = "created_at", updatedAt = "updated_at")),
             nextPageToken = "next_page_token"
@@ -366,15 +340,11 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
     // Policy Management endpoints
     override fun getDecisionLogs(
         ownerId: String, context: String, status: String?, after: String?, before: String?, branch: String?, projectId: String?, buildNumber: String?, offset: Int?
-    ): Observable<DecisionLogListResponse> = Observable.just(
-        DecisionLogListResponse(
-            items = listOf(DecisionLog(id = "id", createdAt = "2024-01-01T00:00:00Z", decision = "PASS", metadata = mapOf("key" to "value"), policies = mapOf("policy" to "rego"), timeTakenMs = 100)),
-            nextPageToken = "next_page_token"
-        )
-    )
+    ): Observable<List<DecisionLog>> =
+        getDecisionLog(ownerId, context, "id").map { listOf(it) }
 
     override fun makeDecision(ownerId: String, context: String, request: MakeDecisionRequest): Observable<Decision> = Observable.just(
-        Decision(decision = "PASS")
+        Decision(status = "PASS")
     )
 
     override fun getDecisionSettings(ownerId: String, context: String): Observable<DecisionSettings> = Observable.just(
@@ -386,7 +356,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
     )
 
     override fun getDecisionLog(ownerId: String, context: String, decisionId: String): Observable<DecisionLog> = Observable.just(
-        DecisionLog(id = decisionId, createdAt = "2024-01-01T00:00:00Z", decision = "PASS", metadata = mapOf("key" to "value"), policies = mapOf("policy" to "rego"), timeTakenMs = 100)
+        DecisionLog(id = decisionId, createdAt = "2024-01-01T00:00:00Z", decision = Decision(status = "PASS"), metadata = mapOf("key" to "value"), policies = mapOf("policy" to "rego"), timeTakenMs = 100)
     )
 
     override fun getDecisionLogPolicyBundle(ownerId: String, context: String, decisionId: String): Observable<PolicyBundle> = Observable.just(
@@ -452,7 +422,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
     )
 
     override fun createPipelineDefinition(projectId: String, request: CreatePipelineDefinitionRequest): Observable<PipelineDefinition> = Observable.just(
-        PipelineDefinition(id = "id", projectId = projectId, name = request.name, createdAt = "created_at", updatedAt = "updated_at", definition = request.definition)
+        PipelineDefinition(id = "id", projectId = projectId, name = request.name, createdAt = "created_at", updatedAt = "updated_at", definition = "definition")
     )
 
     override fun getPipelineDefinition(projectId: String, pipelineDefinitionId: String): Observable<PipelineDefinition> = Observable.just(
@@ -460,7 +430,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
     )
 
     override fun updatePipelineDefinition(projectId: String, pipelineDefinitionId: String, request: UpdatePipelineDefinitionRequest): Observable<PipelineDefinition> = Observable.just(
-        PipelineDefinition(id = pipelineDefinitionId, projectId = projectId, name = request.name ?: "name", createdAt = "created_at", updatedAt = "updated_at", definition = request.definition ?: "definition")
+        PipelineDefinition(id = pipelineDefinitionId, projectId = projectId, name = request.name ?: "name", createdAt = "created_at", updatedAt = "updated_at", definition = "definition")
     )
 
     override fun deletePipelineDefinition(projectId: String, pipelineDefinitionId: String): Observable<PipelineDefinitionDeleted> = Observable.just(
@@ -617,7 +587,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
         id = "id", name = "name", description = "description", createdAt = "created_at", updatedAt = "updated_at",
         projectSlug = "project_slug", parameters = emptyMap(),
         actor = Actor(id = "id", login = "login", name = "name"),
-        timetables = listOf(com.github.unhappychoice.circleci.v2.response.Timetable(id = "id", attribution = "attribution", days = listOf("day"), hours = listOf(1), minutes = listOf(1), perHour = 1))
+        timetable = ScheduleTimetable(1, listOf(1), listOf("TUE"), null, null)
     )
 
     private fun createMockWebhook() = Webhook(
@@ -629,4 +599,11 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
         id = "id", pipelineDefinitionId = pipelineDefinitionId, projectId = projectId, name = "name",
         description = "description", createdAt = "created_at", updatedAt = "updated_at", type = "scheduled", parameters = emptyMap()
     )
+}
+
+private fun unsupportedEndpoints(): CircleCIAPIClientV2 {
+    val api = CircleCIAPIClientV2::class.java
+    return api.cast(Proxy.newProxyInstance(api.classLoader, arrayOf(api)) { _, method, _ ->
+        error("No stub for ${method.name}")
+    })
 }
