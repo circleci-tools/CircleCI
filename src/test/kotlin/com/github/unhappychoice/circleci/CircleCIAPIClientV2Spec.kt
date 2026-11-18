@@ -1268,23 +1268,13 @@ private fun expectNotNull(schedule: Schedule) {
     expect(schedule.parameters).not.to.be.`null`
     expect(schedule.actor).not.to.be.`null`
     expectNotNull(schedule.actor)
-    expect(schedule.timetables).not.to.be.empty
-    schedule.timetables.forEach { expectNotNull(it) }
+    expect(schedule.timetable.hoursOfDay).not.to.be.empty
 }
 
 private fun expectNotNull(actor: Actor) {
     expect(actor.id).not.to.be.`null`
     expect(actor.login).not.to.be.`null`
     expect(actor.name).not.to.be.`null`
-}
-
-private fun expectNotNull(timetable: Timetable) {
-    expect(timetable.id).not.to.be.`null`
-    expect(timetable.attribution).not.to.be.`null`
-    expect(timetable.days).not.to.be.empty
-    expect(timetable.hours).not.to.be.empty
-    expect(timetable.minutes).not.to.be.empty
-    expect(timetable.perHour).not.to.be.`null`
 }
 
 // Trigger types
