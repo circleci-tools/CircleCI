@@ -18,6 +18,7 @@ class CircleCIAPIClient(val token: String) {
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
   fun client1_1(): CircleCIAPIClientV1_1 = client1_1("https://circleci.com/api/v1.1/")
   fun clientV2(): CircleCIAPIClientV2 = clientV2("https://circleci.com/api/v2/")
+  fun clientV3(): CircleCIAPIClientV3 = clientV3("https://circleci.com/api/v3/")
 
   internal fun client1_1(baseUrl: String): CircleCIAPIClientV1_1 =
     retrofitV1(baseUrl).create(CircleCIAPIClientV1_1::class.java)
@@ -25,8 +26,17 @@ class CircleCIAPIClient(val token: String) {
   internal fun clientV2(baseUrl: String): CircleCIAPIClientV2 =
     retrofitV2(baseUrl).create(CircleCIAPIClientV2::class.java)
 
+  internal fun clientV3(baseUrl: String): CircleCIAPIClientV3 = Retrofit.Builder()
+    .client(okHttpV3)
+    .baseUrl(baseUrl)
+    .addConverterFactory(GsonConverterFactory.create())
+    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+    .build()
+    .create(CircleCIAPIClientV3::class.java)
+
   internal val okHttpV1 = authenticatedClient("Authorization", "Basic ${encodedToken()}")
   internal val okHttpV2 = authenticatedClient("Circle-Token", token)
+  private val okHttpV3 by lazy { authenticatedClient("Authorization", "Bearer $token") }
 
   private fun authenticatedClient(header: String, value: String): OkHttpClient = OkHttpClient.Builder()
     .followRedirects(false)
