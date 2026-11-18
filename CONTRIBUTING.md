@@ -11,7 +11,7 @@ the Gradle wrapper included in the repository.
 From the repository root, run the same Gradle tasks as CI:
 
 ```sh
-./gradlew test
+./gradlew build
 ./gradlew jacocoTestReport
 ```
 

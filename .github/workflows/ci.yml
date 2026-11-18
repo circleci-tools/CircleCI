@@ -21,8 +21,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Run tests
-        run: ./gradlew test
+      - name: Build and test
+        run: ./gradlew build
 
       - name: Generate coverage report
         run: ./gradlew jacocoTestReport
