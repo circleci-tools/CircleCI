@@ -487,8 +487,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val response = subscriber.values().first()
-                expect(response.items).not.to.be.empty
-                expect(response.nextPageToken).not.to.be.`null`
+                expect(response.single().decision.status).to.equal("PASS")
             }
 
             test("#makeDecision() should return response") {
@@ -497,7 +496,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val decision = subscriber.values().first()
-                expect(decision.decision).not.to.be.`null`
+                expect(decision.status).to.equal("PASS")
             }
 
             test("#getDecisionSettings() should return response") {
@@ -523,7 +522,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 val log = subscriber.values().first()
                 expect(log.id).not.to.be.`null`
                 expect(log.createdAt).not.to.be.`null`
-                expect(log.decision).not.to.be.`null`
+                expect(log.decision.status).to.equal("PASS")
                 expect(log.metadata).not.to.be.`null`
                 expect(log.policies).not.to.be.`null`
                 expect(log.timeTakenMs).not.to.be.`null`
