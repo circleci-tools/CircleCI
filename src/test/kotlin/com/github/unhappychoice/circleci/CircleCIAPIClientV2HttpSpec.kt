@@ -5,14 +5,17 @@ import com.github.unhappychoice.circleci.v2.request.CreateContextRestrictionRequ
 import com.github.unhappychoice.circleci.v2.request.CreatePipelineDefinitionRequest
 import com.github.unhappychoice.circleci.v2.request.CreateTriggerRequest
 import com.github.unhappychoice.circleci.v2.request.CreateTriggerRequest.EventSource
+import com.github.unhappychoice.circleci.v2.request.PatchClaimsRequest
 import com.github.unhappychoice.circleci.v2.request.PipelineDefinitionRepository
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
+import com.github.unhappychoice.circleci.v2.response.User
 import com.google.gson.JsonParser
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpServer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.spekframework.spek2.Spek
+import retrofit2.HttpException
 import java.net.InetSocketAddress
 import java.net.URI
 import java.util.concurrent.CompletableFuture
@@ -21,6 +24,23 @@ import java.util.concurrent.TimeUnit.SECONDS
 object CircleCIAPIClientV2HttpSpec : Spek({
     test("creates a V2 client with the default base URL") {
         assertNotNull(CircleCIAPIClient("test-token").clientV2())
+    }
+
+    test("decodes the authenticated user") {
+        val response = """{"id":"user-id","login":"test-login","name":"Test User"}"""
+        withResponse(response, "GET", "/me") { client ->
+            client.getMe().test().assertResult(User("user-id", "test-login", "Test User"))
+        }
+    }
+
+    test("returns the HTTP status and error body when authentication fails") {
+        val response = """{"message":"Unauthorized"}"""
+        withResponse(response, "GET", "/me", status = 401) { client ->
+            client.getMe().test().assertNoValues().assertNotComplete().assertError { error ->
+                error is HttpException && error.code() == 401 &&
+                    error.response()?.errorBody()?.string() == response
+            }
+        }
     }
 
     test("deletes a context") {
@@ -170,6 +190,41 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             )
         }
     }
+
+    test("patches organization OIDC claims with a top-level audience array and TTL") {
+        val response = """{"org_id":"org-id"}"""
+        val path = "/org/org-id/oidc-custom-claims"
+        val body = withResponse(response, "PATCH", path) { client ->
+            val request = PatchClaimsRequest(audience = listOf("service-a", "service-b"), ttl = "1h")
+            client.patchOrgClaims("org-id", request).blockingSingle()
+        }
+        val expected = """{"audience":["service-a","service-b"],"ttl":"1h"}"""
+        assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+    }
+
+    test("patches only the selected project OIDC claim") {
+        val response = """{"org_id":"org-id","project_id":"project-id"}"""
+        val path = "/org/org-id/project/project-id/oidc-custom-claims"
+        val body = withResponse(response, "PATCH", path) { client ->
+            val request = PatchClaimsRequest(audience = listOf("service-a"))
+            client.patchProjectClaims("org-id", "project-id", request).blockingSingle()
+        }
+        assertEquals(JsonParser.parseString("""{"audience":["service-a"]}"""), JsonParser.parseString(body))
+    }
+
+    test("deletes selected organization OIDC claims in a single query parameter") {
+        val path = "/org/org-id/oidc-custom-claims?claims=audience%2Cttl"
+        withResponse("""{"org_id":"org-id"}""", "DELETE", path) { client ->
+            client.deleteOrgClaims("org-id", "audience,ttl").blockingSingle()
+        }
+    }
+
+    test("deletes selected project OIDC claims in a single query parameter") {
+        val path = "/org/org-id/project/project-id/oidc-custom-claims?claims=audience%2Cttl"
+        withResponse("""{"org_id":"org-id","project_id":"project-id"}""", "DELETE", path) { client ->
+            client.deleteProjectClaims("org-id", "project-id", "audience,ttl").blockingSingle()
+        }
+    }
 })
 
 private fun assertTriggerRequest(request: CreateTriggerRequest, expected: String) {
@@ -182,7 +237,9 @@ private fun assertTriggerRequest(request: CreateTriggerRequest, expected: String
 
 private data class RecordedRequest(val method: String, val uri: URI, val headers: Headers, val body: String)
 
-private fun withResponse(json: String, method: String, path: String, call: (CircleCIAPIClientV2) -> Unit): String {
+private fun withResponse(
+    json: String, method: String, path: String, status: Int = 200, call: (CircleCIAPIClientV2) -> Unit
+): String {
     val request = CompletableFuture<RecordedRequest>()
     val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
     server.createContext("/") { exchange ->
@@ -191,7 +248,7 @@ private fun withResponse(json: String, method: String, path: String, call: (Circ
             request.complete(RecordedRequest(exchange.requestMethod, exchange.requestURI, exchange.requestHeaders, body))
             val response = json.toByteArray(Charsets.UTF_8)
             exchange.responseHeaders.set("Content-Type", "application/json")
-            exchange.sendResponseHeaders(200, response.size.toLong())
+            exchange.sendResponseHeaders(status, response.size.toLong())
             exchange.responseBody.use { it.write(response) }
         }
     }
