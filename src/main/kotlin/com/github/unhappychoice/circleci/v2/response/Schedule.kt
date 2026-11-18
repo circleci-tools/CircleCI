@@ -6,18 +6,26 @@ data class Schedule(
     val id: String,
     val description: String,
     val name: String,
-    @SerializedName("created_at") val createdAt: String,
-    @SerializedName("updated_at") val updatedAt: String,
-    @SerializedName("project_slug") val projectSlug: String,
+    @SerializedName("created-at") val createdAt: String,
+    @SerializedName("updated-at") val updatedAt: String,
+    @SerializedName("project-slug") val projectSlug: String,
     @SerializedName("parameters") val parameters: Map<String, Any>,
     @SerializedName("actor") val actor: Actor,
-    @SerializedName("timetables") val timetables: List<Timetable>
+    val timetable: ScheduleTimetable
 )
 
 data class Actor(
     val id: String,
     val login: String,
     val name: String
+)
+
+data class ScheduleTimetable(
+    @SerializedName("per-hour") val perHour: Int,
+    @SerializedName("hours-of-day") val hoursOfDay: List<Int>,
+    @SerializedName("days-of-week") val daysOfWeek: List<String>?,
+    @SerializedName("days-of-month") val daysOfMonth: List<Int>?,
+    val months: List<String>?
 )
 
 data class Timetable(
