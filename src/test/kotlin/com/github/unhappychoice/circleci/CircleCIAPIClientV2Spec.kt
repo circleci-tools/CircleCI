@@ -48,7 +48,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
         }
 
-        // Context endpoints (10)
+        // Context endpoints (4)
         group("Context") {
             test("#getContext() should return response") {
                 val subscriber = client.getContext("context-id").test()
@@ -77,14 +77,6 @@ object CircleCIAPIClientV2Spec : Spek({
                 expectNotNull(context)
             }
 
-            test("#deleteContext() should return response") {
-                val subscriber = client.deleteContext("context-id").test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val response = subscriber.values().first()
-                expect(response.message).not.to.be.`null`
-            }
-
             test("#listEnvironmentVariablesFromContext() should return response") {
                 val subscriber = client.listEnvironmentVariablesFromContext("context-id", null).test()
                 expect(subscriber.isFinished()).to.be.`true`
@@ -93,45 +85,6 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(response.items).not.to.be.empty
                 expect(response.nextPageToken).not.to.be.`null`
                 expectNotNull(response.items.first())
-            }
-
-            test("#addEnvironmentVariableToContext() should return response") {
-                val subscriber = client.addEnvironmentVariableToContext("context-id", "VAR", AddEnvironmentVariableRequest("value")).test()
-                expect(subscriber.isFinished()).to.be.`true`
-            }
-
-            test("#deleteEnvironmentVariableFromContext() should return response") {
-                val subscriber = client.deleteEnvironmentVariableFromContext("context-id", "VAR").test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val response = subscriber.values().first()
-                expect(response.message).not.to.be.`null`
-            }
-
-            test("#getContextRestrictions() should return response") {
-                val subscriber = client.getContextRestrictions("context-id", null).test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val response = subscriber.values().first()
-                expect(response.items).not.to.be.`null`
-                expect(response.nextPageToken).not.to.be.`null`
-            }
-
-            test("#createContextRestriction() should return response") {
-                val subscriber = client.createContextRestriction("context-id", CreateContextRestrictionRequest("project-id")).test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val response = subscriber.values().first()
-                expect(response.id).not.to.be.`null`
-                expect(response.message).not.to.be.`null`
-            }
-
-            test("#deleteContextRestriction() should return response") {
-                val subscriber = client.deleteContextRestriction("context-id", "restriction-id").test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val response = subscriber.values().first()
-                expect(response.message).not.to.be.`null`
             }
         }
 

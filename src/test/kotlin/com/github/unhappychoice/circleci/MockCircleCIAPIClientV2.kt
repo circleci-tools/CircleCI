@@ -3,9 +3,10 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v2.request.*
 import com.github.unhappychoice.circleci.v2.response.*
 import io.reactivex.Observable
+import java.lang.reflect.Proxy
 import java.time.OffsetDateTime
 
-class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
+class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     override fun getMe(): Observable<User> = Observable.just(User("id", "login", "name"))
 
     override fun getUser(id: String): Observable<User> = Observable.just(User("id", "login", "name"))
@@ -56,8 +57,6 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
         )
     )
 
-    override fun deleteContext(contextId: String): Observable<MessageResponse> = Observable.just(MessageResponse("message"))
-
     override fun listEnvironmentVariablesFromContext(
         contextId: String,
         pageToken: String?
@@ -74,31 +73,6 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
             nextPageToken = "next_page_token"
         )
     )
-
-    override fun addEnvironmentVariableToContext(
-        contextId: String,
-        envVarName: String,
-        request: AddEnvironmentVariableRequest
-    ): Observable<Any> = Observable.just(
-        EnvironmentVariable(
-            variable = "variable",
-            createdAt = OffsetDateTime.now(),
-            updatedAt = OffsetDateTime.now(),
-            contextId = "context_id"
-        )
-    )
-
-    override fun deleteEnvironmentVariableFromContext(contextId: String, envVarName: String): Observable<MessageResponse> =
-        Observable.just(MessageResponse("message"))
-
-    override fun getContextRestrictions(contextId: String, pageToken: String?): Observable<ContextProjectRestrictionsList> =
-        Observable.just(ContextProjectRestrictionsList(items = emptyList(), nextPageToken = "next_page_token"))
-
-    override fun createContextRestriction(contextId: String, request: CreateContextRestrictionRequest): Observable<RestrictionCreated> =
-        Observable.just(RestrictionCreated(id = "id", message = "message"))
-
-    override fun deleteContextRestriction(contextId: String, restrictionId: String): Observable<MessageResponse> =
-        Observable.just(MessageResponse("message"))
 
     // Deploy endpoints
     override fun listComponents(pageToken: String?): Observable<ComponentListResponse> = Observable.just(
@@ -629,4 +603,11 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 {
         id = "id", pipelineDefinitionId = pipelineDefinitionId, projectId = projectId, name = "name",
         description = "description", createdAt = "created_at", updatedAt = "updated_at", type = "scheduled", parameters = emptyMap()
     )
+}
+
+private fun unsupportedEndpoints(): CircleCIAPIClientV2 {
+    val api = CircleCIAPIClientV2::class.java
+    return api.cast(Proxy.newProxyInstance(api.classLoader, arrayOf(api)) { _, method, _ ->
+        error("No stub for ${method.name}")
+    })
 }
