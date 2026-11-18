@@ -3,6 +3,7 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v2.request.AddEnvironmentVariableRequest
 import com.github.unhappychoice.circleci.v2.request.CreateContextRestrictionRequest
 import com.github.unhappychoice.circleci.v2.request.CreatePipelineDefinitionRequest
+import com.github.unhappychoice.circleci.v2.request.CreateUsageExportRequest
 import com.github.unhappychoice.circleci.v2.request.PatchClaimsRequest
 import com.github.unhappychoice.circleci.v2.request.PipelineDefinitionRepository
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
@@ -11,6 +12,7 @@ import com.google.gson.JsonParser
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpServer
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.spekframework.spek2.Spek
 import retrofit2.HttpException
@@ -129,6 +131,20 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             val result = client.deleteContextRestriction("context-id", "restriction-id").blockingSingle()
             assertEquals("Restriction deleted", result.message)
         }
+    }
+
+    test("serializes usage export dates as start and end") {
+        val start = "2025-01-01T00:00:00Z"
+        val end = "2025-02-01T00:00:00Z"
+        val response = """{"usage_export_job_id":"e8235eed-f121-4ae3-9c72-2719d6572818"}"""
+        val body = withResponse(response, "POST", "/organizations/org-id/usage_export_job") { client ->
+            client.createUsageExport("org-id", CreateUsageExportRequest(start, end)).blockingSingle()
+        }
+        val json = JsonParser.parseString(body).asJsonObject
+        assertEquals(start, json.get("start")?.asString)
+        assertEquals(end, json.get("end")?.asString)
+        assertFalse(json.has("start_date"))
+        assertFalse(json.has("end_date"))
     }
 
     test("patches organization OIDC claims with a top-level audience array and TTL") {
