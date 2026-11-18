@@ -54,18 +54,32 @@ object CircleCIAPIClientV2HttpSpec : Spek({
     test("decodes job details using the CircleCI response schema") {
         withResponse(jobDetailsJson, "GET", jobPath) { client ->
             val details = client.getJobDetails(projectSlug, "123").blockingSingle()
-            assertEquals(123L, details.number)
-            assertEquals(42000L, details.duration)
-            assertEquals(projectSlug, details.project.slug)
-            assertEquals("medium", details.executor.resourceClass)
-            assertEquals("https://app.circleci.com/jobs/123", details.webUrl)
-            assertEquals("https://github.com/CircleCI-Public/api-preview-docs", details.project.externalUrl)
-            assertEquals(JobDetails.ParallelRun(0, "success"), details.parallelRuns.single())
-            assertEquals("build-and-test", details.latestWorkflow.name)
-            assertEquals("2020-01-13T18:51:38Z", details.createdAt)
-            assertEquals("2020-01-13T18:51:39Z", details.queuedAt)
-            assertEquals("2020-01-13T18:51:40Z", details.startedAt)
-            assertEquals("2020-01-13T18:52:22Z", details.stoppedAt)
+            val expected = JobDetails(
+                name = "build",
+                number = 123,
+                status = "success",
+                duration = 42000,
+                webUrl = "https://app.circleci.com/jobs/123",
+                project = JobDetails.Project(
+                    id = "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+                    slug = projectSlug,
+                    name = "api-preview-docs",
+                    externalUrl = "https://github.com/CircleCI-Public/api-preview-docs"
+                ),
+                executor = JobDetails.Executor(type = "docker", resourceClass = "medium"),
+                parallelism = 1,
+                parallelRuns = listOf(JobDetails.ParallelRun(0, "success")),
+                latestWorkflow = JobDetails.LatestWorkflow("8469d90e-f7b9-4642-80da-8aa6244431ac", "build-and-test"),
+                pipeline = JobDetails.Pipeline("5034460f-c7c4-4c43-9457-de07e2029e7b"),
+                organization = JobDetails.Organization("CircleCI-Public"),
+                contexts = listOf(JobDetails.Context("build-context")),
+                messages = listOf(JobDetails.Message("info", "Job completed", "success")),
+                createdAt = "2020-01-13T18:51:38Z",
+                queuedAt = "2020-01-13T18:51:39Z",
+                startedAt = "2020-01-13T18:51:40Z",
+                stoppedAt = "2020-01-13T18:52:22Z"
+            )
+            assertEquals(expected, details)
         }
     }
 
