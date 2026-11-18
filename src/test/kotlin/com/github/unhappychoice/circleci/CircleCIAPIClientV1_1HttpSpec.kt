@@ -2,11 +2,19 @@ package com.github.unhappychoice.circleci
 
 import com.sun.net.httpserver.HttpServer
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.spekframework.spek2.Spek
 import retrofit2.HttpException
 import java.net.InetSocketAddress
 
 object CircleCIAPIClientV1_1HttpSpec: Spek({
+  @Suppress("DEPRECATION")
+  test("#client1_1() should create a client that can prepare a user request") {
+    val client = CircleCIAPIClient("test-token").client1_1()
+
+    assertNotNull(client.getMe())
+  }
+
   test("#getMe() should send Basic authentication and decode the user") {
     val body = """
       {
