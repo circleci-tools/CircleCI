@@ -36,7 +36,9 @@ object PipelineRunHttpSpec : Spek({
 
     test("triggerPipelineRun rejects a response without an ID or skip message") {
         triggerPipelineRun(200, "{}")
-            .assertNoValues().assertNotComplete().assertError { error ->
+            .assertNoValues()
+            .assertNotComplete()
+            .assertError { error ->
                 error is JsonParseException && error.message == "Expected a pipeline ID or skip message"
             }
     }

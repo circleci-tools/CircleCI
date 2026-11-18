@@ -547,7 +547,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     override fun cancelWorkflow(workflowId: String): Observable<MessageResponse> = Observable.just(MessageResponse("message"))
 
-    override fun rerunWorkflow(workflowId: String, request: RerunWorkflowRequest?): Observable<WorkflowId> = Observable.just(WorkflowId("workflow_id"))
+    override fun rerunWorkflow(workflowId: String, request: RerunWorkflowRequest): Observable<WorkflowId> = Observable.just(WorkflowId("workflow_id"))
 
     override fun approveJob(workflowId: String, approvalRequestId: String): Observable<MessageResponse> = Observable.just(MessageResponse("message"))
 
