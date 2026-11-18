@@ -6,6 +6,7 @@ import com.github.unhappychoice.circleci.v2.request.CreatePipelineDefinitionRequ
 import com.github.unhappychoice.circleci.v2.request.CreateUsageExportRequest
 import com.github.unhappychoice.circleci.v2.request.PatchClaimsRequest
 import com.github.unhappychoice.circleci.v2.request.PipelineDefinitionRepository
+import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
 import com.github.unhappychoice.circleci.v2.response.User
 import com.google.gson.JsonParser
@@ -24,6 +25,35 @@ import java.util.concurrent.TimeUnit.SECONDS
 object CircleCIAPIClientV2HttpSpec : Spek({
     test("creates a V2 client with the default base URL") {
         assertNotNull(CircleCIAPIClient("test-token").clientV2())
+    }
+
+    val rollbackRequest = RollbackProjectRequest("production", "frontend", "1.1.0", "1.0.0")
+    val rollbackResponse = """{"id":"123e4567-e89b-12d3-a456-426614174000","rollback_type":"PIPELINE"}"""
+    val rollbackPath = "/projects/project-id/rollback"
+    val rollbackBody = """
+        {
+            "environment_name": "production",
+            "component_name": "frontend",
+            "current_version": "1.1.0",
+            "target_version": "1.0.0"
+        }
+    """.trimIndent()
+
+    test("rolls back a project with a reason") {
+        val body = withResponse(rollbackResponse, "POST", rollbackPath, 202) { client ->
+            client.rollbackProject("project-id", rollbackRequest.copy(reason = "Restore the previous release"))
+                .blockingSingle()
+        }
+        val expected = JsonParser.parseString(rollbackBody).asJsonObject
+        expected.addProperty("reason", "Restore the previous release")
+        assertEquals(expected, JsonParser.parseString(body))
+    }
+
+    test("rolls back a project without a reason") {
+        val body = withResponse(rollbackResponse, "POST", rollbackPath, 202) { client ->
+            client.rollbackProject("project-id", rollbackRequest).blockingSingle()
+        }
+        assertEquals(JsonParser.parseString(rollbackBody), JsonParser.parseString(body))
     }
 
     test("decodes the authenticated user") {
