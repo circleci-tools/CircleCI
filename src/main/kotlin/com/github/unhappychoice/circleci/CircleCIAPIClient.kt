@@ -13,7 +13,10 @@ class CircleCIAPIClient private constructor(
   private val baseUrl: String,
   private val callAdapterFactory: RxJava2CallAdapterFactory
 ) {
-  constructor(token: String) : this(token, BASE_URL, RxJava2CallAdapterFactory.create())
+  constructor(token: String) : this(token, BASE_URL)
+
+  internal constructor(token: String, baseUrl: String) :
+    this(token, baseUrl, RxJava2CallAdapterFactory.create())
 
   companion object {
     private const val BASE_URL = "https://circleci.com/api/"
