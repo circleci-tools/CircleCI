@@ -9,7 +9,7 @@ import org.spekframework.spek2.Spek
 
 @Suppress("DEPRECATION")
 object CircleCIAPIClientSpec : Spek({
-    val accessors = mapOf(
+    val accessors = mapOf<String, (CircleCIAPIClient) -> Any>(
         "v1" to CircleCIAPIClient::client,
         "v1.1" to CircleCIAPIClient::client1_1,
         "v2" to CircleCIAPIClient::clientV2
