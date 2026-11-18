@@ -6,4 +6,7 @@ data class ContinuePipelineRequest(
     @SerializedName("continuation-key") val continuationKey: String,
     val configuration: String,
     val parameters: Map<String, Any>?
-)
+) {
+    override fun toString() =
+        "ContinuePipelineRequest(continuationKey=[REDACTED], configuration=$configuration, parameters=$parameters)"
+}

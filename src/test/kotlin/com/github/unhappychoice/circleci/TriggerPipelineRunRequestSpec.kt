@@ -10,7 +10,7 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 import org.spekframework.spek2.Spek
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
+import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 
 object TriggerPipelineRunRequestSpec : Spek({
@@ -24,14 +24,14 @@ object TriggerPipelineRunRequestSpec : Spek({
                 .protocol(Protocol.HTTP_1_1)
                 .code(201)
                 .message("Created")
-                .body("{}".toResponseBody())
+                .body("""{"id":"pipeline-id"}""".toResponseBody())
                 .build()
         }.build()
         val client = Retrofit.Builder()
             .baseUrl("https://circleci.com/api/v2/")
             .client(httpClient)
             .addConverterFactory(GsonConverterFactory.create())
-            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+            .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
             .build()
             .create(CircleCIAPIClientV2::class.java)
         val request = TriggerPipelineRunRequest(

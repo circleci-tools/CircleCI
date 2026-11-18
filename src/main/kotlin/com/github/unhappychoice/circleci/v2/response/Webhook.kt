@@ -11,7 +11,11 @@ data class Webhook(
     @SerializedName("signing_secret") val signingSecret: String,
     @SerializedName("scope") val scope: WebhookScope,
     @SerializedName("events") val events: List<String>
-)
+) {
+    override fun toString() =
+        "Webhook(id=$id, name=$name, url=$url, createdAt=$createdAt, updatedAt=$updatedAt, " +
+            "signingSecret=[REDACTED], scope=$scope, events=$events)"
+}
 
 data class WebhookScope(
     val type: String,
