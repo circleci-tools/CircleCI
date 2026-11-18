@@ -2,6 +2,9 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.request.AddEnvironmentVariableRequest
 import com.github.unhappychoice.circleci.v2.request.CreateContextRestrictionRequest
+import com.github.unhappychoice.circleci.v2.request.CreatePipelineDefinitionRequest
+import com.github.unhappychoice.circleci.v2.request.PipelineDefinitionRepository
+import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
 import com.github.unhappychoice.circleci.v2.response.JobDetails
 import com.google.gson.JsonNull
 import com.google.gson.JsonParser
@@ -148,6 +151,39 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertEquals("Restriction created", result.message)
         }
         assertEquals("project-id", JsonParser.parseString(body).asJsonObject["restriction"].asString)
+    }
+
+    test("creates a pipeline definition with both sources") {
+        val request = CreatePipelineDefinitionRequest(
+            "pipeline",
+            CreatePipelineDefinitionRequest.ConfigSource(
+                "github_app", ".circleci/pipeline.yml", PipelineDefinitionRepository("config-repo-id")
+            ),
+            CreatePipelineDefinitionRequest.CheckoutSource("github_app", PipelineDefinitionRepository("checkout-repo-id"))
+        )
+        val body = withResponse("""{"id":"definition-id"}""", "POST", "/projects/project-id/pipeline-definitions") { client ->
+            client.createPipelineDefinition("project-id", request).blockingSingle()
+        }
+        val expected = """
+            {
+                "name":"pipeline",
+                "config_source":{"provider":"github_app","file_path":".circleci/pipeline.yml","repo":{"external_id":"config-repo-id"}},
+                "checkout_source":{"provider":"github_app","repo":{"external_id":"checkout-repo-id"}}
+            }
+        """
+        assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+    }
+
+    test("updates a pipeline definition checkout source independently") {
+        val request = UpdatePipelineDefinitionRequest(
+            checkoutSource = UpdatePipelineDefinitionRequest.CheckoutSource(repo = PipelineDefinitionRepository("new-repo-id"))
+        )
+        val path = "/projects/project-id/pipeline-definitions/definition-id"
+        val body = withResponse("""{"id":"definition-id"}""", "PATCH", path) { client ->
+            client.updatePipelineDefinition("project-id", "definition-id", request).blockingSingle()
+        }
+        val expected = """{"checkout_source":{"repo":{"external_id":"new-repo-id"}}}"""
+        assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
     }
 
     test("deletes a context restriction") {
