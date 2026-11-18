@@ -39,11 +39,14 @@ object CredentialRedactionSpec : Spek({
         val secret = "dummy-request-signing-secret"
         val request = CreateWebhookRequest(
             "example", "https://example.test", secret, WebhookScopeRequest("project", "project-id"),
-            listOf("workflow-completed")
+            listOf("workflow-completed"), verifyTls = false
         )
 
         assertRedacted(request, "signingSecret", secret)
-        assertEquals(secret, v2Gson.toJsonTree(request).asJsonObject["signing_secret"].asString)
+        assertTrue(request.toString().contains("verifyTls=false"))
+        val json = v2Gson.toJsonTree(request).asJsonObject
+        assertEquals(secret, json["signing-secret"].asString)
+        assertFalse(json["verify-tls"].asBoolean)
     }
 
     test("redacts the environment variable value and preserves it in request JSON") {
