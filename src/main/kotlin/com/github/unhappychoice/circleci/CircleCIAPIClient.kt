@@ -26,7 +26,12 @@ class CircleCIAPIClient(val token: String) {
     retrofitV2(baseUrl).create(CircleCIAPIClientV2::class.java)
 
   internal val okHttpV1 = authenticatedClient("Authorization", "Basic ${encodedToken()}")
-  internal val okHttpV2 = authenticatedClient("Circle-Token", token)
+  internal val okHttpV2 by lazy {
+    require(token.all { it == '\t' || it in ' '..'~' }) {
+      "CircleCI API token contains invalid header characters"
+    }
+    authenticatedClient("Circle-Token", token)
+  }
 
   private fun authenticatedClient(header: String, value: String): OkHttpClient = OkHttpClient.Builder()
     .followRedirects(false)
