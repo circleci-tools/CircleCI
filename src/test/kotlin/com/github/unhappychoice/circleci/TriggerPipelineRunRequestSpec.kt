@@ -24,7 +24,7 @@ object TriggerPipelineRunRequestSpec : Spek({
                 .protocol(Protocol.HTTP_1_1)
                 .code(201)
                 .message("Created")
-                .body("{}".toResponseBody())
+                .body("""{"id":"pipeline-id"}""".toResponseBody())
                 .build()
         }.build()
         val client = Retrofit.Builder()

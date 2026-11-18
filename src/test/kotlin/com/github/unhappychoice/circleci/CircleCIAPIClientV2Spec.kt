@@ -640,13 +640,10 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(response.createdAt).not.to.be.`null`
             }
 
-            test("#triggerPipelineRun() should return response") {
+            test("#triggerPipelineRun() should return the created pipeline") {
                 val request = TriggerPipelineRunRequest(definitionId = "definition-id")
-                val subscriber = client.triggerPipelineRun("gh", "unhappychoice", "circleci", request).test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val pipeline = subscriber.values().first()
-                expectNotNull(pipeline)
+                client.triggerPipelineRun("gh", "unhappychoice", "circleci", request).test()
+                    .assertResult(PipelineRunResult.Created("pipeline-id"))
             }
 
             test("#getPipelineByNumber() should return response") {
