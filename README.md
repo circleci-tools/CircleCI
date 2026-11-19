@@ -14,9 +14,12 @@ Existing RxJava 2 callers must update their imports and reactive integrations to
 ## Usage
 ```kotlin
 val token = "your-api-token"
-val client = CircleCIAPIClient(token).clientV2()
-client.getMe().subscribe { user -> println(user.login) }
+val client = CircleCIAPIClient.async(token).clientV2()
+client.getMe().subscribe({ user -> println(user.login) }, { error -> error.printStackTrace() })
 ```
+
+With `CircleCIAPIClient.async(token)`, `subscribe()` returns without waiting for the HTTP response.
+Use `CircleCIAPIClient(token)` to keep synchronous subscriptions.
 
 ## Installation
 
