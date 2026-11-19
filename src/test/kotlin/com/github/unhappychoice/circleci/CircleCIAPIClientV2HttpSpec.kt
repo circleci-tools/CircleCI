@@ -3,11 +3,13 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v2.request.AddEnvironmentVariableRequest
 import com.github.unhappychoice.circleci.v2.request.CreateContextRestrictionRequest
 import com.github.unhappychoice.circleci.v2.request.CreatePipelineDefinitionRequest
+import com.github.unhappychoice.circleci.v2.request.CreateURLOrbAllowListEntryRequest
 import com.github.unhappychoice.circleci.v2.request.CreateUsageExportRequest
 import com.github.unhappychoice.circleci.v2.request.PatchClaimsRequest
 import com.github.unhappychoice.circleci.v2.request.PipelineDefinitionRepository
 import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
+import com.github.unhappychoice.circleci.v2.response.URLOrbAllowListEntryAcknowledgment
 import com.github.unhappychoice.circleci.v2.response.User
 import com.google.gson.JsonParser
 import com.sun.net.httpserver.Headers
@@ -70,6 +72,25 @@ object CircleCIAPIClientV2HttpSpec : Spek({
                 error is HttpException && error.code() == 401 &&
                     error.response()?.errorBody()?.string() == response
             }
+        }
+    }
+
+    test("decodes the acknowledgment for creating a URL Orb allow-list entry") {
+        val response = """{"id":"entry-id","message":"Created."}"""
+        val path = "/organization/org-id/url-orb-allow-list"
+        val request = CreateURLOrbAllowListEntryRequest("Example", "https://example.com/", "none")
+        withResponse(response, "POST", path) { client ->
+            client.createUrlOrbAllowListEntry("org-id", request).test()
+                .assertResult(URLOrbAllowListEntryAcknowledgment("entry-id", "Created."))
+        }
+    }
+
+    test("decodes the acknowledgment for removing a URL Orb allow-list entry") {
+        val response = """{"id":"entry-id","message":"Removed."}"""
+        val path = "/organization/org-id/url-orb-allow-list/entry-id"
+        withResponse(response, "DELETE", path) { client ->
+            client.removeUrlOrbAllowListEntry("org-id", "entry-id").test()
+                .assertResult(URLOrbAllowListEntryAcknowledgment("entry-id", "Removed."))
         }
     }
 

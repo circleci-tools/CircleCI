@@ -399,21 +399,15 @@ object CircleCIAPIClientV2Spec : Spek({
                 expectNotNull(response.items.first())
             }
 
-            test("#createUrlOrbAllowListEntry() should return response") {
+            test("#createUrlOrbAllowListEntry() should return an acknowledgment") {
                 val request = CreateURLOrbAllowListEntryRequest("namespace", "origin", "auth")
-                val subscriber = client.createUrlOrbAllowListEntry("org-id", request).test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val entry = subscriber.values().first()
-                expectNotNull(entry)
+                client.createUrlOrbAllowListEntry("org-id", request).test()
+                    .assertResult(URLOrbAllowListEntryAcknowledgment("entry-id", "Created."))
             }
 
-            test("#removeUrlOrbAllowListEntry() should return response") {
-                val subscriber = client.removeUrlOrbAllowListEntry("org-id", "entry-id").test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val response = subscriber.values().first()
-                expect(response.message).not.to.be.`null`
+            test("#removeUrlOrbAllowListEntry() should return an acknowledgment") {
+                client.removeUrlOrbAllowListEntry("org-id", "entry-id").test()
+                    .assertResult(URLOrbAllowListEntryAcknowledgment("entry-id", "Removed."))
             }
         }
 
