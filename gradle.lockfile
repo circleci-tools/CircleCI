@@ -4,11 +4,13 @@
 # To regenerate this file, run: ./gradlew :dependencies --write-locks
 com.google.code.gson:gson:2.13.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.google.errorprone:error_prone_annotations:2.38.0=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-com.squareup.okhttp3:mockwebserver:4.12.0=testCompileClasspath,testRuntimeClasspath
-com.squareup.okhttp3:okhttp-tls:4.12.0=testCompileClasspath,testRuntimeClasspath
-com.squareup.okhttp3:okhttp:4.12.0=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-com.squareup.okio:okio-jvm:3.6.0=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-com.squareup.okio:okio:3.6.0=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.squareup.okhttp3:mockwebserver3:5.5.1=testCompileClasspath,testRuntimeClasspath
+com.squareup.okhttp3:mockwebserver:5.5.1=testCompileClasspath,testRuntimeClasspath
+com.squareup.okhttp3:okhttp-jvm:5.5.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.squareup.okhttp3:okhttp-tls:5.5.1=testCompileClasspath,testRuntimeClasspath
+com.squareup.okhttp3:okhttp:5.5.1=testCompileClasspath,testRuntimeClasspath
+com.squareup.okio:okio-jvm:3.18.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.squareup.okio:okio:3.18.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.squareup.retrofit2:adapter-rxjava3:3.0.0=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.squareup.retrofit2:converter-gson:3.0.0=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.squareup.retrofit2:retrofit:3.0.0=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
@@ -46,7 +48,7 @@ org.jetbrains.kotlin:kotlin-scripting-common:2.4.21=kotlinCompilerPluginClasspat
 org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable:2.4.21=kotlinCompilerPluginClasspathMain,kotlinCompilerPluginClasspathTest
 org.jetbrains.kotlin:kotlin-scripting-compiler-impl-embeddable:2.4.21=kotlinCompilerPluginClasspathMain,kotlinCompilerPluginClasspathTest
 org.jetbrains.kotlin:kotlin-scripting-jvm:2.4.21=kotlinCompilerPluginClasspathMain,kotlinCompilerPluginClasspathTest
-org.jetbrains.kotlin:kotlin-stdlib-common:2.4.21=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+org.jetbrains.kotlin:kotlin-stdlib-common:2.4.21=testRuntimeClasspath
 org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.4.21=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.21=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.jetbrains.kotlin:kotlin-stdlib:2.4.0=kotlinAbiValidationCompatClasspath
