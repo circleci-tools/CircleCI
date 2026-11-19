@@ -8,18 +8,42 @@
 
 This is [CircleCI](https://circleci.com) API Client for Kotlin.
 
-The client returns RxJava 3 observables (`io.reactivex.rxjava3.core.Observable`).
-Existing RxJava 2 callers must update their imports and reactive integrations to RxJava 3.
+The master branch returns RxJava 3 observables (`io.reactivex.rxjava3.core.Observable`).
+Version `2.1.2`, used below, returns RxJava 2 observables. When upgrading to a version
+that uses RxJava 3, update your imports and reactive integrations to RxJava 3.
 
-## Usage
+## Quick start
+
+Use version `2.1.2` in the dependency declaration below.
+Set `CIRCLECI_TOKEN` to your CircleCI personal API token, then run the following in your Kotlin application to print the authenticated user's login.
+
 ```kotlin
-val token = "your-api-token"
+import com.github.unhappychoice.circleci.CircleCIAPIClient
+
+fun main() {
+    val token = requireNotNull(System.getenv("CIRCLECI_TOKEN")) {
+        "Set CIRCLECI_TOKEN to your CircleCI personal API token."
+    }
+    val user = CircleCIAPIClient(token).clientV2().getMe().blockingFirst()
+    println(user.login)
+}
+```
+
+## Asynchronous calls on master
+
+When using a build from the master branch, use the same `token` from the quick start:
+
+```kotlin
 val client = CircleCIAPIClient.async(token).clientV2()
-client.getMe().subscribe({ user -> println(user.login) }, { error -> error.printStackTrace() })
+client.getMe().subscribe(
+    { user -> println(user.login) },
+    { error -> error.printStackTrace() },
+)
 ```
 
 With `CircleCIAPIClient.async(token)`, `subscribe()` returns without waiting for the HTTP response.
-Use `CircleCIAPIClient(token)` to keep synchronous subscriptions.
+Keep the application running until the success or error callback executes.
+Use `CircleCIAPIClient(token)` for synchronous subscriptions.
 
 ## Installation
 
@@ -30,7 +54,7 @@ allprojects {
     }
 }
 dependencies {
-    implementation 'com.github.circleci-tools:circleci:0.1.0'
+    implementation 'com.github.circleci-tools:circleci:2.1.2'
 }
 ```
 
