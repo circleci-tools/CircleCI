@@ -38,6 +38,7 @@ class CircleCIAPIClient private constructor(
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
   fun client1_1(): CircleCIAPIClientV1_1 = serviceV1_1
   fun clientV2(): CircleCIAPIClientV2 = serviceV2
+  fun clientV3(): CircleCIAPIClientV3 = serviceV3
 
   private val serviceV1 by lazy {
     retrofitV1("${baseUrl}v1/").create(CircleCIAPIClientV1::class.java)
@@ -51,6 +52,10 @@ class CircleCIAPIClient private constructor(
     clientV2("${baseUrl}v2/")
   }
 
+  private val serviceV3 by lazy {
+    retrofitV3("${baseUrl}v3/").create(CircleCIAPIClientV3::class.java)
+  }
+
   internal fun client1_1(baseUrl: String): CircleCIAPIClientV1_1 =
     retrofitV1(baseUrl).create(CircleCIAPIClientV1_1::class.java)
 
@@ -60,11 +65,14 @@ class CircleCIAPIClient private constructor(
   internal val okHttpV1 by lazy {
     authenticatedClient("Authorization", "Basic ${encodedToken()}")
   }
-  internal val okHttpV2 by lazy {
+  internal val okHttpV2 by lazy { authenticatedClient("Circle-Token", headerToken()) }
+  private val okHttpV3 by lazy { authenticatedClient("Authorization", "Bearer ${headerToken()}") }
+
+  private fun headerToken(): String {
     require(token.all { it == '\t' || it in ' '..'~' }) {
       "CircleCI API token contains invalid header characters"
     }
-    authenticatedClient("Circle-Token", token)
+    return token
   }
 
   private fun authenticatedClient(header: String, value: String): OkHttpClient = OkHttpClient.Builder()
@@ -93,6 +101,13 @@ class CircleCIAPIClient private constructor(
     .client(okHttpV2)
     .baseUrl(baseUrl)
     .addConverterFactory(converterV2())
+    .addCallAdapterFactory(callAdapterFactory)
+    .build()
+
+  private fun retrofitV3(baseUrl: String): Retrofit = Retrofit.Builder()
+    .client(okHttpV3)
+    .baseUrl(baseUrl)
+    .addConverterFactory(GsonConverterFactory.create())
     .addCallAdapterFactory(callAdapterFactory)
     .build()
 
