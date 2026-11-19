@@ -4,6 +4,7 @@ import com.github.unhappychoice.circleci.v1.request.AddSshKeyRequest
 import com.github.unhappychoice.circleci.v2.request.ContinuePipelineRequest
 import com.github.unhappychoice.circleci.v2.request.CreateEnvVarRequest
 import com.github.unhappychoice.circleci.v2.request.CreateWebhookRequest
+import com.github.unhappychoice.circleci.v2.request.UpdateWebhookRequest
 import com.github.unhappychoice.circleci.v2.request.WebhookScopeRequest
 import com.github.unhappychoice.circleci.v2.response.Webhook
 import com.github.unhappychoice.circleci.v2.response.WebhookScope
@@ -47,6 +48,14 @@ object CredentialRedactionSpec : Spek({
         val json = v2Gson.toJsonTree(request).asJsonObject
         assertEquals(secret, json["signing-secret"].asString)
         assertFalse(json["verify-tls"].asBoolean)
+    }
+
+    test("redacts the webhook update signing secret and preserves it in request JSON") {
+        val secret = "dummy-update-signing-secret"
+        val request = UpdateWebhookRequest(signingSecret = secret)
+
+        assertRedacted(request, "signingSecret", secret)
+        assertEquals(secret, v2Gson.toJsonTree(request).asJsonObject["signing-secret"].asString)
     }
 
     test("redacts the environment variable value and preserves it in request JSON") {
