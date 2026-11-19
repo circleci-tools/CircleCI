@@ -1,13 +1,19 @@
 package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.request.AddEnvironmentVariableRequest
+import com.github.unhappychoice.circleci.v2.request.ContinuePipelineRequest
 import com.github.unhappychoice.circleci.v2.request.CreateContextRestrictionRequest
 import com.github.unhappychoice.circleci.v2.request.CreatePipelineDefinitionRequest
+import com.github.unhappychoice.circleci.v2.request.CreateScheduleParameters
+import com.github.unhappychoice.circleci.v2.request.CreateScheduleTimetable
 import com.github.unhappychoice.circleci.v2.request.CreateUsageExportRequest
+import com.github.unhappychoice.circleci.v2.request.CreateWebhookRequest
 import com.github.unhappychoice.circleci.v2.request.PatchClaimsRequest
 import com.github.unhappychoice.circleci.v2.request.PipelineDefinitionRepository
 import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
+import com.github.unhappychoice.circleci.v2.request.ScheduleAttributionActor
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
+import com.github.unhappychoice.circleci.v2.request.WebhookScopeRequest
 import com.github.unhappychoice.circleci.v2.response.User
 import com.google.gson.JsonParser
 import com.sun.net.httpserver.Headers
@@ -25,6 +31,62 @@ import java.util.concurrent.TimeUnit.SECONDS
 object CircleCIAPIClientV2HttpSpec : Spek({
     test("creates a V2 client with the default base URL") {
         assertNotNull(CircleCIAPIClient("test-token").clientV2())
+    }
+
+    test("continues a pipeline with its configuration and parameters") {
+        val request = ContinuePipelineRequest("test-key", "version: 2.1", mapOf("deploy" to true))
+        val body = withResponse("""{"message":"Pipeline continued"}""", "POST", "/pipeline/continue") { client ->
+            client.continuePipeline(request).blockingSingle()
+        }
+        val expected = """{"continuation-key":"test-key","configuration":"version: 2.1","parameters":{"deploy":true}}"""
+        assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+    }
+
+    test("creates a schedule with its timetable and pipeline parameters") {
+        val request = CreateScheduleParameters(
+            name = "Nightly",
+            timetable = CreateScheduleTimetable(1, listOf(2), daysOfWeek = listOf("MON", "FRI")),
+            attributionActor = ScheduleAttributionActor.SYSTEM,
+            parameters = mapOf("branch" to "main", "deploy" to true)
+        )
+        val path = "/project/gh%2Fexample%2Fproject/schedule"
+        val body = withResponse("""{"id":"schedule-id"}""", "POST", path, 201) { client ->
+            client.createSchedule("gh/example/project", request).blockingSingle()
+        }
+        val expected = """
+            {
+                "name":"Nightly",
+                "timetable":{"per-hour":1,"hours-of-day":[2],"days-of-week":["MON","FRI"]},
+                "attribution-actor":"system",
+                "parameters":{"branch":"main","deploy":true}
+            }
+        """
+        assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+    }
+
+    test("creates a webhook with its scope, events, and TLS verification setting") {
+        val request = CreateWebhookRequest(
+            name = "Build notifications",
+            url = "https://example.com/webhook",
+            signingSecret = "test-secret",
+            scope = WebhookScopeRequest("project", "project-id"),
+            events = listOf("workflow-completed"),
+            verifyTls = false
+        )
+        val body = withResponse("""{"id":"webhook-id"}""", "POST", "/webhook", 201) { client ->
+            client.createWebhook(request).blockingSingle()
+        }
+        val expected = """
+            {
+                "name":"Build notifications",
+                "url":"https://example.com/webhook",
+                "signing-secret":"test-secret",
+                "scope":{"type":"project","id":"project-id"},
+                "events":["workflow-completed"],
+                "verify-tls":false
+            }
+        """
+        assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
     }
 
     val rollbackRequest = RollbackProjectRequest("production", "frontend", "1.1.0", "1.0.0")

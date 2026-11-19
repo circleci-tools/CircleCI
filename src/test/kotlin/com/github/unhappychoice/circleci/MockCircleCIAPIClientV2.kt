@@ -404,7 +404,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     override fun getMyProjectPipelines(projectSlug: String, pageToken: String?): Observable<PipelineListResponse> =
         Observable.just(createMockPipelineListResponse())
 
-    override fun continuePipeline(request: ContinuePipelineRequest?): Observable<MessageResponse> = Observable.just(MessageResponse("message"))
+    override fun continuePipeline(request: ContinuePipelineRequest): Observable<MessageResponse> = Observable.just(MessageResponse("message"))
 
     override fun triggerNewPipeline(projectSlug: String, request: TriggerNewPipelineRequest?): Observable<TriggerNewPipelineResponse> = Observable.just(
         TriggerNewPipelineResponse(number = 1, state = "state", id = "id", createdAt = "created_at")
@@ -514,7 +514,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         ScheduleListResponse(items = listOf(createMockSchedule()), nextPageToken = "next_page_token")
     )
 
-    override fun createSchedule(projectSlug: String, params: CreateScheduleParameters?): Observable<Schedule> = Observable.just(createMockSchedule())
+    override fun createSchedule(projectSlug: String, params: CreateScheduleParameters): Observable<Schedule> = Observable.just(createMockSchedule())
 
     override fun updateSchedule(scheduleId: String, params: UpdateScheduleParameters?): Observable<Schedule> = Observable.just(createMockSchedule())
 
@@ -527,7 +527,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         WebhookListResponse(items = listOf(createMockWebhook()), nextPageToken = "next_page_token")
     )
 
-    override fun createWebhook(request: CreateWebhookRequest?): Observable<Webhook> = Observable.just(createMockWebhook())
+    override fun createWebhook(request: CreateWebhookRequest): Observable<Webhook> = Observable.just(createMockWebhook())
 
     override fun updateWebhook(webhookId: String, request: UpdateWebhookRequest?): Observable<Webhook> = Observable.just(createMockWebhook())
 
