@@ -35,6 +35,12 @@ dependencyLocking {
     lockAllConfigurations()
 }
 
+configurations.implementation {
+    // The unified Kotlin standard library already contains these JDK extensions.
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+}
+
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.squareup.retrofit2:retrofit:3.0.0'
