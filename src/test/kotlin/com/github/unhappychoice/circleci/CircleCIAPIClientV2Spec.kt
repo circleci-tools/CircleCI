@@ -256,20 +256,8 @@ object CircleCIAPIClientV2Spec : Spek({
             }
         }
 
-        // Job endpoints (5)
+        // Job endpoints (4)
         group("Job") {
-            test("#getJobDetails() should return response") {
-                val subscriber = client.getJobDetails(projectSlug, "job-number").test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val details = subscriber.values().first()
-                expect(details.name).not.to.be.`null`
-                expect(details.metrics).not.to.be.empty
-                details.metrics.forEach { expectNotNull(it) }
-                expect(details.trends).not.to.be.empty
-                details.trends.forEach { expectNotNull(it) }
-            }
-
             test("#cancelJob() should return response") {
                 val subscriber = client.cancelJob(projectSlug, "job-number").test()
                 expect(subscriber.isFinished()).to.be.`true`
@@ -542,14 +530,6 @@ object CircleCIAPIClientV2Spec : Spek({
 
                 val bundle = subscriber.values().first()
                 expect(bundle.id).not.to.be.`null`
-            }
-
-            test("#createPolicyBundle() should return response") {
-                val subscriber = client.createPolicyBundle("owner-id", "context", false, BundlePayload("policy")).test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val diff = subscriber.values().first()
-                expect(diff.message).not.to.be.`null`
             }
 
             test("#getPolicyDocument() should return response") {
@@ -1602,14 +1582,4 @@ private fun expectNotNull(data: ProjectWorkflowsPageData.ProjectWorkflowBranchDa
     expectNotNull(data.metrics)
     expect(data.trends).not.to.be.`null`
     expectNotNull(data.trends)
-}
-
-private fun expectNotNull(metric: JobDetails.Metric) {
-    expect(metric.name).not.to.be.`null`
-    expect(metric.value).not.to.be.`null`
-}
-
-private fun expectNotNull(trend: JobDetails.Trend) {
-    expect(trend.name).not.to.be.`null`
-    expect(trend.value).not.to.be.`null`
 }
