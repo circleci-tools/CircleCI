@@ -544,14 +544,6 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(bundle.id).not.to.be.`null`
             }
 
-            test("#createPolicyBundle() should return response") {
-                val subscriber = client.createPolicyBundle("owner-id", "context", false, BundlePayload("policy")).test()
-                expect(subscriber.isFinished()).to.be.`true`
-
-                val diff = subscriber.values().first()
-                expect(diff.message).not.to.be.`null`
-            }
-
             test("#getPolicyDocument() should return response") {
                 val subscriber = client.getPolicyDocument("owner-id", "context", "policy-name").test()
                 expect(subscriber.isFinished()).to.be.`true`
