@@ -139,7 +139,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         )
     )
 
-    override fun getOrgSummaryData(orgSlug: String, reportingWindow: String?, projectNames: Any?): Observable<OrgSummaryData> = Observable.just(
+    override fun getOrgSummaryData(orgSlug: String, reportingWindow: String?, projectNames: List<String>?): Observable<OrgSummaryData> = Observable.just(
         OrgSummaryData(
             org_data = OrgSummaryData.OrgData(
                 metrics = OrgSummaryData.OrgMetrics(total_runs = 1, total_duration_secs = 1, total_credits_used = 1, success_rate = 1f, throughput = 1f),
@@ -157,7 +157,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     )
 
     override fun getProjectWorkflowsPageData(
-        projectSlug: String, reportingWindow: String?, branches: Any?, workflowNames: Any?
+        projectSlug: String, reportingWindow: String?, branches: List<String>?, workflowNames: List<String>?
     ): Observable<ProjectWorkflowsPageData> = Observable.just(
         ProjectWorkflowsPageData(
             org_id = "org_id", project_id = "project_id",
@@ -367,7 +367,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     )
 
     override fun createPolicyBundle(ownerId: String, context: String, dry: Boolean?, request: BundlePayload): Observable<BundleDiff> = Observable.just(
-        BundleDiff(message = "Bundle created")
+        BundleDiff(created = request.policies.keys.toList())
     )
 
     override fun getPolicyDocument(ownerId: String, context: String, policyName: String): Observable<Policy> = Observable.just(
