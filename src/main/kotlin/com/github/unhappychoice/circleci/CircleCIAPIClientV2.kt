@@ -122,15 +122,15 @@ interface CircleCIAPIClientV2 {
     fun getOrgSummaryData(
         @Path("org-slug") orgSlug: String,
         @Query("reporting-window") reportingWindow: String? = null,
-        @Query("project-names") projectNames: Any? = null
+        @Query("project-names") projectNames: List<String>? = null
     ): Observable<OrgSummaryData>
 
     @GET("insights/pages/{project-slug}/summary")
     fun getProjectWorkflowsPageData(
         @Path("project-slug") projectSlug: String,
         @Query("reporting-window") reportingWindow: String? = null,
-        @Query("branches") branches: Any? = null,
-        @Query("workflow-names") workflowNames: Any? = null
+        @Query("branches") branches: List<String>? = null,
+        @Query("workflow-names") workflowNames: List<String>? = null
     ): Observable<ProjectWorkflowsPageData>
 
     @GET("insights/{project-slug}/workflows")
@@ -617,10 +617,14 @@ interface CircleCIAPIClientV2 {
     @GET("webhook/{webhook-id}")
     fun getWebhookById(@Path("webhook-id") webhookId: String): Observable<Webhook>
 
+    fun getWebhooks(scopeId: String, scopeType: String): Observable<WebhookListResponse> =
+        getWebhooks(scopeId, scopeType, null)
+
     @GET("webhook")
     fun getWebhooks(
         @Query("scope-id") scopeId: String,
-        @Query("scope-type") scopeType: String
+        @Query("scope-type") scopeType: String,
+        @Query("is-enabled") isEnabled: Boolean?
     ): Observable<WebhookListResponse>
 
     @POST("webhook")
