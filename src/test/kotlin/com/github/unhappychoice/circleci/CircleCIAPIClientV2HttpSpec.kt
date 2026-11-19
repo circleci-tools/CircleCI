@@ -12,9 +12,12 @@ import com.github.unhappychoice.circleci.v2.response.User
 import com.google.gson.JsonParser
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpServer
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.spekframework.spek2.Spek
 import retrofit2.HttpException
 import java.net.InetSocketAddress
@@ -25,6 +28,25 @@ import java.util.concurrent.TimeUnit.SECONDS
 object CircleCIAPIClientV2HttpSpec : Spek({
     test("creates a V2 client with the default base URL") {
         assertNotNull(CircleCIAPIClient("test-token").clientV2())
+    }
+
+    test("fetches the next workflow job page using the returned token") {
+        MockWebServer().use { server ->
+            val path = "/api/v2/workflow/workflow-id/job"
+            server.enqueue(MockResponse().setBody("""{"items":[{"id":"build"}],"next_page_token":"page + token"}"""))
+            server.enqueue(MockResponse().setBody("""{"items":[{"id":"test"}],"next_page_token":null}"""))
+            val client = CircleCIAPIClient("test-token").clientV2(server.url("/api/v2/").toString())
+
+            val firstPage = client.getWorkflowJobs("workflow-id").blockingSingle()
+            assertEquals(path, server.takeRequest(1, SECONDS)?.path)
+            assertEquals("build", firstPage.items.single().id)
+            assertEquals("page + token", firstPage.nextPageToken)
+
+            val secondPage = client.getWorkflowJobs("workflow-id", firstPage.nextPageToken).blockingSingle()
+            assertEquals("$path?page-token=page%20%2B%20token", server.takeRequest(1, SECONDS)?.path)
+            assertEquals("test", secondPage.items.single().id)
+            assertNull(secondPage.nextPageToken)
+        }
     }
 
     val rollbackRequest = RollbackProjectRequest("production", "frontend", "1.1.0", "1.0.0")
