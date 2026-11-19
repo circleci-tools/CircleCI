@@ -842,7 +842,7 @@ object CircleCIAPIClientV2Spec : Spek({
         // Rollback endpoint (1)
         group("Rollback") {
             test("#rollbackProject() should return response") {
-                val request = RollbackProjectRequest("version")
+                val request = RollbackProjectRequest("production", "frontend", "1.1.0", "1.0.0")
                 val subscriber = client.rollbackProject(projectSlug, request).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
