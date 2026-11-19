@@ -20,6 +20,9 @@ On Windows, use `gradlew.bat` in place of `./gradlew`.
 The Spek tests live in `src/test/kotlin`. When changing an API method, look for
 the corresponding client spec and mock client there.
 
+See the [architecture guide](docs/architecture.md) for the client structure and
+where to start when changing an endpoint.
+
 ## Open a pull request
 
 Push your branch to your fork and open a pull request against
