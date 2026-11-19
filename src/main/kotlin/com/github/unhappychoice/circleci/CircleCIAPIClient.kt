@@ -12,7 +12,25 @@ import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import java.time.OffsetDateTime
 
-class CircleCIAPIClient(val token: String) {
+class CircleCIAPIClient private constructor(
+  val token: String,
+  private val baseUrl: String,
+  private val callAdapterFactory: RxJava3CallAdapterFactory
+) {
+  constructor(token: String) : this(token, BASE_URL)
+
+  internal constructor(token: String, baseUrl: String) :
+    this(token, baseUrl, RxJava3CallAdapterFactory.createSynchronous())
+
+  companion object {
+    private const val BASE_URL = "https://circleci.com/api/"
+
+    fun async(token: String): CircleCIAPIClient = async(token, BASE_URL)
+
+    internal fun async(token: String, baseUrl: String): CircleCIAPIClient =
+      CircleCIAPIClient(token, baseUrl, RxJava3CallAdapterFactory.create())
+  }
+
   @Deprecated("V1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
   fun client(): CircleCIAPIClientV1 = serviceV1
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
@@ -23,19 +41,19 @@ class CircleCIAPIClient(val token: String) {
   fun clientV3(): CircleCIAPIClientV3 = serviceV3
 
   private val serviceV1 by lazy {
-    retrofitV1("https://circleci.com/api/v1/").create(CircleCIAPIClientV1::class.java)
+    retrofitV1("${baseUrl}v1/").create(CircleCIAPIClientV1::class.java)
   }
 
   private val serviceV1_1 by lazy {
-    client1_1("https://circleci.com/api/v1.1/")
+    client1_1("${baseUrl}v1.1/")
   }
 
   private val serviceV2 by lazy {
-    clientV2("https://circleci.com/api/v2/")
+    clientV2("${baseUrl}v2/")
   }
 
   private val serviceV3 by lazy {
-    clientV3("https://circleci.com/api/v3/")
+    retrofitV3("${baseUrl}v3/").create(CircleCIAPIClientV3::class.java)
   }
 
   internal fun client1_1(baseUrl: String): CircleCIAPIClientV1_1 =
@@ -43,14 +61,6 @@ class CircleCIAPIClient(val token: String) {
 
   internal fun clientV2(baseUrl: String): CircleCIAPIClientV2 =
     retrofitV2(baseUrl).create(CircleCIAPIClientV2::class.java)
-
-  internal fun clientV3(baseUrl: String): CircleCIAPIClientV3 = Retrofit.Builder()
-    .client(okHttpV3)
-    .baseUrl(baseUrl)
-    .addConverterFactory(GsonConverterFactory.create())
-    .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
-    .build()
-    .create(CircleCIAPIClientV3::class.java)
 
   internal val okHttpV1 = authenticatedClient("Authorization", "Basic ${encodedToken()}")
   internal val okHttpV2 by lazy { authenticatedClient("Circle-Token", headerToken()) }
@@ -82,14 +92,21 @@ class CircleCIAPIClient(val token: String) {
     .client(okHttpV1)
     .baseUrl(baseUrl)
     .addConverterFactory(converterV1())
-    .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
+    .addCallAdapterFactory(callAdapterFactory)
     .build()
 
   internal fun retrofitV2(baseUrl: String): Retrofit = Retrofit.Builder()
     .client(okHttpV2)
     .baseUrl(baseUrl)
     .addConverterFactory(converterV2())
-    .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
+    .addCallAdapterFactory(callAdapterFactory)
+    .build()
+
+  private fun retrofitV3(baseUrl: String): Retrofit = Retrofit.Builder()
+    .client(okHttpV3)
+    .baseUrl(baseUrl)
+    .addConverterFactory(GsonConverterFactory.create())
+    .addCallAdapterFactory(callAdapterFactory)
     .build()
 
   private fun converterV1() = GsonConverterFactory.create(

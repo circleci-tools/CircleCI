@@ -7,6 +7,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.spekframework.spek2.Spek
@@ -77,13 +78,29 @@ object CircleCIAPIClientV3HttpSpec : Spek({
             assertNull(response.data.attributes.currentOutcome)
         }
     }
+
+    test("delivers v3 responses asynchronously when created with the async factory") {
+        MockWebServer().use { server ->
+            server.enqueue(run("ended", "\"succeeded\""))
+            val subscribingThread = Thread.currentThread()
+            val client = CircleCIAPIClient.async("test-token", server.url("/api/").toString()).clientV3()
+            val expected = RunResponse(RunResponse.Data(runId, RunResponse.Attributes("ended", "succeeded")))
+
+            client.getRun(runId)
+                .doOnNext { assertNotSame(subscribingThread, Thread.currentThread()) }
+                .test()
+                .awaitDone(5, SECONDS)
+                .assertResult(expected)
+            assertRequest(server.takeRequest(5, SECONDS)!!, "GET", "/api/v3/runs/$runId")
+        }
+    }
 })
 
 private const val pipelineId = "11111111-1111-4111-8111-111111111111"
 private const val projectId = "22222222-2222-4222-8222-222222222222"
 private const val runId = "33333333-3333-4333-8333-333333333333"
 
-private fun MockWebServer.client() = CircleCIAPIClient("test-token").clientV3(url("/api/v3/").toString())
+private fun MockWebServer.client() = CircleCIAPIClient("test-token", url("/api/").toString()).clientV3()
 
 private fun createdRun() = MockResponse().setResponseCode(201).setBody(
     """{"data":{"id":"$runId","attributes":{"created_at":"2026-11-18T00:00:00Z"}}}"""
