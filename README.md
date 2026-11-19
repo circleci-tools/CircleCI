@@ -29,6 +29,22 @@ fun main() {
 }
 ```
 
+## Asynchronous calls on master
+
+When using a build from the master branch, use the same `token` from the quick start:
+
+```kotlin
+val client = CircleCIAPIClient.async(token).clientV2()
+client.getMe().subscribe(
+    { user -> println(user.login) },
+    { error -> error.printStackTrace() },
+)
+```
+
+With `CircleCIAPIClient.async(token)`, `subscribe()` returns without waiting for the HTTP response.
+Keep the application running until the success or error callback executes.
+Use `CircleCIAPIClient(token)` for synchronous subscriptions.
+
 ## Installation
 
 ```groovy
