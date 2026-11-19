@@ -15,12 +15,12 @@ interfaces describe the legacy endpoints behind the deprecated accessors.
    and returns an RxJava 3 `Observable<User>`.
 2. Subscribing runs the HTTP call. `CircleCIAPIClient(token)` uses a
    synchronous call adapter, and `CircleCIAPIClient.async(token)` uses an
-   asynchronous one. Retrofit uses Gson to serialize request bodies, and
-   OkHttp sends the token in `Circle-Token` for v2 or uses Basic
-   authentication for the legacy clients.
-3. Retrofit uses Gson to decode responses into
-   the Kotlin types in [`v2/request`](../src/main/kotlin/com/github/unhappychoice/circleci/v2/request)
-   and [`v2/response`](../src/main/kotlin/com/github/unhappychoice/circleci/v2/response).
+   asynchronous one. OkHttp sends the token in `Circle-Token` for v2 or
+   uses Basic authentication for the legacy clients.
+3. For v2, Retrofit uses Gson to serialize request body models in
+   [`v2/request`](../src/main/kotlin/com/github/unhappychoice/circleci/v2/request)
+   to JSON and decode JSON responses into models in
+   [`v2/response`](../src/main/kotlin/com/github/unhappychoice/circleci/v2/response).
    The v2 Gson configuration in `CircleCIAPIClient.kt` includes custom
    deserializers for pipeline values and `OffsetDateTime`.
 
