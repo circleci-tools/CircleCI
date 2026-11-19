@@ -9,9 +9,11 @@ import com.github.unhappychoice.circleci.v2.request.PipelineDefinitionRepository
 import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
 import com.github.unhappychoice.circleci.v2.response.JobDetails
+import com.github.unhappychoice.circleci.v2.response.TestsResponse
 import com.github.unhappychoice.circleci.v2.response.User
 import com.google.gson.JsonNull
 import com.google.gson.JsonParser
+import com.google.gson.JsonSyntaxException
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpServer
 import org.junit.Assert.assertEquals
@@ -32,6 +34,47 @@ object CircleCIAPIClientV2HttpSpec : Spek({
 
     val projectSlug = "gh/CircleCI-Public/api-preview-docs"
     val jobPath = "/project/gh%2FCircleCI-Public%2Fapi-preview-docs/job/123"
+    val jobTestsPath = "/project/gh%2FCircleCI-Public%2Fapi-preview-docs/123/tests"
+
+    test("decodes job test results and the next page token") {
+        val response = """
+            {
+              "items": [{
+                "message": "Expected 2 but got 1",
+                "source": "junit",
+                "run_time": 0.125,
+                "file": "CalculatorTest.kt",
+                "result": "failure",
+                "name": "addsNumbers",
+                "classname": "CalculatorTest"
+              }],
+              "next_page_token": "next-page"
+            }
+        """.trimIndent()
+        val item = TestsResponse.Test(
+            "Expected 2 but got 1", "junit", 0.125, "CalculatorTest.kt", "failure", "addsNumbers", "CalculatorTest"
+        )
+        withResponse(response, "GET", jobTestsPath) { client ->
+            client.getTests(projectSlug, "123").test().assertResult(TestsResponse(listOf(item), "next-page"))
+        }
+    }
+
+    test("rejects job test results with a non-array items field") {
+        withResponse("""{"items":{}}""", "GET", jobTestsPath) { client ->
+            client.getTests(projectSlug, "123").test().assertFailure(JsonSyntaxException::class.java)
+        }
+    }
+
+    test("returns the HTTP status and error body when the job is missing") {
+        val response = """{"message":"Job not found"}"""
+        withResponse(response, "GET", jobTestsPath, status = 404) { client ->
+            client.getTests(projectSlug, "123").test().assertNoValues().assertNotComplete().assertError { error ->
+                error is HttpException && error.code() == 404 &&
+                    error.response()?.errorBody()?.string() == response
+            }
+        }
+    }
+
     val jobDetailsJson = """
         {
           "web_url": "https://app.circleci.com/jobs/123",
