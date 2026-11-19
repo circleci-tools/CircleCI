@@ -3,8 +3,10 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v2.request.AddEnvironmentVariableRequest
 import com.github.unhappychoice.circleci.v2.request.CreateContextRestrictionRequest
 import com.github.unhappychoice.circleci.v2.request.CreatePipelineDefinitionRequest
+import com.github.unhappychoice.circleci.v2.request.CreateUsageExportRequest
 import com.github.unhappychoice.circleci.v2.request.PatchClaimsRequest
 import com.github.unhappychoice.circleci.v2.request.PipelineDefinitionRepository
+import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
 import com.github.unhappychoice.circleci.v2.response.ContextRestriction
 import com.github.unhappychoice.circleci.v2.response.User
@@ -12,6 +14,7 @@ import com.google.gson.JsonParser
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpServer
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.spekframework.spek2.Spek
 import retrofit2.HttpException
@@ -23,6 +26,35 @@ import java.util.concurrent.TimeUnit.SECONDS
 object CircleCIAPIClientV2HttpSpec : Spek({
     test("creates a V2 client with the default base URL") {
         assertNotNull(CircleCIAPIClient("test-token").clientV2())
+    }
+
+    val rollbackRequest = RollbackProjectRequest("production", "frontend", "1.1.0", "1.0.0")
+    val rollbackResponse = """{"id":"123e4567-e89b-12d3-a456-426614174000","rollback_type":"PIPELINE"}"""
+    val rollbackPath = "/projects/project-id/rollback"
+    val rollbackBody = """
+        {
+            "environment_name": "production",
+            "component_name": "frontend",
+            "current_version": "1.1.0",
+            "target_version": "1.0.0"
+        }
+    """.trimIndent()
+
+    test("rolls back a project with a reason") {
+        val body = withResponse(rollbackResponse, "POST", rollbackPath, 202) { client ->
+            client.rollbackProject("project-id", rollbackRequest.copy(reason = "Restore the previous release"))
+                .blockingSingle()
+        }
+        val expected = JsonParser.parseString(rollbackBody).asJsonObject
+        expected.addProperty("reason", "Restore the previous release")
+        assertEquals(expected, JsonParser.parseString(body))
+    }
+
+    test("rolls back a project without a reason") {
+        val body = withResponse(rollbackResponse, "POST", rollbackPath, 202) { client ->
+            client.rollbackProject("project-id", rollbackRequest).blockingSingle()
+        }
+        assertEquals(JsonParser.parseString(rollbackBody), JsonParser.parseString(body))
     }
 
     test("decodes the authenticated user") {
@@ -166,6 +198,20 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             val result = client.deleteContextRestriction("context-id", "restriction-id").blockingSingle()
             assertEquals("Restriction deleted", result.message)
         }
+    }
+
+    test("serializes usage export dates as start and end") {
+        val start = "2025-01-01T00:00:00Z"
+        val end = "2025-02-01T00:00:00Z"
+        val response = """{"usage_export_job_id":"e8235eed-f121-4ae3-9c72-2719d6572818"}"""
+        val body = withResponse(response, "POST", "/organizations/org-id/usage_export_job") { client ->
+            client.createUsageExport("org-id", CreateUsageExportRequest(start, end)).blockingSingle()
+        }
+        val json = JsonParser.parseString(body).asJsonObject
+        assertEquals(start, json.get("start")?.asString)
+        assertEquals(end, json.get("end")?.asString)
+        assertFalse(json.has("start_date"))
+        assertFalse(json.has("end_date"))
     }
 
     test("patches organization OIDC claims with a top-level audience array and TTL") {
