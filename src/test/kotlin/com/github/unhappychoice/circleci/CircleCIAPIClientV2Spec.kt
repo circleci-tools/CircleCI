@@ -533,7 +533,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val bundle = subscriber.values().first()
-                expect(bundle.id).not.to.be.`null`
+                expect(bundle.getValue("policy-name").single().name).to.equal("policy-name")
             }
 
             test("#getPolicyBundle() should return response") {
@@ -541,7 +541,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val bundle = subscriber.values().first()
-                expect(bundle.id).not.to.be.`null`
+                expect(bundle.getValue("policy-name").single().name).to.equal("policy-name")
             }
 
             test("#createPolicyBundle() should return response") {
