@@ -248,9 +248,8 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     )
 
     // Job endpoints
-    override fun getJobDetails(projectSlug: String, jobNumber: String): Observable<JobDetails> = Observable.just(
-        JobDetails(name = "name", metrics = listOf(JobDetails.Metric("metric name", 0.0)), trends = listOf(JobDetails.Trend("trend name", 0.0)))
-    )
+    override fun getJobDetails(projectSlug: String, jobNumber: String): Observable<JobDetails> =
+        Observable.error(UnsupportedOperationException("Job details are covered by the HTTP spec"))
 
     override fun getJobArtifacts(projectSlug: String, jobNumber: String): Observable<Artifact.ArtifactListResponse> = Observable.just(
         Artifact.ArtifactListResponse(items = listOf(Artifact(path = "path", nodeIndex = 0, url = "url")), nextPageToken = "next_page_token")
@@ -535,6 +534,8 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     // Workflow endpoints
     override fun getWorkflowById(workflowId: String): Observable<Workflow> = Observable.just(createMockWorkflow())
+
+    override fun getWorkflowJobs(workflowId: String): Observable<JobListResponse> = getWorkflowJobs(workflowId, null)
 
     override fun getWorkflowJobs(workflowId: String, pageToken: String?): Observable<JobListResponse> = Observable.just(
         JobListResponse(

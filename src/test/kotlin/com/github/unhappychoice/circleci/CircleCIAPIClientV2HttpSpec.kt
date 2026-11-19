@@ -8,7 +8,9 @@ import com.github.unhappychoice.circleci.v2.request.PatchClaimsRequest
 import com.github.unhappychoice.circleci.v2.request.PipelineDefinitionRepository
 import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
+import com.github.unhappychoice.circleci.v2.response.JobDetails
 import com.github.unhappychoice.circleci.v2.response.User
+import com.google.gson.JsonNull
 import com.google.gson.JsonParser
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpServer
@@ -18,6 +20,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.spekframework.spek2.Spek
 import retrofit2.HttpException
 import java.net.InetSocketAddress
@@ -35,6 +38,7 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             val path = "/api/v2/workflow/workflow-id/job"
             server.enqueue(MockResponse().setBody("""{"items":[{"id":"build"}],"next_page_token":"page + token"}"""))
             server.enqueue(MockResponse().setBody("""{"items":[{"id":"test"}],"next_page_token":null}"""))
+            server.enqueue(MockResponse().setBody("""{"items":[],"next_page_token":null}"""))
             val client = CircleCIAPIClient("test-token").clientV2(server.url("/api/v2/").toString())
 
             val firstPage = client.getWorkflowJobs("workflow-id").blockingSingle()
@@ -46,6 +50,89 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertEquals("$path?page-token=page%20%2B%20token", server.takeRequest(1, SECONDS)?.path)
             assertEquals("test", secondPage.items.single().id)
             assertNull(secondPage.nextPageToken)
+
+            assertTrue(client.getWorkflowJobs("workflow-id", null).blockingSingle().items.isEmpty())
+            assertEquals(path, server.takeRequest(1, SECONDS)?.path)
+        }
+    }
+
+    val projectSlug = "gh/CircleCI-Public/api-preview-docs"
+    val jobPath = "/project/gh%2FCircleCI-Public%2Fapi-preview-docs/job/123"
+    val jobDetailsJson = """
+        {
+          "web_url": "https://app.circleci.com/jobs/123",
+          "project": {
+            "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+            "slug": "$projectSlug",
+            "name": "api-preview-docs",
+            "external_url": "https://github.com/CircleCI-Public/api-preview-docs"
+          },
+          "parallel_runs": [{"index": 0, "status": "success"}],
+          "started_at": "2020-01-13T18:51:40Z",
+          "latest_workflow": {"id": "8469d90e-f7b9-4642-80da-8aa6244431ac", "name": "build-and-test"},
+          "name": "build",
+          "executor": {"type": "docker", "resource_class": "medium"},
+          "parallelism": 1,
+          "status": "success",
+          "number": 123,
+          "pipeline": {"id": "5034460f-c7c4-4c43-9457-de07e2029e7b"},
+          "duration": 42000,
+          "created_at": "2020-01-13T18:51:38Z",
+          "messages": [{"type": "info", "message": "Job completed", "reason": "success"}],
+          "contexts": [{"name": "build-context"}],
+          "organization": {"name": "CircleCI-Public"},
+          "queued_at": "2020-01-13T18:51:39Z",
+          "stopped_at": "2020-01-13T18:52:22Z"
+        }
+    """.trimIndent()
+
+    test("decodes job details using the CircleCI response schema") {
+        withResponse(jobDetailsJson, "GET", jobPath) { client ->
+            val details = client.getJobDetails(projectSlug, "123").blockingSingle()
+            val expected = JobDetails(
+                name = "build",
+                number = 123,
+                status = "success",
+                duration = 42000,
+                webUrl = "https://app.circleci.com/jobs/123",
+                project = JobDetails.Project(
+                    id = "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+                    slug = projectSlug,
+                    name = "api-preview-docs",
+                    externalUrl = "https://github.com/CircleCI-Public/api-preview-docs"
+                ),
+                executor = JobDetails.Executor(type = "docker", resourceClass = "medium"),
+                parallelism = 1,
+                parallelRuns = listOf(JobDetails.ParallelRun(0, "success")),
+                latestWorkflow = JobDetails.LatestWorkflow("8469d90e-f7b9-4642-80da-8aa6244431ac", "build-and-test"),
+                pipeline = JobDetails.Pipeline("5034460f-c7c4-4c43-9457-de07e2029e7b"),
+                organization = JobDetails.Organization("CircleCI-Public"),
+                contexts = listOf(JobDetails.Context("build-context")),
+                messages = listOf(JobDetails.Message("info", "Job completed", "success")),
+                createdAt = "2020-01-13T18:51:38Z",
+                queuedAt = "2020-01-13T18:51:39Z",
+                startedAt = "2020-01-13T18:51:40Z",
+                stoppedAt = "2020-01-13T18:52:22Z"
+            )
+            assertEquals(expected, details)
+        }
+    }
+
+    test("decodes job details with null and omitted fields") {
+        val response = JsonParser.parseString(jobDetailsJson).asJsonObject.apply {
+            add("duration", JsonNull.INSTANCE)
+            add("status", JsonNull.INSTANCE)
+            remove("stopped_at")
+            getAsJsonObject("project").remove("id")
+            getAsJsonArray("messages")[0].asJsonObject.remove("reason")
+        }
+        withResponse(response.toString(), "GET", jobPath) { client ->
+            val details = client.getJobDetails(projectSlug, "123").blockingSingle()
+            assertNull(details.duration)
+            assertNull(details.status)
+            assertNull(details.stoppedAt)
+            assertNull(details.project.id)
+            assertNull(details.messages.single().reason)
         }
     }
 
