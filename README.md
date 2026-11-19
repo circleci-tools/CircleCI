@@ -45,6 +45,23 @@ With `CircleCIAPIClient.async(token)`, `subscribe()` returns without waiting for
 Keep the application running until the success or error callback executes.
 Use `CircleCIAPIClient(token)` for synchronous subscriptions.
 
+### CircleCI Cloud API v3
+
+Use a personal API token and the ID of an existing pipeline to trigger a run and
+look up its status. `currentOutcome` can be null while the run is in progress.
+
+```kotlin
+import com.github.unhappychoice.circleci.CircleCIAPIClient
+import com.github.unhappychoice.circleci.v3.request.TriggerRunRequest
+
+val v3 = CircleCIAPIClient("your-api-token").clientV3()
+val created = v3.triggerRun(TriggerRunRequest(pipelineId = "your-pipeline-id")).blockingSingle()
+val run = v3.getRun(created.data.id).blockingSingle().data
+println("${run.id}: ${run.attributes.phase} (${run.attributes.currentOutcome})")
+```
+
+For CircleCI Server, use `clientV2()`.
+
 ## Installation
 
 ```groovy
