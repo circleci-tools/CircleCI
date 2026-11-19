@@ -116,9 +116,11 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
                     `time-wasted` = 1, `workflow-created-at` = "workflow-created-at", `workflow-id` = "workflow-id",
                     classname = "classname", `pipeline-number` = 1, `workflow-name` = "workflow-name", `test-name` = "test-name",
                     `job-name` = "job-name", `job-number` = 1, `pipeline-id` = "pipeline-id", `rerun-workflow-id` = "rerun-workflow-id",
-                    `test-result` = "test-result", `workflow-rerun-number` = 1
+                    `test-result` = "test-result", `workflow-rerun-number` = 1,
+                    `times-flaked` = 2, source = "junit", file = "ExampleTest.kt"
                 )
-            )
+            ),
+            `total-flaky-tests` = 1.0
         )
     )
 
