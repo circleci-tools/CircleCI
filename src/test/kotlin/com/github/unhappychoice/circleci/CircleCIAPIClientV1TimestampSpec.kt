@@ -2,7 +2,7 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v1.response.Build
 import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.Assert.assertEquals
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 import java.time.Instant
 import java.util.TimeZone

@@ -2,7 +2,7 @@ package com.github.unhappychoice.circleci
 
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import org.junit.Assert.assertEquals
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 
 object InsightsFilterRequestSpec : Spek({

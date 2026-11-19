@@ -10,9 +10,9 @@ import com.github.unhappychoice.circleci.v2.response.WebhookScope
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
 
 object CredentialRedactionSpec : Spek({

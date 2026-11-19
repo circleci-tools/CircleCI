@@ -16,10 +16,10 @@ import com.google.gson.JsonParser
 import com.google.gson.JsonSyntaxException
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpServer
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.spekframework.spek2.Spek
 import retrofit2.HttpException
 import java.net.InetSocketAddress
