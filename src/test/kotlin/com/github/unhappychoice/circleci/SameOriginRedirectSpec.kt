@@ -104,7 +104,7 @@ object SameOriginRedirectSpec : Spek({
             repeat(20) { origin.redirect() }
             origin.enqueue(MockResponse().setBody("done"))
 
-            client.get(origin).execute().use { assertEquals("done", it.body!!.string()) }
+            client.get(origin).execute().use { assertEquals("done", it.body.string()) }
 
             assertEquals(21, origin.requestCount)
         }
