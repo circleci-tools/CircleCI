@@ -426,7 +426,7 @@ interface CircleCIAPIClientV2 {
     @POST("project/{project-slug}/pipeline")
     fun triggerNewPipeline(
         @Path("project-slug") projectSlug: String,
-        @Body request: TriggerNewPipelineRequest?
+        @Body request: TriggerNewPipelineRequest = TriggerNewPipelineRequest()
     ): Observable<TriggerNewPipelineResponse>
 
     @POST("project/{provider}/{organization}/{project}/pipeline/run")

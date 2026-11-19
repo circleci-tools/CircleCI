@@ -406,7 +406,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     override fun continuePipeline(request: ContinuePipelineRequest?): Observable<MessageResponse> = Observable.just(MessageResponse("message"))
 
-    override fun triggerNewPipeline(projectSlug: String, request: TriggerNewPipelineRequest?): Observable<TriggerNewPipelineResponse> = Observable.just(
+    override fun triggerNewPipeline(projectSlug: String, request: TriggerNewPipelineRequest): Observable<TriggerNewPipelineResponse> = Observable.just(
         TriggerNewPipelineResponse(number = 1, state = "state", id = "id", createdAt = "created_at")
     )
 
