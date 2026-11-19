@@ -491,7 +491,9 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     )
 
     override fun createTrigger(projectId: String, pipelineDefinitionId: String, request: CreateTriggerRequest): Observable<Trigger> = Observable.just(
-        createMockTrigger(pipelineDefinitionId, projectId).copy(name = request.name, type = request.type)
+        createMockTrigger(pipelineDefinitionId, projectId).copy(
+            name = request.eventName.orEmpty(), type = request.eventSource.provider
+        )
     )
 
     override fun getTrigger(projectId: String, triggerId: String): Observable<Trigger> = Observable.just(

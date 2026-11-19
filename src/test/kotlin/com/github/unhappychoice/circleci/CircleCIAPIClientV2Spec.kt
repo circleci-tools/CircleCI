@@ -908,7 +908,8 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#createTrigger() should return response") {
-                val request = CreateTriggerRequest("name", "description", "inbound-webhook", mapOf())
+                val source = CreateTriggerRequest.EventSource("github_app", repo = CreateTriggerRequest.EventSource.Repo("repo-id"))
+                val request = CreateTriggerRequest(source)
                 val subscriber = client.createTrigger(projectSlug, "definition-id", request).test()
                 expect(subscriber.isFinished()).to.be.`true`
 
