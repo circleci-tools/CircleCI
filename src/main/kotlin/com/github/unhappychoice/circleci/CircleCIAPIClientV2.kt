@@ -122,15 +122,15 @@ interface CircleCIAPIClientV2 {
     fun getOrgSummaryData(
         @Path("org-slug") orgSlug: String,
         @Query("reporting-window") reportingWindow: String? = null,
-        @Query("project-names") projectNames: Any? = null
+        @Query("project-names") projectNames: List<String>? = null
     ): Observable<OrgSummaryData>
 
     @GET("insights/pages/{project-slug}/summary")
     fun getProjectWorkflowsPageData(
         @Path("project-slug") projectSlug: String,
         @Query("reporting-window") reportingWindow: String? = null,
-        @Query("branches") branches: Any? = null,
-        @Query("workflow-names") workflowNames: Any? = null
+        @Query("branches") branches: List<String>? = null,
+        @Query("workflow-names") workflowNames: List<String>? = null
     ): Observable<ProjectWorkflowsPageData>
 
     @GET("insights/{project-slug}/workflows")
