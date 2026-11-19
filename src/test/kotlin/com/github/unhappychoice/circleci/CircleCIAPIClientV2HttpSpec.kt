@@ -246,6 +246,29 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
     }
 
+    test("lists all webhooks when the enabled filter is omitted") {
+        val path = "/webhook?scope-id=project-id&scope-type=project"
+        withResponse("""{"items":[]}""", "GET", path) { client ->
+            client.getWebhooks("project-id", "project").blockingSingle()
+        }
+    }
+
+    test("lists all webhooks when the enabled filter is null") {
+        val path = "/webhook?scope-id=project-id&scope-type=project"
+        withResponse("""{"items":[]}""", "GET", path) { client ->
+            client.getWebhooks("project-id", "project", null).blockingSingle()
+        }
+    }
+
+    listOf(true, false).forEach { isEnabled ->
+        test("lists webhooks with is-enabled=$isEnabled") {
+            val path = "/webhook?scope-id=project-id&scope-type=project&is-enabled=$isEnabled"
+            withResponse("""{"items":[]}""", "GET", path) { client ->
+                client.getWebhooks("project-id", "project", isEnabled).blockingSingle()
+            }
+        }
+    }
+
     test("serializes usage export dates as start and end") {
         val start = "2025-01-01T00:00:00Z"
         val end = "2025-02-01T00:00:00Z"
