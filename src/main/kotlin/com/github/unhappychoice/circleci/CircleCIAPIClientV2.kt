@@ -115,7 +115,8 @@ interface CircleCIAPIClientV2 {
         @Query("branch") branch: String? = null,
         @Query("granularity") granularity: String? = null,
         @Query("start-date") startDate: String? = null,
-        @Query("end-date") endDate: String? = null
+        @Query("end-date") endDate: String? = null,
+        @Query("page-token") pageToken: String? = null
     ): Observable<JobTimeseriesResponse>
 
     @GET("insights/{org-slug}/summary")
