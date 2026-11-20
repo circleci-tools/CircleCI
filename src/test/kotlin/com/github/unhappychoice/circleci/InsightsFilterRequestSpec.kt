@@ -43,6 +43,17 @@ object InsightsFilterRequestSpec : Spek({
         }
     }
 
+    test("omits job time series queries when optional arguments are unspecified") {
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setBody("""{"items":[],"next_page_token":null}"""))
+
+            server.client().getJobTimeseries(projectSlug, "ci").blockingSingle()
+
+            val request = requireNotNull(server.takeRequest().requestUrl)
+            assertEquals(emptySet<String>(), request.queryParameterNames)
+        }
+    }
+
     listOf(2, 1).forEach { count ->
         test("sends $count query entries for each Insights filter") {
             MockWebServer().use { server ->
