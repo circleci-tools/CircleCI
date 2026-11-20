@@ -5,7 +5,7 @@ import com.github.unhappychoice.circleci.v2.request.UpdateWebhookRequest
 import com.github.unhappychoice.circleci.v2.request.WebhookScopeRequest
 import com.google.gson.Gson
 import com.google.gson.JsonParser
-import org.junit.Assert.assertEquals
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 
 object WebhookRequestSpec : Spek({

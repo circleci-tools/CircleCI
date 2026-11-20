@@ -2,7 +2,7 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.response.PipelineValues
 import com.sun.net.httpserver.HttpServer
-import org.junit.Assert.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
 
