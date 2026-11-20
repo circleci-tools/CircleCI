@@ -13,6 +13,7 @@ import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
 import com.github.unhappychoice.circleci.v2.response.ComponentVersion
 import com.github.unhappychoice.circleci.v2.response.ComponentVersionListResponse
+import com.github.unhappychoice.circleci.v2.response.FlakyTests.FlakyTest
 import com.github.unhappychoice.circleci.v2.response.JobDetails
 import com.github.unhappychoice.circleci.v2.response.PipelineDefinition
 import com.github.unhappychoice.circleci.v2.response.PipelineListResponse
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
 import retrofit2.HttpException
 import java.net.InetSocketAddress
@@ -39,6 +41,44 @@ import java.util.concurrent.TimeUnit.SECONDS
 object CircleCIAPIClientV2HttpSpec : Spek({
     test("creates a V2 client with the default base URL") {
         assertNotNull(CircleCIAPIClient("test-token").clientV2())
+    }
+
+    test("decodes Insights flaky-test counts and nullable metadata") {
+        val firstTest = """
+            {
+                "workflow-created-at": "2024-01-01T00:00:00Z",
+                "workflow-id": "123e4567-e89b-12d3-a456-426614174000",
+                "classname": "ExampleTest",
+                "pipeline-number": 7,
+                "workflow-name": "build-and-test",
+                "test-name": "testWithSource",
+                "job-name": "test",
+                "job-number": 9,
+                "times-flaked": 2147483648,
+                "source": "junit",
+                "file": "src/test/ExampleTest.kt"
+            }
+        """.trimIndent()
+        val secondTest = firstTest.replace("\"testWithSource\"", "\"testWithoutSource\"")
+            .replace("\"junit\"", "null").replace("\"src/test/ExampleTest.kt\"", "null")
+            .replace("2147483648", "3")
+        val response = """{"total-flaky-tests":2.0,"flaky-tests":[$firstTest,$secondTest]}"""
+        withResponse(response, "GET", "/insights/gh%2Forg%2Frepo/flaky-tests") { client ->
+            val result = client.getFlakyTests("gh/org/repo").blockingSingle()
+            assertEquals(2.0, result.`total-flaky-tests`, 0.0)
+            assertEquals(2, result.`flaky-tests`.size)
+            val (withSource, withoutSource) = result.`flaky-tests`
+            assertEquals(2147483648L, withSource.`times-flaked`)
+            assertEquals("junit", withSource.source)
+            assertEquals("src/test/ExampleTest.kt", withSource.file)
+            assertNull(withSource.`pipeline-id`)
+            assertNull(withSource.`test-result`)
+            assertTrue(FlakyTest::`pipeline-id`.returnType.isMarkedNullable)
+            assertTrue(FlakyTest::`test-result`.returnType.isMarkedNullable)
+            assertEquals(3L, withoutSource.`times-flaked`)
+            assertNull(withoutSource.source)
+            assertNull(withoutSource.file)
+        }
     }
 
     test("decodes deployed component versions using the CircleCI response schema") {
