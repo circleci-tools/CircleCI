@@ -137,9 +137,11 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
                     `time-wasted` = 1, `workflow-created-at` = "workflow-created-at", `workflow-id` = "workflow-id",
                     classname = "classname", `pipeline-number` = 1, `workflow-name` = "workflow-name", `test-name` = "test-name",
                     `job-name` = "job-name", `job-number` = 1, `pipeline-id` = "pipeline-id", `rerun-workflow-id` = "rerun-workflow-id",
-                    `test-result` = "test-result", `workflow-rerun-number` = 1
+                    `test-result` = "test-result", `workflow-rerun-number` = 1,
+                    `times-flaked` = 2, source = "junit", file = "ExampleTest.kt"
                 )
-            )
+            ),
+            `total-flaky-tests` = 1.0
         )
     )
 
@@ -333,11 +335,11 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         URLOrbAllowListEntryList(items = listOf(URLOrbAllowListEntry(id = "id", name = "name", prefix = "https://", auth = "none")), nextPageToken = "next_page_token")
     )
 
-    override fun createUrlOrbAllowListEntry(orgSlugOrId: String, request: CreateURLOrbAllowListEntryRequest): Observable<URLOrbAllowListEntry> = Observable.just(
-        URLOrbAllowListEntry(id = "id", name = request.name, prefix = request.prefix, auth = request.auth)
+    override fun createUrlOrbAllowListEntry(orgSlugOrId: String, request: CreateURLOrbAllowListEntryRequest): Observable<URLOrbAllowListEntryAcknowledgment> = Observable.just(
+        URLOrbAllowListEntryAcknowledgment(id = "entry-id", message = "Created.")
     )
 
-    override fun removeUrlOrbAllowListEntry(orgSlugOrId: String, allowListEntryId: String): Observable<MessageResponse> = Observable.just(MessageResponse("message"))
+    override fun removeUrlOrbAllowListEntry(orgSlugOrId: String, allowListEntryId: String): Observable<URLOrbAllowListEntryAcknowledgment> = Observable.just(URLOrbAllowListEntryAcknowledgment(id = allowListEntryId, message = "Removed."))
 
     // Groups endpoints
     override fun getOrganizationGroups(orgId: String, pageToken: String?): Observable<GroupListResponse> = Observable.just(
@@ -442,7 +444,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     override fun continuePipeline(request: ContinuePipelineRequest?): Observable<MessageResponse> = Observable.just(MessageResponse("message"))
 
-    override fun triggerNewPipeline(projectSlug: String, request: TriggerNewPipelineRequest?): Observable<TriggerNewPipelineResponse> = Observable.just(
+    override fun triggerNewPipeline(projectSlug: String, request: TriggerNewPipelineRequest): Observable<TriggerNewPipelineResponse> = Observable.just(
         TriggerNewPipelineResponse(number = 1, state = "state", id = "id", createdAt = "created_at")
     )
 
@@ -542,7 +544,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     )
 
     override fun updateTrigger(projectId: String, triggerId: String, request: UpdateTriggerRequest): Observable<Trigger> = Observable.just(
-        createMockTrigger().copy(id = triggerId, eventName = request.name ?: "name")
+        createMockTrigger().copy(id = triggerId, eventName = request.eventName ?: "name")
     )
 
     override fun deleteTrigger(projectId: String, triggerId: String): Observable<TriggerDeleted> = Observable.just(
@@ -581,7 +583,9 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     // Workflow endpoints
     override fun getWorkflowById(workflowId: String): Observable<Workflow> = Observable.just(createMockWorkflow())
 
-    override fun getWorkflowJobs(workflowId: String): Observable<JobListResponse> = Observable.just(
+    override fun getWorkflowJobs(workflowId: String): Observable<JobListResponse> = getWorkflowJobs(workflowId, null)
+
+    override fun getWorkflowJobs(workflowId: String, pageToken: String?): Observable<JobListResponse> = Observable.just(
         JobListResponse(
             items = listOf(Job(id = "id", name = "name", type = "type", status = "status", jobNumber = 1, projectSlug = "project_slug", startedAt = "started_at", stoppedAt = "stopped_at", approvalRequestId = "approval_request_id", dependencies = listOf("dependency"))),
             nextPageToken = "next_page_token"
