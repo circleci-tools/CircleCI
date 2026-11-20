@@ -4,7 +4,9 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
+import java.util.concurrent.TimeUnit.SECONDS
 
 object WorkflowJobsHttpSpec : Spek({
     test("getWorkflowJobs preserves dependency conditions and accepts jobs without requires") {
@@ -46,6 +48,29 @@ object WorkflowJobsHttpSpec : Spek({
             assertEquals(mapOf("build" to listOf("failed", "canceled")), jobs[1].requires)
             assertNull(jobs[2].requires)
             assertEquals("/api/v2/workflow/workflow-id/job", server.takeRequest().path)
+        }
+    }
+
+    test("fetches the next workflow job page using the returned token") {
+        MockWebServer().use { server ->
+            val path = "/api/v2/workflow/workflow-id/job"
+            server.enqueue(MockResponse().setBody("""{"items":[{"id":"build"}],"next_page_token":"page + token"}"""))
+            server.enqueue(MockResponse().setBody("""{"items":[{"id":"test"}],"next_page_token":null}"""))
+            server.enqueue(MockResponse().setBody("""{"items":[],"next_page_token":null}"""))
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
+
+            val firstPage = client.getWorkflowJobs("workflow-id").blockingSingle()
+            assertEquals(path, server.takeRequest(1, SECONDS)?.path)
+            assertEquals("build", firstPage.items.single().id)
+            assertEquals("page + token", firstPage.nextPageToken)
+
+            val secondPage = client.getWorkflowJobs("workflow-id", firstPage.nextPageToken).blockingSingle()
+            assertEquals("$path?page-token=page%20%2B%20token", server.takeRequest(1, SECONDS)?.path)
+            assertEquals("test", secondPage.items.single().id)
+            assertNull(secondPage.nextPageToken)
+
+            assertTrue(client.getWorkflowJobs("workflow-id", null).blockingSingle().items.isEmpty())
+            assertEquals(path, server.takeRequest(1, SECONDS)?.path)
         }
     }
 })
