@@ -276,13 +276,13 @@ interface CircleCIAPIClientV2 {
     fun createUrlOrbAllowListEntry(
         @Path("org-slug-or-id") orgSlugOrId: String,
         @Body request: CreateURLOrbAllowListEntryRequest
-    ): Observable<URLOrbAllowListEntry>
+    ): Observable<URLOrbAllowListEntryAcknowledgment>
 
     @DELETE("organization/{org-slug-or-id}/url-orb-allow-list/{allow-list-entry-id}")
     fun removeUrlOrbAllowListEntry(
         @Path("org-slug-or-id") orgSlugOrId: String,
         @Path("allow-list-entry-id") allowListEntryId: String
-    ): Observable<MessageResponse>
+    ): Observable<URLOrbAllowListEntryAcknowledgment>
 
     // Groups endpoints
     @GET("organizations/{org-id}/groups")

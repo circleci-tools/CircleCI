@@ -333,11 +333,11 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         URLOrbAllowListEntryList(items = listOf(URLOrbAllowListEntry(id = "id", name = "name", prefix = "https://", auth = "none")), nextPageToken = "next_page_token")
     )
 
-    override fun createUrlOrbAllowListEntry(orgSlugOrId: String, request: CreateURLOrbAllowListEntryRequest): Observable<URLOrbAllowListEntry> = Observable.just(
-        URLOrbAllowListEntry(id = "id", name = request.name, prefix = request.prefix, auth = request.auth)
+    override fun createUrlOrbAllowListEntry(orgSlugOrId: String, request: CreateURLOrbAllowListEntryRequest): Observable<URLOrbAllowListEntryAcknowledgment> = Observable.just(
+        URLOrbAllowListEntryAcknowledgment(id = "entry-id", message = "Created.")
     )
 
-    override fun removeUrlOrbAllowListEntry(orgSlugOrId: String, allowListEntryId: String): Observable<MessageResponse> = Observable.just(MessageResponse("message"))
+    override fun removeUrlOrbAllowListEntry(orgSlugOrId: String, allowListEntryId: String): Observable<URLOrbAllowListEntryAcknowledgment> = Observable.just(URLOrbAllowListEntryAcknowledgment(id = allowListEntryId, message = "Removed."))
 
     // Groups endpoints
     override fun getOrganizationGroups(orgId: String, pageToken: String?): Observable<GroupListResponse> = Observable.just(
