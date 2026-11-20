@@ -11,6 +11,14 @@ object InsightsFilterRequestSpec : Spek({
 
     fun MockWebServer.client() = CircleCIAPIClient("test-token", url("/api/").toString()).clientV2()
 
+    test("preserves the six-argument JVM method and Kotlin default argument bridge") {
+        val client = CircleCIAPIClientV2::class.java
+        val parameters = Array(6) { String::class.java }
+        client.getMethod("getJobTimeseries", *parameters)
+        val bridgeParameters = listOf(client) + parameters + listOf(Int::class.javaPrimitiveType!!, Any::class.java)
+        client.getMethod("getJobTimeseries\$default", *bridgeParameters.toTypedArray())
+    }
+
     test("fetches the next job time series page with the same filters") {
         MockWebServer().use { server ->
             val client = server.client()
