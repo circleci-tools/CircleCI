@@ -36,6 +36,12 @@ object WorkflowRerunSpec : Spek({
             )
         }
     }
+
+    test("reruns selected jobs with SSH enabled") {
+        assertRerun("""{"jobs":["job-id"],"enable_ssh":true}""") {
+            it.rerunWorkflow("workflow-id", RerunWorkflowRequest(jobs = listOf("job-id"), enableSsh = true))
+        }
+    }
 })
 
 private fun assertRerun(expectedBody: String, rerun: (CircleCIAPIClientV2) -> Observable<WorkflowId>) {
