@@ -9,15 +9,38 @@ import io.reactivex.rxjava3.subjects.PublishSubject
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
 import retrofit2.HttpException
 import retrofit2.Response
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.TimeoutException
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 object RunPollingSpec : Spek({
+    mapOf("zero" to Duration.ZERO, "a negative duration" to (-1).seconds, "infinity" to Duration.INFINITE)
+        .forEach { (name, duration) ->
+            test("rejects $name as the poll interval before requesting a run") {
+                val client = RunPollingClient()
+                val error = assertThrows(IllegalArgumentException::class.java) {
+                    client.waitForRun("run-id", duration, 10.seconds)
+                }
+                assertEquals("Poll interval must be positive and finite", error.message)
+                assertTrue(client.requestedIds.isEmpty())
+            }
+
+            test("rejects $name as the timeout before requesting a run") {
+                val client = RunPollingClient()
+                val error = assertThrows(IllegalArgumentException::class.java) {
+                    client.waitForRun("run-id", 2.seconds, duration)
+                }
+                assertEquals("Timeout must be positive and finite", error.message)
+                assertTrue(client.requestedIds.isEmpty())
+            }
+        }
+
     test("polls sequentially and returns the ended response even after an earlier outcome") {
         val scheduler = TestScheduler()
         val first = PublishSubject.create<RunResponse>()
