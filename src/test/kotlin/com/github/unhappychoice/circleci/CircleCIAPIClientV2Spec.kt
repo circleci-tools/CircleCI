@@ -451,9 +451,10 @@ object CircleCIAPIClientV2Spec : Spek({
 
                 val job = subscriber.values().first()
                 expect(job.id).not.to.be.`null`
-                expect(job.status).not.to.be.`null`
-                expect(job.createdAt).not.to.be.`null`
-                expect(job.downloadUrl).not.to.be.`null`
+                expect(job.state).not.to.be.`null`
+                expect(job.start).not.to.be.`null`
+                expect(job.end).not.to.be.`null`
+                expect(job.downloadUrls).not.to.be.`null`
             }
 
             test("#getUsageExport() should return response") {
@@ -462,9 +463,8 @@ object CircleCIAPIClientV2Spec : Spek({
 
                 val status = subscriber.values().first()
                 expect(status.id).not.to.be.`null`
-                expect(status.status).not.to.be.`null`
-                expect(status.createdAt).not.to.be.`null`
-                expect(status.downloadUrl).not.to.be.`null`
+                expect(status.state).not.to.be.`null`
+                expect(status.downloadUrls).not.to.be.`null`
             }
         }
 
@@ -521,7 +521,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val bundle = subscriber.values().first()
-                expect(bundle.id).not.to.be.`null`
+                expect(bundle.getValue("policy-name").single().name).to.equal("policy-name")
             }
 
             test("#getPolicyBundle() should return response") {
@@ -529,7 +529,7 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val bundle = subscriber.values().first()
-                expect(bundle.id).not.to.be.`null`
+                expect(bundle.getValue("policy-name").single().name).to.equal("policy-name")
             }
 
             test("#getPolicyDocument() should return response") {
@@ -1083,10 +1083,9 @@ private fun expectNotNull(component: Component) {
 }
 
 private fun expectNotNull(componentVersion: ComponentVersion) {
-    expect(componentVersion.id).not.to.be.`null`
-    expect(componentVersion.componentId).not.to.be.`null`
-    expect(componentVersion.version).not.to.be.`null`
-    expect(componentVersion.createdAt).not.to.be.`null`
+    expect(componentVersion.name).not.to.be.`null`
+    expect(componentVersion.environmentId).not.to.be.`null`
+    expect(componentVersion.lastDeployedAt).not.to.be.`null`
 }
 
 private fun expectNotNull(env: DeployEnvironment) {
@@ -1261,14 +1260,8 @@ private fun expectNotNull(actor: Actor) {
 // Trigger types
 private fun expectNotNull(trigger: Trigger) {
     expect(trigger.id).not.to.be.`null`
-    expect(trigger.pipelineDefinitionId).not.to.be.`null`
-    expect(trigger.projectId).not.to.be.`null`
-    expect(trigger.name).not.to.be.`null`
-    expect(trigger.description).not.to.be.`null`
-    expect(trigger.createdAt).not.to.be.`null`
-    expect(trigger.updatedAt).not.to.be.`null`
-    expect(trigger.type).not.to.be.`null`
-    expect(trigger.parameters).not.to.be.`null`
+    expect(trigger.eventName).not.to.be.`null`
+    expect(trigger.eventSource.provider).not.to.be.`null`
 }
 
 // Webhook types
