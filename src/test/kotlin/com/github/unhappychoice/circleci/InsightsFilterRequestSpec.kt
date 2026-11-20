@@ -1,5 +1,6 @@
 package com.github.unhappychoice.circleci
 
+import io.reactivex.rxjava3.core.Observable
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -17,6 +18,29 @@ object InsightsFilterRequestSpec : Spek({
         client.getMethod("getJobTimeseries", *parameters)
         val bridgeParameters = listOf(client) + parameters + listOf(Int::class.javaPrimitiveType!!, Any::class.java)
         client.getMethod("getJobTimeseries\$default", *bridgeParameters.toTypedArray())
+    }
+
+    listOf(emptyList(), listOf("next-page")).forEach { paginationArguments ->
+        val arity = 6 + paginationArguments.size
+        test("fetches job time series through the $arity-argument JVM compatibility bridge") {
+            val clientType = CircleCIAPIClientV2::class.java
+            val compatibilityClass = clientType.declaredClasses.single { it.simpleName == "DefaultImpls" }
+            val parameters = listOf(clientType) + List(arity) { String::class.java } +
+                listOf(Int::class.javaPrimitiveType, Any::class.java)
+            val bridge = compatibilityClass.getMethod("getJobTimeseries\$default", *parameters.toTypedArray())
+            val omittedFiltersMask = 0b111100
+
+            MockWebServer().use { server ->
+                server.enqueue(MockResponse().setBody("""{"items":[],"next_page_token":null}"""))
+                val arguments = listOf(server.client(), projectSlug, "ci", null, null, null, null) +
+                    paginationArguments + listOf(omittedFiltersMask, null)
+
+                (bridge.invoke(null, *arguments.toTypedArray()) as Observable<*>).blockingSingle()
+
+                val request = requireNotNull(server.takeRequest().requestUrl)
+                assertEquals(paginationArguments, request.queryParameterValues("page-token"))
+            }
+        }
     }
 
     test("fetches the next job time series page with the same filters") {
@@ -59,6 +83,21 @@ object InsightsFilterRequestSpec : Spek({
 
             val request = requireNotNull(server.takeRequest().requestUrl)
             assertEquals(emptySet<String>(), request.queryParameterNames)
+        }
+    }
+
+    listOf("next-page", null).forEach { pageToken ->
+        test("sends job time series queries with default filters and page token $pageToken") {
+            MockWebServer().use { server ->
+                server.enqueue(MockResponse().setBody("""{"items":[],"next_page_token":null}"""))
+
+                server.client().getJobTimeseries(projectSlug, "ci", pageToken = pageToken).blockingSingle()
+
+                val request = requireNotNull(server.takeRequest().requestUrl)
+                val expectedQueries = if (pageToken == null) emptySet() else setOf("page-token")
+                assertEquals(expectedQueries, request.queryParameterNames)
+                assertEquals(pageToken, request.queryParameter("page-token"))
+            }
         }
     }
 
