@@ -13,6 +13,7 @@ import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequ
 import com.github.unhappychoice.circleci.v2.response.ComponentVersion
 import com.github.unhappychoice.circleci.v2.response.ComponentVersionListResponse
 import com.github.unhappychoice.circleci.v2.response.JobDetails
+import com.github.unhappychoice.circleci.v2.response.PipelineDefinition
 import com.github.unhappychoice.circleci.v2.response.TestsResponse
 import com.github.unhappychoice.circleci.v2.response.Trigger
 import com.github.unhappychoice.circleci.v2.response.User
@@ -313,6 +314,57 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertEquals("Restriction created", result.message)
         }
         assertEquals("project-id", JsonParser.parseString(body).asJsonObject["restriction"].asString)
+    }
+
+    group("decodes pipeline definitions") {
+        val path = "/projects/project-id/pipeline-definitions"
+        val id = "39723015-b399-4601-9ff6-bd1bfbed8fa8"
+        val response = """
+            {
+              "id": "$id",
+              "name": "Build",
+              "description": "Build the application",
+              "created_at": "2025-01-01T00:00:00Z",
+              "config_source": {
+                "provider": "github_app",
+                "repo": {"full_name": "example/config", "external_id": "config-id"},
+                "file_path": ".circleci/build.yml"
+              },
+              "checkout_source": {
+                "provider": "github_app",
+                "repo": {"full_name": "example/app", "external_id": "app-id"}
+              }
+            }
+        """.trimIndent()
+        val expected = PipelineDefinition(
+            id = id,
+            name = "Build",
+            description = "Build the application",
+            createdAt = "2025-01-01T00:00:00Z",
+            configSource = PipelineDefinition.ConfigSource(
+                "github_app", PipelineDefinition.Repository("example/config", "config-id"), ".circleci/build.yml"
+            ),
+            checkoutSource = PipelineDefinition.CheckoutSource(
+                "github_app", PipelineDefinition.Repository("example/app", "app-id")
+            )
+        )
+
+        test("decodes the sources and configuration path from a single response") {
+            withResponse(response, "GET", "$path/$id") { client ->
+                assertEquals(expected, client.getPipelineDefinition("project-id", id).blockingSingle())
+            }
+        }
+
+        test("decodes sources and absent optional fields in list items") {
+            val partial = """{"config_source":{"file_path":".circleci/managed.yml"},"checkout_source":null}"""
+            val page = """{"items":[$response,$partial],"next_page_token":"next-page"}"""
+            withResponse(page, "GET", path) { client ->
+                val result = client.listPipelineDefinitions("project-id", null).blockingSingle()
+                val managedConfig = PipelineDefinition.ConfigSource(filePath = ".circleci/managed.yml")
+                assertEquals(listOf(expected, PipelineDefinition(configSource = managedConfig)), result.items)
+                assertEquals("next-page", result.nextPageToken)
+            }
+        }
     }
 
     test("creates a pipeline definition with both sources") {
