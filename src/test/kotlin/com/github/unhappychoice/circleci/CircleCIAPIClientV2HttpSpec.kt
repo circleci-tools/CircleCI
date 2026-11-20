@@ -14,6 +14,7 @@ import com.github.unhappychoice.circleci.v2.response.ComponentVersion
 import com.github.unhappychoice.circleci.v2.response.ComponentVersionListResponse
 import com.github.unhappychoice.circleci.v2.response.JobDetails
 import com.github.unhappychoice.circleci.v2.response.PipelineDefinition
+import com.github.unhappychoice.circleci.v2.response.PipelineListResponse
 import com.github.unhappychoice.circleci.v2.response.TestsResponse
 import com.github.unhappychoice.circleci.v2.response.Trigger
 import com.github.unhappychoice.circleci.v2.response.User
@@ -75,6 +76,15 @@ object CircleCIAPIClientV2HttpSpec : Spek({
     }
 
     val projectSlug = "gh/CircleCI-Public/api-preview-docs"
+
+    test("lists project pipelines without branch or pagination query parameters") {
+        val path = "/project/gh%2FCircleCI-Public%2Fapi-preview-docs/pipeline"
+        withResponse("""{"items":[],"next_page_token":"next"}""", "GET", path) { client ->
+            client.getProjectPipelines(projectSlug).test()
+                .assertResult(PipelineListResponse(emptyList(), "next"))
+        }
+    }
+
     val jobPath = "/project/gh%2FCircleCI-Public%2Fapi-preview-docs/job/123"
     val jobTestsPath = "/project/gh%2FCircleCI-Public%2Fapi-preview-docs/123/tests"
 
