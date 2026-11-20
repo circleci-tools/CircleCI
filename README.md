@@ -55,17 +55,35 @@ Use `CircleCIAPIClient(token)` for synchronous subscriptions.
 ### CircleCI Cloud API v3
 
 Use a personal API token and the ID of an existing pipeline to trigger a run and
-look up its status. `currentOutcome` can be null while the run is in progress.
+wait for it to finish before starting a dependent step. Use `getRun(id)` for a
+single status snapshot.
 
 ```kotlin
 import com.github.unhappychoice.circleci.CircleCIAPIClient
 import com.github.unhappychoice.circleci.v3.request.TriggerRunRequest
+import com.github.unhappychoice.circleci.waitForRun
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 val v3 = CircleCIAPIClient("your-api-token").clientV3()
 val created = v3.triggerRun(TriggerRunRequest(pipelineId = "your-pipeline-id")).blockingSingle()
-val run = v3.getRun(created.data.id).blockingSingle().data
-println("${run.id}: ${run.attributes.phase} (${run.attributes.currentOutcome})")
+val run = v3.waitForRun(created.data.id, pollInterval = 5.seconds, timeout = 20.minutes)
+    .blockingGet().data
+check(run.attributes.currentOutcome == "succeeded") {
+    "Run ${run.id} ended with outcome ${run.attributes.currentOutcome}"
+}
 ```
+
+`waitForRun` returns a `Single` that polls immediately on subscription, then
+waits for the configured interval after each response. It returns the first
+response whose phase is `ended`, even if an earlier response had a
+`currentOutcome`. A later rerun can change the observed outcome.
+
+The timeout covers the full wait, including time spent queued, awaiting
+approval, or fetching status. It emits a `TimeoutException` when the deadline
+expires. Request errors, including HTTP 429, terminate the wait immediately.
+Dispose the subscription to stop polling. The CircleCI run itself continues
+independently.
 
 ## Installation
 

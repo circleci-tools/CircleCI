@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.spekframework.spek2.Spek
 import java.util.concurrent.TimeUnit.SECONDS
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 object CircleCIAPIClientV3HttpSpec : Spek({
     test("rejects an invalid bearer token without revealing it") {
@@ -76,6 +78,23 @@ object CircleCIAPIClientV3HttpSpec : Spek({
 
             assertEquals("queued", response.data.attributes.phase)
             assertNull(response.data.attributes.currentOutcome)
+        }
+    }
+
+    test("waits for a run to end through the v3 HTTP client") {
+        MockWebServer().use { server ->
+            server.enqueue(run("started", "\"failed\""))
+            server.enqueue(run("ended", "\"succeeded\""))
+            val expected = RunResponse(RunResponse.Data(runId, RunResponse.Attributes("ended", "succeeded")))
+
+            server.client().waitForRun(runId, 1.milliseconds, 5.seconds)
+                .test()
+                .awaitDone(5, SECONDS)
+                .assertResult(expected)
+            repeat(2) {
+                assertRequest(server.takeRequest(5, SECONDS)!!, "GET", "/api/v3/runs/$runId")
+            }
+            assertEquals(2, server.requestCount)
         }
     }
 
