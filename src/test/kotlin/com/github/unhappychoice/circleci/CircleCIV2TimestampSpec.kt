@@ -4,7 +4,7 @@ import com.github.unhappychoice.circleci.v2.response.CheckoutKey
 import com.github.unhappychoice.circleci.v2.response.Context
 import com.github.unhappychoice.circleci.v2.response.EnvironmentVariableListResponse
 import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.Assert.assertEquals
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 import retrofit2.Retrofit
 import java.time.OffsetDateTime

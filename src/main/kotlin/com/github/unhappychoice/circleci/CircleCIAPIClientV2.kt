@@ -76,7 +76,8 @@ interface CircleCIAPIClientV2 {
     fun listComponents(
         @Query("org-id") orgId: String,
         @Query("page-size") pageSize: Int,
-        @Query("page-token") pageToken: String? = null
+        @Query("page-token") pageToken: String? = null,
+        @Query("project-id") projectId: String? = null
     ): Observable<ComponentListResponse>
 
     @GET("deploy/components/{component-id}")
@@ -85,7 +86,8 @@ interface CircleCIAPIClientV2 {
     @GET("deploy/components/{component-id}/versions")
     fun listComponentVersions(
         @Path("component-id") componentId: String,
-        @Query("page-token") pageToken: String? = null
+        @Query("page-token") pageToken: String? = null,
+        @Query("environment-id") environmentId: String? = null
     ): Observable<ComponentVersionListResponse>
 
     @GET("deploy/environments")
@@ -116,6 +118,17 @@ interface CircleCIAPIClientV2 {
         @Query("granularity") granularity: String? = null,
         @Query("start-date") startDate: String? = null,
         @Query("end-date") endDate: String? = null
+    ): Observable<JobTimeseriesResponse>
+
+    @GET("insights/time-series/{project-slug}/workflows/{workflow-name}/jobs")
+    fun getJobTimeseries(
+        @Path("project-slug") projectSlug: String,
+        @Path("workflow-name") workflowName: String,
+        @Query("branch") branch: String? = null,
+        @Query("granularity") granularity: String? = null,
+        @Query("start-date") startDate: String? = null,
+        @Query("end-date") endDate: String? = null,
+        @Query("page-token") pageToken: String?
     ): Observable<JobTimeseriesResponse>
 
     @GET("insights/{org-slug}/summary")

@@ -15,12 +15,16 @@ import java.time.OffsetDateTime
 class CircleCIAPIClient private constructor(
   val token: String,
   private val baseUrl: String,
-  private val callAdapterFactory: RxJava3CallAdapterFactory
+  private val callAdapterFactory: RxJava3CallAdapterFactory,
+  baseTransport: OkHttpClient? = null
 ) {
   constructor(token: String) : this(token, BASE_URL)
 
   internal constructor(token: String, baseUrl: String) :
     this(token, baseUrl, RxJava3CallAdapterFactory.createSynchronous())
+
+  internal constructor(token: String, baseUrl: String, transport: OkHttpClient) :
+    this(token, baseUrl, RxJava3CallAdapterFactory.createSynchronous(), transport)
 
   companion object {
     private const val BASE_URL = "https://circleci.com/api/"
@@ -39,6 +43,8 @@ class CircleCIAPIClient private constructor(
   fun client1_1(): CircleCIAPIClientV1_1 = serviceV1_1
   fun clientV2(): CircleCIAPIClientV2 = serviceV2
   fun clientV3(): CircleCIAPIClientV3 = serviceV3
+
+  private val transport by lazy { baseTransport ?: OkHttpClient() }
 
   private val serviceV1 by lazy {
     retrofitV1("${baseUrl}v1/").create(CircleCIAPIClientV1::class.java)
@@ -62,7 +68,9 @@ class CircleCIAPIClient private constructor(
   internal fun clientV2(baseUrl: String): CircleCIAPIClientV2 =
     retrofitV2(baseUrl).create(CircleCIAPIClientV2::class.java)
 
-  internal val okHttpV1 = authenticatedClient("Authorization", "Basic ${encodedToken()}")
+  internal val okHttpV1 by lazy {
+    authenticatedClient("Authorization", "Basic ${encodedToken()}")
+  }
   internal val okHttpV2 by lazy { authenticatedClient("Circle-Token", headerToken()) }
   private val okHttpV3 by lazy { authenticatedClient("Authorization", "Bearer ${headerToken()}") }
 
@@ -73,7 +81,7 @@ class CircleCIAPIClient private constructor(
     return token
   }
 
-  private fun authenticatedClient(header: String, value: String): OkHttpClient = OkHttpClient.Builder()
+  private fun authenticatedClient(header: String, value: String): OkHttpClient = transport.newBuilder()
     .followRedirects(false)
     .addInterceptor {
       val request = it.request().newBuilder()
