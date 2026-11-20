@@ -68,6 +68,10 @@ test {
 }
 
 jacocoTestReport {
+    // The v3 interface's DefaultImpls class only forwards to the JVM default argument methods.
+    classDirectories.setFrom(sourceSets.main.output.classesDirs.asFileTree.matching {
+        exclude 'com/github/unhappychoice/circleci/CircleCIAPIClientV3$DefaultImpls.class'
+    })
     reports {
         xml {
             required = true
