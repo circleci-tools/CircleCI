@@ -1,5 +1,6 @@
 package com.github.unhappychoice.circleci
 
+import com.github.unhappychoice.circleci.v1.request.AddHerokuKeyRequest
 import com.github.unhappychoice.circleci.v1.request.AddSshKeyRequest
 import com.github.unhappychoice.circleci.v2.request.ContinuePipelineRequest
 import com.github.unhappychoice.circleci.v2.request.CreateEnvVarRequest
@@ -18,6 +19,14 @@ import org.spekframework.spek2.Spek
 object CredentialRedactionSpec : Spek({
     val v1Gson = GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create()
     val v2Gson = Gson()
+
+    test("redacts the Heroku API key and preserves the original property value") {
+        val key = "dummy-key"
+        val request = AddHerokuKeyRequest(key)
+
+        assertRedacted(request, "apikey", key)
+        assertEquals(key, request.apikey)
+    }
 
     test("redacts the SSH private key and preserves it in request JSON") {
         val key = "dummy-private-key"
