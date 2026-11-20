@@ -1,8 +1,39 @@
 package com.github.unhappychoice.circleci.v2.request
 
+import com.google.gson.annotations.SerializedName
+
 data class CreateTriggerRequest(
-    val name: String,
-    val description: String?,
-    val type: String,
-    val parameters: Map<String, Any>
-)
+    @SerializedName("event_source")
+    val eventSource: EventSource,
+    @SerializedName("event_preset")
+    val eventPreset: String? = null,
+    @SerializedName("checkout_ref")
+    val checkoutRef: String? = null,
+    @SerializedName("config_ref")
+    val configRef: String? = null,
+    @SerializedName("event_name")
+    val eventName: String? = null,
+    val disabled: Boolean? = null,
+    val parameters: Map<String, Any>? = null
+) {
+    data class EventSource(
+        val provider: String,
+        val repo: Repo? = null,
+        val webhook: Webhook? = null,
+        val schedule: Schedule? = null
+    ) {
+        data class Repo(
+            @SerializedName("external_id")
+            val externalId: String
+        )
+
+        data class Webhook(val sender: String? = null)
+
+        data class Schedule(
+            @SerializedName("cron_expression")
+            val cronExpression: String? = null,
+            @SerializedName("attribution_actor")
+            val attributionActor: String? = null
+        )
+    }
+}
