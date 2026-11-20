@@ -16,11 +16,18 @@ data class ComponentListResponse(
 )
 
 data class ComponentVersion(
-    val id: String,
-    @SerializedName("component_id") val componentId: String,
-    val version: String,
-    @SerializedName("created_at") val createdAt: String
-)
+    val name: String,
+    @SerializedName("environment_id") val environmentId: String,
+    val namespace: String,
+    @SerializedName("is_live") val isLive: Boolean,
+    @SerializedName("pipeline_id") val pipelineId: String,
+    @SerializedName("workflow_id") val workflowId: String,
+    @SerializedName("job_id") val jobId: String,
+    @SerializedName("job_number") val jobNumber: Int,
+    @SerializedName("last_deployed_at") val lastDeployedAt: String
+) {
+    val version: String get() = name
+}
 
 data class ComponentVersionListResponse(
     val items: List<ComponentVersion>,
