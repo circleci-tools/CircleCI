@@ -578,7 +578,9 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     // Workflow endpoints
     override fun getWorkflowById(workflowId: String): Observable<Workflow> = Observable.just(createMockWorkflow())
 
-    override fun getWorkflowJobs(workflowId: String): Observable<JobListResponse> = Observable.just(
+    override fun getWorkflowJobs(workflowId: String): Observable<JobListResponse> = getWorkflowJobs(workflowId, null)
+
+    override fun getWorkflowJobs(workflowId: String, pageToken: String?): Observable<JobListResponse> = Observable.just(
         JobListResponse(
             items = listOf(Job(id = "id", name = "name", type = "type", status = "status", jobNumber = 1, projectSlug = "project_slug", startedAt = "started_at", stoppedAt = "stopped_at", approvalRequestId = "approval_request_id", dependencies = listOf("dependency"))),
             nextPageToken = "next_page_token"

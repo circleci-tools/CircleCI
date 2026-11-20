@@ -659,6 +659,12 @@ interface CircleCIAPIClientV2 {
     @GET("workflow/{id}/job")
     fun getWorkflowJobs(@Path("id") workflowId: String): Observable<JobListResponse>
 
+    @GET("workflow/{id}/job")
+    fun getWorkflowJobs(
+        @Path("id") workflowId: String,
+        @Query("page-token") pageToken: String?
+    ): Observable<JobListResponse>
+
     @POST("workflow/{id}/cancel")
     fun cancelWorkflow(@Path("id") workflowId: String): Observable<MessageResponse>
 
