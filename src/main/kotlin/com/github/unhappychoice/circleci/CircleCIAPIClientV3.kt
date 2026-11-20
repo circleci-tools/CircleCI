@@ -1,6 +1,7 @@
 package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v3.request.TriggerRunRequest
+import com.github.unhappychoice.circleci.v3.response.RunListResponse
 import com.github.unhappychoice.circleci.v3.response.RunResponse
 import com.github.unhappychoice.circleci.v3.response.TriggerRunResponse
 import io.reactivex.rxjava3.core.Observable
@@ -19,4 +20,17 @@ interface CircleCIAPIClientV3 {
 
     @GET("runs/{id}")
     fun getRun(@Path("id") id: String): Observable<RunResponse>
+
+    @GET("runs")
+    fun listProjectRuns(
+        @Query("filter[project_id]") projectId: String,
+        @Query("page[limit]") pageSize: Int? = null,
+        @Query("page[cursor]") cursor: String? = null
+    ): Observable<RunListResponse>
+
+    @GET("runs?filter%5Buser_id%5D=me")
+    fun listMyRuns(
+        @Query("page[limit]") pageSize: Int? = null,
+        @Query("page[cursor]") cursor: String? = null
+    ): Observable<RunListResponse>
 }

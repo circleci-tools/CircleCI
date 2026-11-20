@@ -434,7 +434,7 @@ interface CircleCIAPIClientV2 {
     ): Observable<PipelineListResponse>
 
     @POST("pipeline/continue")
-    fun continuePipeline(@Body request: ContinuePipelineRequest?): Observable<MessageResponse>
+    fun continuePipeline(@Body request: ContinuePipelineRequest): Observable<MessageResponse>
 
     @POST("project/{project-slug}/pipeline")
     fun triggerNewPipeline(
@@ -620,7 +620,7 @@ interface CircleCIAPIClientV2 {
     @POST("project/{project-slug}/schedule")
     fun createSchedule(
         @Path("project-slug") projectSlug: String,
-        @Body params: CreateScheduleParameters?
+        @Body params: CreateScheduleParameters
     ): Observable<Schedule>
 
     @PATCH("schedule/{schedule-id}")
@@ -647,7 +647,7 @@ interface CircleCIAPIClientV2 {
     ): Observable<WebhookListResponse>
 
     @POST("webhook")
-    fun createWebhook(@Body request: CreateWebhookRequest?): Observable<Webhook>
+    fun createWebhook(@Body request: CreateWebhookRequest): Observable<Webhook>
 
     @PUT("webhook/{webhook-id}")
     fun updateWebhook(
