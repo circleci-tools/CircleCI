@@ -359,11 +359,11 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     )
 
     override fun getDecisionLogPolicyBundle(ownerId: String, context: String, decisionId: String): Observable<PolicyBundle> = Observable.just(
-        PolicyBundle(id = "bundle_id")
+        mapOf("policy-name" to listOf(Policy(name = "policy-name", content = "policy content")))
     )
 
     override fun getPolicyBundle(ownerId: String, context: String): Observable<PolicyBundle> = Observable.just(
-        PolicyBundle(id = "bundle_id")
+        mapOf("policy-name" to listOf(Policy(name = "policy-name", content = "policy content")))
     )
 
     override fun createPolicyBundle(ownerId: String, context: String, dry: Boolean?, request: BundlePayload): Observable<BundleDiff> = Observable.just(
