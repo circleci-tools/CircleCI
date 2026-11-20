@@ -4,9 +4,9 @@ import com.github.unhappychoice.circleci.v2.response.User
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import io.reactivex.rxjava3.observers.TestObserver
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
 import java.util.concurrent.CountDownLatch
@@ -61,12 +61,12 @@ object CircleCIAPIClientAsyncSpec : Spek({
       val client = CircleCIAPIClient.async("test-token", server.baseUrl()).clientV2()
       val subscription = subscribingThread.submit { client.getMe().subscribe(subscriber) }
 
-      assertTrue("The server should receive the request", requestReceived.await(5, SECONDS))
+      assertTrue(requestReceived.await(5, SECONDS), "The server should receive the request")
       subscription.get(5, SECONDS)
       subscriber.assertNoValues().assertNotComplete().assertNoErrors()
 
       releaseResponse.countDown()
-      assertTrue("The subscriber should receive the response", subscriber.await(5, SECONDS))
+      assertTrue(subscriber.await(5, SECONDS), "The subscriber should receive the response")
       subscriber.assertResult(User("user-id", "octocat", "Octocat"))
     } finally {
       releaseResponse.countDown()

@@ -5,7 +5,7 @@ import com.github.unhappychoice.circleci.v2.response.BundleDiff
 import com.google.gson.JsonParser
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import org.junit.Assert.assertEquals
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 
 object PolicyBundleHttpSpec : Spek({
