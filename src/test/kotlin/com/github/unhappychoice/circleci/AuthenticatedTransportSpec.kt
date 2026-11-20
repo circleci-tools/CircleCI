@@ -110,4 +110,25 @@ object AuthenticatedTransportSpec : Spek({
             }
         }
     }
+
+    test("Retrofit decodes a V2 response after an authenticated HTTPS redirect") {
+        MockWebServer().use { origin ->
+            origin.useHttps(serverTls.sslSocketFactory(), false)
+            origin.enqueue(MockResponse().setResponseCode(302).addHeader("Location", "/new-me"))
+            origin.enqueue(MockResponse().setBody("""{"login":"test-user"}"""))
+
+            val service = api.retrofitV2(origin.url("/").toString()).newBuilder()
+                .client(api.okHttpV2.withTestTls())
+                .build()
+                .create(CircleCIAPIClientV2::class.java)
+
+            assertEquals("test-user", service.getMe().blockingSingle().login)
+            assertEquals(2, origin.requestCount)
+            listOf("/me", "/new-me").forEach { path ->
+                val received = origin.takeRequest()
+                assertEquals(path, received.path)
+                assertEquals("test-token", received.getHeader("Circle-Token"))
+            }
+        }
+    }
 })
