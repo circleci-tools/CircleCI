@@ -67,6 +67,28 @@ val run = v3.getRun(created.data.id).blockingSingle().data
 println("${run.id}: ${run.attributes.phase} (${run.attributes.currentOutcome})")
 ```
 
+List recent runs for a project using its UUID, or call `listMyRuns()` for runs
+triggered by the authenticated user across projects. Both methods accept an optional
+`pageSize` (up to 20) and an opaque `cursor`. Pass `page.next` back to the same
+method to fetch the next page. A null `page.next` marks the last page.
+
+```kotlin
+val projectId = "your-project-uuid"
+val firstPage = v3.listProjectRuns(projectId, pageSize = 10).blockingSingle()
+firstPage.data.forEach { summary ->
+    println("${summary.id}: ${summary.attributes.phase} (${summary.branch})")
+}
+
+firstPage.data.firstOrNull()?.let { selected ->
+    val details = v3.getRun(selected.id).blockingSingle().data
+    println("${details.id}: ${details.attributes.currentOutcome}")
+}
+
+val nextPage = firstPage.page.next?.let { cursor ->
+    v3.listProjectRuns(projectId, pageSize = 10, cursor = cursor).blockingSingle()
+}
+```
+
 ### V2 context restrictions
 
 `getContextRestrictions` returns a `ContextProjectRestrictionsList` whose `items` are now
