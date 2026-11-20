@@ -397,6 +397,71 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
     }
 
+    test("decodes a webhook trigger response") {
+        val response = """
+            {
+              "id": "trigger-id",
+              "event_name": "monitor-alert",
+              "event_source": {
+                "provider": "webhook",
+                "webhook": {"url": "https://example.com/webhook?secret=test-secret", "sender": "datadog"}
+              },
+              "checkout_ref": "main",
+              "config_ref": "ci-config",
+              "disabled": false
+            }
+        """.trimIndent()
+
+        withResponse(response, "GET", "/projects/project-id/triggers/trigger-id") { client ->
+            val trigger = client.getTrigger("project-id", "trigger-id").blockingSingle()
+            assertEquals("trigger-id", trigger.id)
+            assertEquals("monitor-alert", trigger.eventName)
+            assertEquals("webhook", trigger.eventSource.provider)
+            assertEquals("https://example.com/webhook?secret=test-secret", trigger.eventSource.webhook?.url)
+            assertEquals("datadog", trigger.eventSource.webhook?.sender)
+            assertFalse(trigger.toString().contains("test-secret"))
+            assertEquals("main", trigger.checkoutRef)
+            assertEquals("ci-config", trigger.configRef)
+            assertEquals(false, trigger.disabled)
+            assertNull(trigger.eventPreset)
+            assertNull(trigger.parameters)
+        }
+    }
+
+    test("decodes a schedule trigger in the list response") {
+        val response = """
+            {
+              "items": [{
+                "id": "schedule-id",
+                "event_name": "weekday-build",
+                "event_source": {
+                  "provider": "schedule",
+                  "schedule": {
+                    "cron_expression": "0 9 * * 1-5",
+                    "attribution_actor": {"id": "actor-id"}
+                  }
+                },
+                "checkout_ref": "main",
+                "config_ref": "main",
+                "disabled": true,
+                "parameters": {"deploy_env": "staging"}
+              }]
+            }
+        """.trimIndent()
+
+        val path = "/projects/project-id/pipeline-definitions/definition-id/triggers"
+        withResponse(response, "GET", path) { client ->
+            val trigger = client.listPipelineDefinitionTriggers("project-id", "definition-id").blockingSingle().items.single()
+            assertEquals("schedule-id", trigger.id)
+            assertEquals("weekday-build", trigger.eventName)
+            assertEquals("schedule", trigger.eventSource.provider)
+            assertEquals("0 9 * * 1-5", trigger.eventSource.schedule?.cronExpression)
+            assertEquals("actor-id", trigger.eventSource.schedule?.attributionActor?.id)
+            assertEquals(true, trigger.disabled)
+            assertEquals(mapOf("deploy_env" to "staging"), trigger.parameters)
+        }
+    }
+
     test("patches only the selected project OIDC claim") {
         val response = """{"org_id":"org-id","project_id":"project-id"}"""
         val path = "/org/org-id/project/project-id/oidc-custom-claims"
