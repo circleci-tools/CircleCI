@@ -21,4 +21,10 @@ data class BuildAction(
   val timedout: Boolean?,
   val truncated: Boolean?,
   val type: String?
-)
+) {
+  override fun toString() =
+    "BuildAction(bashCommand=$bashCommand, canceled=$canceled, endTime=$endTime, exitCode=$exitCode, " +
+      "failed=$failed, hasOutput=$hasOutput, infrastructureFail=$infrastructureFail, index=$index, name=$name, " +
+      "outputUrl=[REDACTED], parallel=$parallel, runTimeMillis=$runTimeMillis, startTime=$startTime, status=$status, " +
+      "step=$step, timedout=$timedout, truncated=$truncated, type=$type)"
+}
