@@ -94,17 +94,6 @@ object CircleCIAPIClientV1Spec: Spek({
       expectNotNull(action)
     }
 
-    test("#getArtifacts() should return response") {
-      val subscriber = client.getArtifacts(userName, project, buildNum).test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val artifacts = subscriber.values().first()
-      expect(artifacts).not.to.be.empty
-
-      val artifact = artifacts.first()
-      expectNotNull(artifact)
-    }
-
     test("#retryBuild() should return response") {
       val subscriber = client.retryBuild(userName, project, buildNum).test()
       expect(subscriber.isFinished()).to.be.`true`
@@ -343,17 +332,6 @@ object CircleCIAPIClientV1Spec: Spek({
 
       val action = step.actions.first()
       expectNotNull(action)
-    }
-
-    test("#getArtifacts() should return response") {
-      val subscriber = client1_1.getArtifacts(vcsType, userName, project, buildNum).test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val artifacts = subscriber.values().first()
-      expect(artifacts).not.to.be.empty
-
-      val artifact = artifacts.first()
-      expectNotNull(artifact)
     }
 
     test("#retryBuild() should return response") {

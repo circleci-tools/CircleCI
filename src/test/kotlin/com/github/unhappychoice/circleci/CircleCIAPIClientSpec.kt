@@ -3,8 +3,8 @@ package com.github.unhappychoice.circleci
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.SECONDS
-import org.junit.Assert.assertNotSame
-import org.junit.Assert.assertSame
+import org.junit.jupiter.api.Assertions.assertNotSame
+import org.junit.jupiter.api.Assertions.assertSame
 import org.spekframework.spek2.Spek
 
 @Suppress("DEPRECATION")
