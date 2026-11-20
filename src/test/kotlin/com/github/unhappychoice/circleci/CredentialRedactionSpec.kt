@@ -1,6 +1,7 @@
 package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v1.request.AddSshKeyRequest
+import com.github.unhappychoice.circleci.v1.response.Build
 import com.github.unhappychoice.circleci.v2.request.ContinuePipelineRequest
 import com.github.unhappychoice.circleci.v2.request.CreateEnvVarRequest
 import com.github.unhappychoice.circleci.v2.request.CreateWebhookRequest
@@ -18,6 +19,23 @@ import org.spekframework.spek2.Spek
 object CredentialRedactionSpec : Spek({
     val v1Gson = GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create()
     val v2Gson = Gson()
+
+    test("redacts a signed output URL from the build action and containing build") {
+        val signature = "dummy-output-signature"
+        val url = "https://example.test/output?AWSAccessKeyId=dummy-key&Expires=2000000000&Signature=$signature"
+        val build = v1Gson.fromJson(
+            """{"steps":[{"name":"Test","actions":[{"name":"Run tests","output_url":"$url"}]}]}""",
+            Build::class.java
+        )
+        val action = requireNotNull(build.steps).single().actions.single()
+
+        assertEquals(url, action.outputUrl)
+        assertRedacted(action, "outputUrl", url)
+        assertRedacted(build, "outputUrl", url)
+        assertFalse(action.toString().contains(signature))
+        assertFalse(build.toString().contains(signature))
+        assertTrue(action.toString().contains("name=Run tests"))
+    }
 
     test("redacts the SSH private key and preserves it in request JSON") {
         val key = "dummy-private-key"
