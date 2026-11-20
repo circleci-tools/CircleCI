@@ -487,21 +487,22 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     // Trigger endpoints
     override fun listPipelineDefinitionTriggers(projectId: String, pipelineDefinitionId: String, pageToken: String?): Observable<TriggerList> = Observable.just(
-        TriggerList(items = listOf(createMockTrigger(pipelineDefinitionId, projectId)), nextPageToken = "next_page_token")
+        TriggerList(items = listOf(createMockTrigger()), nextPageToken = "next_page_token")
     )
 
     override fun createTrigger(projectId: String, pipelineDefinitionId: String, request: CreateTriggerRequest): Observable<Trigger> = Observable.just(
-        createMockTrigger(pipelineDefinitionId, projectId).copy(
-            name = request.eventName.orEmpty(), type = request.eventSource.provider
+        createMockTrigger().copy(
+            eventName = request.eventName.orEmpty(),
+            eventSource = Trigger.EventSource(provider = request.eventSource.provider)
         )
     )
 
     override fun getTrigger(projectId: String, triggerId: String): Observable<Trigger> = Observable.just(
-        createMockTrigger("pipeline_def_id", projectId).copy(id = triggerId)
+        createMockTrigger().copy(id = triggerId)
     )
 
     override fun updateTrigger(projectId: String, triggerId: String, request: UpdateTriggerRequest): Observable<Trigger> = Observable.just(
-        createMockTrigger("pipeline_def_id", projectId).copy(id = triggerId, name = request.name ?: "name")
+        createMockTrigger().copy(id = triggerId, eventName = request.name ?: "name")
     )
 
     override fun deleteTrigger(projectId: String, triggerId: String): Observable<TriggerDeleted> = Observable.just(
@@ -599,9 +600,10 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         signingSecret = "signing_secret", scope = WebhookScope(id = "id", type = "type"), events = listOf("event")
     )
 
-    private fun createMockTrigger(pipelineDefinitionId: String, projectId: String) = Trigger(
-        id = "id", pipelineDefinitionId = pipelineDefinitionId, projectId = projectId, name = "name",
-        description = "description", createdAt = "created_at", updatedAt = "updated_at", type = "scheduled", parameters = emptyMap()
+    private fun createMockTrigger() = Trigger(
+        id = "id",
+        eventName = "name",
+        eventSource = Trigger.EventSource(provider = "schedule")
     )
 }
 

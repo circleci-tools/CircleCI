@@ -1261,14 +1261,8 @@ private fun expectNotNull(actor: Actor) {
 // Trigger types
 private fun expectNotNull(trigger: Trigger) {
     expect(trigger.id).not.to.be.`null`
-    expect(trigger.pipelineDefinitionId).not.to.be.`null`
-    expect(trigger.projectId).not.to.be.`null`
-    expect(trigger.name).not.to.be.`null`
-    expect(trigger.description).not.to.be.`null`
-    expect(trigger.createdAt).not.to.be.`null`
-    expect(trigger.updatedAt).not.to.be.`null`
-    expect(trigger.type).not.to.be.`null`
-    expect(trigger.parameters).not.to.be.`null`
+    expect(trigger.eventName).not.to.be.`null`
+    expect(trigger.eventSource.provider).not.to.be.`null`
 }
 
 // Webhook types

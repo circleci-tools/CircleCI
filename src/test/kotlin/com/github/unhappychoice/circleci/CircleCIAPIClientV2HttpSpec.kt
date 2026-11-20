@@ -12,6 +12,7 @@ import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
 import com.github.unhappychoice.circleci.v2.response.JobDetails
 import com.github.unhappychoice.circleci.v2.response.TestsResponse
+import com.github.unhappychoice.circleci.v2.response.Trigger
 import com.github.unhappychoice.circleci.v2.response.User
 import com.google.gson.JsonNull
 import com.google.gson.JsonParser
@@ -421,6 +422,94 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
         val expected = """{"audience":["service-a","service-b"],"ttl":"1h"}"""
         assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+    }
+
+    test("decodes a webhook trigger response") {
+        val response = """
+            {
+              "id": "trigger-id",
+              "event_name": "monitor-alert",
+              "event_source": {
+                "provider": "webhook",
+                "webhook": {"url": "https://example.com/webhook?secret=test-secret", "sender": "datadog"}
+              },
+              "checkout_ref": "main",
+              "config_ref": "ci-config",
+              "disabled": false
+            }
+        """.trimIndent()
+
+        withResponse(response, "GET", "/projects/project-id/triggers/trigger-id") { client ->
+            val trigger = client.getTrigger("project-id", "trigger-id").blockingSingle()
+            assertEquals("trigger-id", trigger.id)
+            assertEquals("monitor-alert", trigger.eventName)
+            assertEquals("webhook", trigger.eventSource.provider)
+            val webhook = Trigger.Webhook("https://example.com/webhook?secret=test-secret", "datadog")
+            assertEquals(webhook, trigger.eventSource.webhook)
+            assertFalse(trigger.toString().contains("test-secret"))
+            assertEquals("main", trigger.checkoutRef)
+            assertEquals("ci-config", trigger.configRef)
+            assertEquals(false, trigger.disabled)
+            assertNull(trigger.eventPreset)
+            assertNull(trigger.parameters)
+        }
+    }
+
+    test("decodes the repository and event preset in a VCS trigger response") {
+        val response = """
+            {
+              "id": "trigger-id",
+              "event_preset": "all-pushes",
+              "event_source": {
+                "provider": "github_app",
+                "repo": {"full_name": "example/project", "external_id": "repo-id"}
+              }
+            }
+        """.trimIndent()
+
+        withResponse(response, "GET", "/projects/project-id/triggers/trigger-id") { client ->
+            val trigger = client.getTrigger("project-id", "trigger-id").blockingSingle()
+            assertEquals("all-pushes", trigger.eventPreset)
+            val repository = Trigger.Repository("example/project", "repo-id")
+            assertEquals(Trigger.EventSource("github_app", repo = repository), trigger.eventSource)
+            assertEquals(repository.fullName, trigger.eventSource.repo?.fullName)
+            assertEquals(repository.externalId, trigger.eventSource.repo?.externalId)
+        }
+    }
+
+    test("decodes a schedule trigger in the list response") {
+        val response = """
+            {
+              "items": [{
+                "id": "schedule-id",
+                "event_name": "weekday-build",
+                "event_source": {
+                  "provider": "schedule",
+                  "schedule": {
+                    "cron_expression": "0 9 * * 1-5",
+                    "attribution_actor": {"id": "actor-id"}
+                  }
+                },
+                "checkout_ref": "main",
+                "config_ref": "main",
+                "disabled": true,
+                "parameters": {"deploy_env": "staging"}
+              }]
+            }
+        """.trimIndent()
+
+        val path = "/projects/project-id/pipeline-definitions/definition-id/triggers"
+        withResponse(response, "GET", path) { client ->
+            val trigger = client.listPipelineDefinitionTriggers("project-id", "definition-id").blockingSingle().items.single()
+            assertEquals("schedule-id", trigger.id)
+            assertEquals("weekday-build", trigger.eventName)
+            assertEquals("schedule", trigger.eventSource.provider)
+            val schedule = Trigger.Schedule("0 9 * * 1-5", Trigger.AttributionActor("actor-id"))
+            assertEquals(schedule.cronExpression, trigger.eventSource.schedule?.cronExpression)
+            assertEquals(schedule.attributionActor, trigger.eventSource.schedule?.attributionActor)
+            assertEquals(true, trigger.disabled)
+            assertEquals(mapOf("deploy_env" to "staging"), trigger.parameters)
+        }
     }
 
     test("patches only the selected project OIDC claim") {
