@@ -80,5 +80,6 @@ dependencies {
 }
 ```
 
-## LISENCE
-see [LISENCE](./LISENCE)
+## License
+
+[MIT License](./LICENSE)
