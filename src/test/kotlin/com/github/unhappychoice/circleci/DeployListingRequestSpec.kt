@@ -29,6 +29,29 @@ object DeployListingRequestSpec : Spek({
             assertListingRequest(request, "components", orgId, pageSize, pageToken)
         }
 
+        test("lists components filtered by project") {
+            val projectId = "39723015-b399-4601-9ff6-bd1bfbed8fa8"
+            val request = captureRequest { it.listComponents(orgId, pageSize, pageToken, projectId = projectId) }
+            assertListingRequest(request, "components", orgId, pageSize, pageToken, projectId)
+        }
+
+        test("lists component versions without an environment filter") {
+            val request = captureRequest { it.listComponentVersions("component-id") }
+            assertDeployRequest(request, "components/component-id/versions", emptyMap())
+        }
+
+        test("lists component versions filtered by environment") {
+            val environmentId = "6e342ef2-0013-4bd4-8203-a6782e1c38fa"
+            val request = captureRequest {
+                it.listComponentVersions("component-id", pageToken, environmentId = environmentId)
+            }
+            assertDeployRequest(
+                request,
+                "components/component-id/versions",
+                mapOf("page-token" to listOf(pageToken), "environment-id" to listOf(environmentId))
+            )
+        }
+
         test("lists the first page of environments with the organization and page size") {
             val request = captureRequest { it.listEnvironments(orgId, pageSize) }
             assertListingRequest(request, "environments", orgId, pageSize)
@@ -64,12 +87,24 @@ private fun captureRequest(list: (CircleCIAPIClientV2) -> Observable<*>): Reques
     return request
 }
 
-private fun assertListingRequest(request: Request, resource: String, orgId: String, pageSize: Int, pageToken: String? = null) {
+private fun assertListingRequest(
+    request: Request,
+    resource: String,
+    orgId: String,
+    pageSize: Int,
+    pageToken: String? = null,
+    projectId: String? = null
+) {
     val expectedQuery = buildMap {
         put("org-id", listOf(orgId))
         put("page-size", listOf(pageSize.toString()))
         pageToken?.let { put("page-token", listOf(it)) }
+        projectId?.let { put("project-id", listOf(it)) }
     }
+    assertDeployRequest(request, resource, expectedQuery)
+}
+
+private fun assertDeployRequest(request: Request, resource: String, expectedQuery: Map<String, List<String>>) {
     assertEquals("GET", request.method)
     assertEquals("/api/v2/deploy/$resource", request.url.encodedPath)
     assertEquals(expectedQuery, request.url.queryParameterNames.associateWith(request.url::queryParameterValues))
