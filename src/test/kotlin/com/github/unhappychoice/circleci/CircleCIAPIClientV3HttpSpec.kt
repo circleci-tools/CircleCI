@@ -79,6 +79,49 @@ object CircleCIAPIClientV3HttpSpec : Spek({
         }
     }
 
+    test("lists project runs and follows the opaque next cursor") {
+        MockWebServer().use { server ->
+            val cursor = "a+/=%2F&? #"
+            server.enqueue(runPage("""{"branch":"main","revision":"abc123"}""", """{"next":"$cursor","prev":null}"""))
+            server.enqueue(MockResponse().setBody("""{"data":[],"page":{"next":null,"prev":"back"}}"""))
+            val client = server.client()
+            val first = client.listProjectRuns(projectId, pageSize = 10).blockingSingle()
+            val summary = first.data.single()
+            assertEquals(runId, summary.id)
+            assertEquals("queued", summary.attributes.phase)
+            assertNull(summary.attributes.currentOutcome)
+            assertEquals("2026-11-18T00:00:00Z", summary.attributes.createdAt)
+            assertEquals(7, summary.attributes.number)
+            assertEquals(projectId, summary.references.project.id)
+            assertEquals("main", summary.branch)
+            assertEquals("abc123", summary.revision)
+            assertEquals(cursor, first.page.next)
+            assertNull(first.page.prev)
+
+            val path = "/api/v3/runs?filter%5Bproject_id%5D=$projectId&page%5Blimit%5D=10"
+            assertRequest(server.takeRequest(5, SECONDS)!!, "GET", path)
+            val second = client.listProjectRuns(projectId, pageSize = 10, cursor = first.page.next).blockingSingle()
+            val request = server.takeRequest(5, SECONDS)!!
+            assertRequest(request, "GET", "$path&page%5Bcursor%5D=a%2B%2F%3D%252F%26%3F%20%23")
+            assertEquals(cursor, request.requestUrl!!.queryParameter("page[cursor]"))
+            assertEquals(emptyList<Any>(), second.data)
+            assertNull(second.page.next)
+            assertEquals("back", second.page.prev)
+        }
+    }
+
+    test("lists the authenticated user's runs without default pagination parameters") {
+        MockWebServer().use { server ->
+            server.enqueue(runPage("null", "{}"))
+            val response = server.client().listMyRuns().blockingSingle()
+
+            assertRequest(server.takeRequest(5, SECONDS)!!, "GET", "/api/v3/runs?filter%5Buser_id%5D=me")
+            assertNull(response.data.single().branch)
+            assertNull(response.data.single().revision)
+            assertNull(response.page.next)
+        }
+    }
+
     test("delivers v3 responses asynchronously when created with the async factory") {
         MockWebServer().use { server ->
             server.enqueue(run("ended", "\"succeeded\""))
@@ -108,6 +151,24 @@ private fun createdRun() = MockResponse().setResponseCode(201).setBody(
 
 private fun run(phase: String, outcome: String) = MockResponse().setBody(
     """{"data":{"id":"$runId","attributes":{"phase":"$phase","current_outcome":$outcome,"number":1}}}"""
+)
+
+private fun runPage(vcs: String, page: String) = MockResponse().setBody(
+    """
+    {
+      "data": [{
+        "id": "$runId",
+        "attributes": {"phase":"queued","current_outcome":null,"created_at":"2026-11-18T00:00:00Z","number":7},
+        "references": {
+          "event":{"attributes":{"vcs":$vcs}},
+          "project":{"id":"$projectId"},
+          "pipeline":{"id":"$pipelineId","attributes":{}},
+          "trigger":{"id":"44444444-4444-4444-8444-444444444444","attributes":{"event_source":{}}}
+        }
+      }],
+      "page": $page
+    }
+    """.trimIndent()
 )
 
 private fun assertRequest(request: RecordedRequest, method: String, path: String) {
