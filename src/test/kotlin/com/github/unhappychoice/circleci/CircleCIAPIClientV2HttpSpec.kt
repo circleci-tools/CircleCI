@@ -12,6 +12,7 @@ import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
 import com.github.unhappychoice.circleci.v2.response.JobDetails
 import com.github.unhappychoice.circleci.v2.response.TestsResponse
+import com.github.unhappychoice.circleci.v2.response.Trigger
 import com.github.unhappychoice.circleci.v2.response.User
 import com.google.gson.JsonNull
 import com.google.gson.JsonParser
@@ -417,14 +418,36 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertEquals("trigger-id", trigger.id)
             assertEquals("monitor-alert", trigger.eventName)
             assertEquals("webhook", trigger.eventSource.provider)
-            assertEquals("https://example.com/webhook?secret=test-secret", trigger.eventSource.webhook?.url)
-            assertEquals("datadog", trigger.eventSource.webhook?.sender)
+            val webhook = Trigger.Webhook("https://example.com/webhook?secret=test-secret", "datadog")
+            assertEquals(webhook, trigger.eventSource.webhook)
             assertFalse(trigger.toString().contains("test-secret"))
             assertEquals("main", trigger.checkoutRef)
             assertEquals("ci-config", trigger.configRef)
             assertEquals(false, trigger.disabled)
             assertNull(trigger.eventPreset)
             assertNull(trigger.parameters)
+        }
+    }
+
+    test("decodes the repository and event preset in a VCS trigger response") {
+        val response = """
+            {
+              "id": "trigger-id",
+              "event_preset": "all-pushes",
+              "event_source": {
+                "provider": "github_app",
+                "repo": {"full_name": "example/project", "external_id": "repo-id"}
+              }
+            }
+        """.trimIndent()
+
+        withResponse(response, "GET", "/projects/project-id/triggers/trigger-id") { client ->
+            val trigger = client.getTrigger("project-id", "trigger-id").blockingSingle()
+            assertEquals("all-pushes", trigger.eventPreset)
+            val repository = Trigger.Repository("example/project", "repo-id")
+            assertEquals(Trigger.EventSource("github_app", repo = repository), trigger.eventSource)
+            assertEquals(repository.fullName, trigger.eventSource.repo?.fullName)
+            assertEquals(repository.externalId, trigger.eventSource.repo?.externalId)
         }
     }
 
@@ -455,8 +478,9 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertEquals("schedule-id", trigger.id)
             assertEquals("weekday-build", trigger.eventName)
             assertEquals("schedule", trigger.eventSource.provider)
-            assertEquals("0 9 * * 1-5", trigger.eventSource.schedule?.cronExpression)
-            assertEquals("actor-id", trigger.eventSource.schedule?.attributionActor?.id)
+            val schedule = Trigger.Schedule("0 9 * * 1-5", Trigger.AttributionActor("actor-id"))
+            assertEquals(schedule.cronExpression, trigger.eventSource.schedule?.cronExpression)
+            assertEquals(schedule.attributionActor, trigger.eventSource.schedule?.attributionActor)
             assertEquals(true, trigger.disabled)
             assertEquals(mapOf("deploy_env" to "staging"), trigger.parameters)
         }
