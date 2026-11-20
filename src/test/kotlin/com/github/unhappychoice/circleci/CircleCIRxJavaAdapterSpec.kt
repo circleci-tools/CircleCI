@@ -3,7 +3,7 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v1.response.User as V1User
 import com.github.unhappychoice.circleci.v2.response.User as V2User
 import com.sun.net.httpserver.HttpServer
-import org.junit.Assert.assertSame
+import org.junit.jupiter.api.Assertions.assertSame
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
 

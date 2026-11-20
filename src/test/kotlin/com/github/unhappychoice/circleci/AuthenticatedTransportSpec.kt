@@ -7,8 +7,10 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.HeldCertificate
-import org.junit.Assert.assertEquals
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.spekframework.spek2.Spek
+import java.util.concurrent.TimeUnit.SECONDS
 
 object AuthenticatedTransportSpec : Spek({
     val api = CircleCIAPIClient("test-token")
@@ -19,6 +21,30 @@ object AuthenticatedTransportSpec : Spek({
     fun OkHttpClient.withTestTls() = newBuilder()
         .sslSocketFactory(clientTls.sslSocketFactory(), clientTls.trustManager)
         .build()
+
+    test("V2 and V3 reuse an HTTPS connection with version-specific authentication") {
+        MockWebServer().use { origin ->
+            origin.useHttps(serverTls.sslSocketFactory(), false)
+            origin.enqueue(MockResponse().setBody("""{"login":"test-user"}"""))
+            origin.enqueue(MockResponse().setBody("""{"data":{"id":"run-id","attributes":{"phase":"queued"}}}"""))
+            val client = CircleCIAPIClient("test-token", origin.url("/api/").toString(), OkHttpClient().withTestTls())
+
+            assertEquals("test-user", client.clientV2().getMe().blockingSingle().login)
+            assertEquals("run-id", client.clientV3().getRun("run-id").blockingSingle().data.id)
+
+            val v2 = origin.takeRequest(5, SECONDS)!!
+            assertEquals("/api/v2/me", v2.path)
+            assertEquals(0, v2.sequenceNumber)
+            assertEquals("test-token", v2.getHeader("Circle-Token"))
+            assertNull(v2.getHeader("Authorization"))
+
+            val v3 = origin.takeRequest(5, SECONDS)!!
+            assertEquals("/api/v3/runs/run-id", v3.path)
+            assertEquals(1, v3.sequenceNumber)
+            assertEquals("Bearer test-token", v3.getHeader("Authorization"))
+            assertNull(v3.getHeader("Circle-Token"))
+        }
+    }
 
     listOf(false, true).forEach { downgrade ->
         val destination = if (downgrade) "HTTP" else "another HTTPS origin"

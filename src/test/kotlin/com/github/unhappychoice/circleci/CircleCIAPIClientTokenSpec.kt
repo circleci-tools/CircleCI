@@ -1,9 +1,9 @@
 package com.github.unhappychoice.circleci
 
 import com.sun.net.httpserver.HttpServer
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertThrows
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference

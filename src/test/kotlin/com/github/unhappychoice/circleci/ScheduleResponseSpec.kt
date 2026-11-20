@@ -3,7 +3,7 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v2.response.Schedule
 import com.github.unhappychoice.circleci.v2.response.ScheduleTimetable
 import com.sun.net.httpserver.HttpServer
-import org.junit.Assert.assertEquals
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
 
