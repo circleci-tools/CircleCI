@@ -329,11 +329,21 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     // Usage endpoints
     override fun createUsageExport(orgId: String, request: CreateUsageExportRequest): Observable<UsageExportJob> = Observable.just(
-        UsageExportJob(id = "id", status = "running", createdAt = "2024-01-01T00:00:00Z", downloadUrl = "https://example.com/download")
+        UsageExportJob(
+            id = "id",
+            state = "created",
+            start = request.startDate,
+            end = request.endDate,
+            downloadUrls = emptyList()
+        )
     )
 
     override fun getUsageExport(orgId: String, usageExportJobId: String): Observable<GetUsageExportJobStatus> = Observable.just(
-        GetUsageExportJobStatus(id = usageExportJobId, status = "completed", createdAt = "2024-01-01T00:00:00Z", downloadUrl = "https://example.com/download")
+        GetUsageExportJobStatus(
+            id = usageExportJobId,
+            state = "completed",
+            downloadUrls = listOf("https://example.com/download")
+        )
     )
 
     // Policy Management endpoints

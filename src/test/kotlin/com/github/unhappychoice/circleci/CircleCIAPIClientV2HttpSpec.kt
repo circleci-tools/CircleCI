@@ -372,18 +372,70 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
     }
 
-    test("serializes usage export dates as start and end") {
+    val usageExportId = "e8235eed-f121-4ae3-9c72-2719d6572818"
+    val usageExportPath = "/organizations/org-id/usage_export_job"
+
+    test("serializes usage export dates and decodes the created job") {
         val start = "2025-01-01T00:00:00Z"
         val end = "2025-02-01T00:00:00Z"
-        val response = """{"usage_export_job_id":"e8235eed-f121-4ae3-9c72-2719d6572818"}"""
-        val body = withResponse(response, "POST", "/organizations/org-id/usage_export_job") { client ->
-            client.createUsageExport("org-id", CreateUsageExportRequest(start, end)).blockingSingle()
+        val response = """
+            {
+              "usage_export_job_id": "$usageExportId",
+              "state": "created",
+              "start": "$start",
+              "end": "$end",
+              "download_urls": []
+            }
+        """.trimIndent()
+        val body = withResponse(response, "POST", usageExportPath, status = 201) { client ->
+            val job = client.createUsageExport("org-id", CreateUsageExportRequest(start, end)).blockingSingle()
+            assertEquals(usageExportId, job.id)
+            assertEquals("created", job.state)
+            assertEquals(start, job.start)
+            assertEquals(end, job.end)
+            assertEquals(emptyList<String>(), job.downloadUrls)
         }
         val json = JsonParser.parseString(body).asJsonObject
         assertEquals(start, json.get("start")?.asString)
         assertEquals(end, json.get("end")?.asString)
         assertFalse(json.has("start_date"))
         assertFalse(json.has("end_date"))
+    }
+
+    test("preserves every download URL for a completed usage export") {
+        val firstUrl = "https://example.com/usage-1.csv?signature=first"
+        val secondUrl = "https://example.com/usage-2.csv?signature=second"
+        val response = """
+            {
+              "usage_export_job_id": "$usageExportId",
+              "state": "completed",
+              "download_urls": ["$firstUrl", "$secondUrl"]
+            }
+        """.trimIndent()
+        withResponse(response, "GET", "$usageExportPath/$usageExportId") { client ->
+            val job = client.getUsageExport("org-id", usageExportId).blockingSingle()
+            assertEquals(usageExportId, job.id)
+            assertEquals("completed", job.state)
+            assertEquals(listOf(firstUrl, secondUrl), job.downloadUrls)
+            assertNull(job.errorReason)
+        }
+    }
+
+    test("decodes the error reason for a failed usage export") {
+        val response = """
+            {
+              "usage_export_job_id": "$usageExportId",
+              "state": "failed",
+              "download_urls": [],
+              "error_reason": "Export generation failed"
+            }
+        """.trimIndent()
+        withResponse(response, "GET", "$usageExportPath/$usageExportId") { client ->
+            val job = client.getUsageExport("org-id", usageExportId).blockingSingle()
+            assertEquals("failed", job.state)
+            assertEquals(emptyList<String>(), job.downloadUrls)
+            assertEquals("Export generation failed", job.errorReason)
+        }
     }
 
     test("patches organization OIDC claims with a top-level audience array and TTL") {

@@ -451,9 +451,10 @@ object CircleCIAPIClientV2Spec : Spek({
 
                 val job = subscriber.values().first()
                 expect(job.id).not.to.be.`null`
-                expect(job.status).not.to.be.`null`
-                expect(job.createdAt).not.to.be.`null`
-                expect(job.downloadUrl).not.to.be.`null`
+                expect(job.state).not.to.be.`null`
+                expect(job.start).not.to.be.`null`
+                expect(job.end).not.to.be.`null`
+                expect(job.downloadUrls).not.to.be.`null`
             }
 
             test("#getUsageExport() should return response") {
@@ -462,9 +463,8 @@ object CircleCIAPIClientV2Spec : Spek({
 
                 val status = subscriber.values().first()
                 expect(status.id).not.to.be.`null`
-                expect(status.status).not.to.be.`null`
-                expect(status.createdAt).not.to.be.`null`
-                expect(status.downloadUrl).not.to.be.`null`
+                expect(status.state).not.to.be.`null`
+                expect(status.downloadUrls).not.to.be.`null`
             }
         }
 
