@@ -5,6 +5,7 @@ import com.github.unhappychoice.circleci.v2.response.WorkflowId
 import com.google.gson.JsonParser
 import com.sun.net.httpserver.HttpServer
 import io.reactivex.rxjava3.core.Observable
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
 
@@ -42,7 +43,42 @@ object WorkflowRerunSpec : Spek({
             it.rerunWorkflow("workflow-id", RerunWorkflowRequest(jobs = listOf("job-id"), enableSsh = true))
         }
     }
+
+    test("retains the original JVM constructors for compiled callers") {
+        val requestType = RerunWorkflowRequest::class.java
+        val constructor = requestType.getConstructor(*legacyOptionTypes)
+        val defaultConstructor = requestType.getConstructor(
+            *legacyOptionTypes, Int::class.javaPrimitiveType, Class.forName("kotlin.jvm.internal.DefaultConstructorMarker")
+        )
+
+        assertEquals(RerunWorkflowRequest(), requestType.getConstructor().newInstance())
+        assertEquals(
+            RerunWorkflowRequest(listOf("job-id"), false, true),
+            constructor.newInstance(listOf("job-id"), false, true)
+        )
+        assertEquals(
+            RerunWorkflowRequest(fromFailed = false),
+            defaultConstructor.newInstance(null, false, null, 0b101, null)
+        )
+    }
+
+    test("retains the original JVM copy methods for compiled callers") {
+        val requestType = RerunWorkflowRequest::class.java
+        val copy = requestType.getMethod("copy", *legacyOptionTypes)
+        val copyWithDefaults = requestType.getMethod(
+            "copy\$default", requestType, *legacyOptionTypes, Int::class.javaPrimitiveType, Any::class.java
+        )
+        val request = RerunWorkflowRequest(listOf("job-id"), fromFailed = false, sparseTree = true, enableSsh = true)
+
+        assertEquals(request.copy(fromFailed = null, sparseTree = false), copy.invoke(request, request.jobs, null, false))
+        assertEquals(
+            request.copy(sparseTree = false),
+            copyWithDefaults.invoke(null, request, null, true, false, 0b011, null)
+        )
+    }
 })
+
+private val legacyOptionTypes = arrayOf(List::class.java, Boolean::class.javaObjectType, Boolean::class.javaObjectType)
 
 private fun assertRerun(expectedBody: String, rerun: (CircleCIAPIClientV2) -> Observable<WorkflowId>) {
     val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)

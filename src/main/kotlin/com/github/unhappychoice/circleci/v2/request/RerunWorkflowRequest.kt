@@ -11,4 +11,15 @@ data class RerunWorkflowRequest(
     @SerializedName("from_failed") val fromFailed: Boolean? = null,
     @SerializedName("sparse_tree") val sparseTree: Boolean? = null,
     @SerializedName("enable_ssh") val enableSsh: Boolean? = null
-)
+) {
+    @Deprecated("Retained for JVM binary compatibility", level = DeprecationLevel.HIDDEN)
+    constructor(jobs: List<String>? = null, fromFailed: Boolean? = null, sparseTree: Boolean? = null) :
+        this(jobs, fromFailed, sparseTree, enableSsh = null)
+
+    @Deprecated("Retained for JVM binary compatibility", level = DeprecationLevel.HIDDEN)
+    fun copy(
+        jobs: List<String>? = this.jobs,
+        fromFailed: Boolean? = this.fromFailed,
+        sparseTree: Boolean? = this.sparseTree
+    ): RerunWorkflowRequest = copy(jobs, fromFailed, sparseTree, enableSsh = this.enableSsh)
+}
