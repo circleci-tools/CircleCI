@@ -11,6 +11,7 @@ import com.github.unhappychoice.circleci.v2.request.PatchClaimsRequest
 import com.github.unhappychoice.circleci.v2.request.PipelineDefinitionRepository
 import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
+import com.github.unhappychoice.circleci.v2.request.UpdateTriggerRequest
 import com.github.unhappychoice.circleci.v2.response.ComponentVersion
 import com.github.unhappychoice.circleci.v2.response.ComponentVersionListResponse
 import com.github.unhappychoice.circleci.v2.response.FlakyTests.FlakyTest
@@ -537,6 +538,42 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
     }
 
+    group("updates a pipeline trigger") {
+        test("sends only the disabled flag when disabling a trigger") {
+            assertTriggerUpdate(UpdateTriggerRequest(disabled = true), """{"disabled":true}""")
+        }
+
+        test("sends schedule settings and pipeline parameters") {
+            val source = UpdateTriggerRequest.EventSource(schedule = EventSource.Schedule("0 9 * * 1-5", "system"))
+            assertTriggerUpdate(
+                UpdateTriggerRequest(
+                    eventSource = source, eventName = "weekday-build", checkoutRef = "main", configRef = "main",
+                    parameters = mapOf("deploy_env" to "staging")
+                ),
+                """{
+                    "event_source":{"schedule":{"cron_expression":"0 9 * * 1-5","attribution_actor":"system"}},
+                    "event_name":"weekday-build","checkout_ref":"main","config_ref":"main",
+                    "parameters":{"deploy_env":"staging"}
+                }"""
+            )
+        }
+
+        test("sends webhook sender settings") {
+            val source = UpdateTriggerRequest.EventSource(webhook = EventSource.Webhook("monitor"))
+            assertTriggerUpdate(
+                UpdateTriggerRequest(eventSource = source, eventName = "alert"),
+                """{"event_source":{"webhook":{"sender":"monitor"}},"event_name":"alert"}"""
+            )
+        }
+
+        test("sends the event preset and explicit false when enabling a trigger") {
+            assertTriggerUpdate(
+                UpdateTriggerRequest(eventPreset = "all-pushes", disabled = false),
+                """{"event_preset":"all-pushes","disabled":false}"""
+            )
+        }
+    }
+
     test("lists all webhooks when the enabled filter is omitted") {
         val path = "/webhook?scope-id=project-id&scope-type=project"
         withResponse("""{"items":[]}""", "GET", path) { client ->
@@ -754,6 +791,14 @@ private fun assertTriggerRequest(request: CreateTriggerRequest, expected: String
     val path = "/projects/project-id/pipeline-definitions/definition-id/triggers"
     val body = withResponse("""{"id":"trigger-id"}""", "POST", path) { client ->
         assertEquals("trigger-id", client.createTrigger("project-id", "definition-id", request).blockingSingle().id)
+    }
+    assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+}
+
+private fun assertTriggerUpdate(request: UpdateTriggerRequest, expected: String) {
+    val path = "/projects/project-id/triggers/trigger-id"
+    val body = withResponse("""{"id":"trigger-id"}""", "PATCH", path) { client ->
+        assertEquals("trigger-id", client.updateTrigger("project-id", "trigger-id", request).blockingSingle().id)
     }
     assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
 }

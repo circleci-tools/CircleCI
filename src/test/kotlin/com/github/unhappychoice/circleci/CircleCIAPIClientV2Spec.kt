@@ -920,7 +920,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#updateTrigger() should return response") {
-                val request = UpdateTriggerRequest("name", "description", "inbound-webhook", mapOf())
+                val request = UpdateTriggerRequest(disabled = true)
                 val subscriber = client.updateTrigger("project-id", "trigger-id", request).test()
                 expect(subscriber.isFinished()).to.be.`true`
 

@@ -541,7 +541,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     )
 
     override fun updateTrigger(projectId: String, triggerId: String, request: UpdateTriggerRequest): Observable<Trigger> = Observable.just(
-        createMockTrigger().copy(id = triggerId, eventName = request.name ?: "name")
+        createMockTrigger().copy(id = triggerId, eventName = request.eventName ?: "name")
     )
 
     override fun deleteTrigger(projectId: String, triggerId: String): Observable<TriggerDeleted> = Observable.just(
