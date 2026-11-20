@@ -38,6 +38,32 @@ object CircleCIAPIClientV2HttpSpec : Spek({
     val jobPath = "/project/gh%2FCircleCI-Public%2Fapi-preview-docs/job/123"
     val jobTestsPath = "/project/gh%2FCircleCI-Public%2Fapi-preview-docs/123/tests"
 
+    test("cancels a job by project slug and job number") {
+        val response = """{"message":"Job canceled"}"""
+        val body = withResponse(response, "POST", "$jobPath/cancel") { client ->
+            assertEquals("Job canceled", client.cancelJob(projectSlug, "123").blockingSingle().message)
+        }
+        assertEquals("", body)
+    }
+
+    test("cancels a job by ID") {
+        val response = """{"message":"Job canceled"}"""
+        val body = withResponse(response, "POST", "/jobs/job-id/cancel") { client ->
+            assertEquals("Job canceled", client.cancelJobByJobId("job-id").blockingSingle().message)
+        }
+        assertEquals("", body)
+    }
+
+    test("returns the HTTP status and error body when a job cannot be found for cancellation") {
+        val response = """{"message":"Job not found"}"""
+        withResponse(response, "POST", "$jobPath/cancel", status = 404) { client ->
+            client.cancelJob(projectSlug, "123").test().assertNoValues().assertNotComplete().assertError { error ->
+                error is HttpException && error.code() == 404 &&
+                    error.response()?.errorBody()?.string() == response
+            }
+        }
+    }
+
     test("decodes job test results and the next page token") {
         val response = """
             {
