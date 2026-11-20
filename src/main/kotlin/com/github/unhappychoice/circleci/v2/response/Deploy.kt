@@ -37,9 +37,16 @@ data class ComponentVersionListResponse(
 data class DeployEnvironment(
     val id: String,
     val name: String,
-    @SerializedName("organization_id") val organizationId: String,
+    @SerializedName("organization_id") val organizationId: String? = null,
     @SerializedName("created_at") val createdAt: String,
-    @SerializedName("updated_at") val updatedAt: String
+    @SerializedName("updated_at") val updatedAt: String,
+    val description: String? = null,
+    val labels: List<DeployEnvironmentLabel>? = null
+)
+
+data class DeployEnvironmentLabel(
+    val key: String?,
+    val value: String?
 )
 
 data class DeployEnvironmentListResponse(
