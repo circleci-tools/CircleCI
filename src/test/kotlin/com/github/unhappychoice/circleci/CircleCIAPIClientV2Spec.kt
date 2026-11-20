@@ -1083,10 +1083,9 @@ private fun expectNotNull(component: Component) {
 }
 
 private fun expectNotNull(componentVersion: ComponentVersion) {
-    expect(componentVersion.id).not.to.be.`null`
-    expect(componentVersion.componentId).not.to.be.`null`
-    expect(componentVersion.version).not.to.be.`null`
-    expect(componentVersion.createdAt).not.to.be.`null`
+    expect(componentVersion.name).not.to.be.`null`
+    expect(componentVersion.environmentId).not.to.be.`null`
+    expect(componentVersion.lastDeployedAt).not.to.be.`null`
 }
 
 private fun expectNotNull(env: DeployEnvironment) {

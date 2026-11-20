@@ -10,6 +10,8 @@ import com.github.unhappychoice.circleci.v2.request.PatchClaimsRequest
 import com.github.unhappychoice.circleci.v2.request.PipelineDefinitionRepository
 import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
+import com.github.unhappychoice.circleci.v2.response.ComponentVersion
+import com.github.unhappychoice.circleci.v2.response.ComponentVersionListResponse
 import com.github.unhappychoice.circleci.v2.response.JobDetails
 import com.github.unhappychoice.circleci.v2.response.TestsResponse
 import com.github.unhappychoice.circleci.v2.response.Trigger
@@ -33,6 +35,42 @@ import java.util.concurrent.TimeUnit.SECONDS
 object CircleCIAPIClientV2HttpSpec : Spek({
     test("creates a V2 client with the default base URL") {
         assertNotNull(CircleCIAPIClient("test-token").clientV2())
+    }
+
+    test("decodes deployed component versions using the CircleCI response schema") {
+        val componentId = "b9291e0d-a11e-41fb-8517-c545388b5953"
+        val response = """
+            {
+              "items": [{
+                "name": "1.0.0",
+                "environment_id": "123e4127-e89b-12d3-a456-426123417400",
+                "namespace": "default",
+                "is_live": true,
+                "pipeline_id": "cc54a110-d03f-4916-96fc-ff36a1221ed7",
+                "workflow_id": "5034460f-c7c4-4c43-9457-de07e2029e7b",
+                "job_id": "f7e18b53-db27-4706-ad77-b16dc1e6fc53",
+                "job_number": 123,
+                "last_deployed_at": "2026-01-13T18:51:40Z"
+              }],
+              "next_page_token": null
+            }
+        """.trimIndent()
+        val expected = ComponentVersion(
+            name = "1.0.0",
+            environmentId = "123e4127-e89b-12d3-a456-426123417400",
+            namespace = "default",
+            isLive = true,
+            pipelineId = "cc54a110-d03f-4916-96fc-ff36a1221ed7",
+            workflowId = "5034460f-c7c4-4c43-9457-de07e2029e7b",
+            jobId = "f7e18b53-db27-4706-ad77-b16dc1e6fc53",
+            jobNumber = 123,
+            lastDeployedAt = "2026-01-13T18:51:40Z"
+        )
+        withResponse(response, "GET", "/deploy/components/$componentId/versions") { client ->
+            val versions = client.listComponentVersions(componentId).blockingSingle()
+            assertEquals(ComponentVersionListResponse(listOf(expected), null), versions)
+            assertEquals(expected.name, versions.items.single().version)
+        }
     }
 
     val projectSlug = "gh/CircleCI-Public/api-preview-docs"

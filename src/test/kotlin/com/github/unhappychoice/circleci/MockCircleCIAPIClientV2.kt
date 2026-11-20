@@ -88,7 +88,19 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     override fun listComponentVersions(componentId: String, pageToken: String?): Observable<ComponentVersionListResponse> = Observable.just(
         ComponentVersionListResponse(
-            items = listOf(ComponentVersion(id = "id", componentId = "component_id", version = "1.0.0", createdAt = "created_at")),
+            items = listOf(
+                ComponentVersion(
+                    name = "1.0.0",
+                    environmentId = "environment_id",
+                    namespace = "default",
+                    isLive = true,
+                    pipelineId = "pipeline_id",
+                    workflowId = "workflow_id",
+                    jobId = "job_id",
+                    jobNumber = 123,
+                    lastDeployedAt = "2026-01-13T18:51:40Z"
+                )
+            ),
             nextPageToken = "next_page_token"
         )
     )
