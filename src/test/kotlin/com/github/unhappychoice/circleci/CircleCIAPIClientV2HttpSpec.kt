@@ -11,8 +11,12 @@ import com.github.unhappychoice.circleci.v2.request.PipelineDefinitionRepository
 import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
 import com.github.unhappychoice.circleci.v2.request.UpdateTriggerRequest
+import com.github.unhappychoice.circleci.v2.response.ComponentVersion
+import com.github.unhappychoice.circleci.v2.response.ComponentVersionListResponse
 import com.github.unhappychoice.circleci.v2.response.JobDetails
+import com.github.unhappychoice.circleci.v2.response.PipelineDefinition
 import com.github.unhappychoice.circleci.v2.response.TestsResponse
+import com.github.unhappychoice.circleci.v2.response.Trigger
 import com.github.unhappychoice.circleci.v2.response.User
 import com.google.gson.JsonNull
 import com.google.gson.JsonParser
@@ -35,9 +39,71 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         assertNotNull(CircleCIAPIClient("test-token").clientV2())
     }
 
+    test("decodes deployed component versions using the CircleCI response schema") {
+        val componentId = "b9291e0d-a11e-41fb-8517-c545388b5953"
+        val response = """
+            {
+              "items": [{
+                "name": "1.0.0",
+                "environment_id": "123e4127-e89b-12d3-a456-426123417400",
+                "namespace": "default",
+                "is_live": true,
+                "pipeline_id": "cc54a110-d03f-4916-96fc-ff36a1221ed7",
+                "workflow_id": "5034460f-c7c4-4c43-9457-de07e2029e7b",
+                "job_id": "f7e18b53-db27-4706-ad77-b16dc1e6fc53",
+                "job_number": 123,
+                "last_deployed_at": "2026-01-13T18:51:40Z"
+              }],
+              "next_page_token": null
+            }
+        """.trimIndent()
+        val expected = ComponentVersion(
+            name = "1.0.0",
+            environmentId = "123e4127-e89b-12d3-a456-426123417400",
+            namespace = "default",
+            isLive = true,
+            pipelineId = "cc54a110-d03f-4916-96fc-ff36a1221ed7",
+            workflowId = "5034460f-c7c4-4c43-9457-de07e2029e7b",
+            jobId = "f7e18b53-db27-4706-ad77-b16dc1e6fc53",
+            jobNumber = 123,
+            lastDeployedAt = "2026-01-13T18:51:40Z"
+        )
+        withResponse(response, "GET", "/deploy/components/$componentId/versions") { client ->
+            val versions = client.listComponentVersions(componentId).blockingSingle()
+            assertEquals(ComponentVersionListResponse(listOf(expected), null), versions)
+            assertEquals(expected.name, versions.items.single().version)
+        }
+    }
+
     val projectSlug = "gh/CircleCI-Public/api-preview-docs"
     val jobPath = "/project/gh%2FCircleCI-Public%2Fapi-preview-docs/job/123"
     val jobTestsPath = "/project/gh%2FCircleCI-Public%2Fapi-preview-docs/123/tests"
+
+    test("cancels a job by project slug and job number") {
+        val response = """{"message":"Job canceled"}"""
+        val body = withResponse(response, "POST", "$jobPath/cancel") { client ->
+            assertEquals("Job canceled", client.cancelJob(projectSlug, "123").blockingSingle().message)
+        }
+        assertEquals("", body)
+    }
+
+    test("cancels a job by ID") {
+        val response = """{"message":"Job canceled"}"""
+        val body = withResponse(response, "POST", "/jobs/job-id/cancel") { client ->
+            assertEquals("Job canceled", client.cancelJobByJobId("job-id").blockingSingle().message)
+        }
+        assertEquals("", body)
+    }
+
+    test("returns the HTTP status and error body when a job cannot be found for cancellation") {
+        val response = """{"message":"Job not found"}"""
+        withResponse(response, "POST", "$jobPath/cancel", status = 404) { client ->
+            client.cancelJob(projectSlug, "123").test().assertNoValues().assertNotComplete().assertError { error ->
+                error is HttpException && error.code() == 404 &&
+                    error.response()?.errorBody()?.string() == response
+            }
+        }
+    }
 
     test("decodes job test results and the next page token") {
         val response = """
@@ -251,6 +317,57 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         assertEquals("project-id", JsonParser.parseString(body).asJsonObject["restriction"].asString)
     }
 
+    group("decodes pipeline definitions") {
+        val path = "/projects/project-id/pipeline-definitions"
+        val id = "39723015-b399-4601-9ff6-bd1bfbed8fa8"
+        val response = """
+            {
+              "id": "$id",
+              "name": "Build",
+              "description": "Build the application",
+              "created_at": "2025-01-01T00:00:00Z",
+              "config_source": {
+                "provider": "github_app",
+                "repo": {"full_name": "example/config", "external_id": "config-id"},
+                "file_path": ".circleci/build.yml"
+              },
+              "checkout_source": {
+                "provider": "github_app",
+                "repo": {"full_name": "example/app", "external_id": "app-id"}
+              }
+            }
+        """.trimIndent()
+        val expected = PipelineDefinition(
+            id = id,
+            name = "Build",
+            description = "Build the application",
+            createdAt = "2025-01-01T00:00:00Z",
+            configSource = PipelineDefinition.ConfigSource(
+                "github_app", PipelineDefinition.Repository("example/config", "config-id"), ".circleci/build.yml"
+            ),
+            checkoutSource = PipelineDefinition.CheckoutSource(
+                "github_app", PipelineDefinition.Repository("example/app", "app-id")
+            )
+        )
+
+        test("decodes the sources and configuration path from a single response") {
+            withResponse(response, "GET", "$path/$id") { client ->
+                assertEquals(expected, client.getPipelineDefinition("project-id", id).blockingSingle())
+            }
+        }
+
+        test("decodes sources and absent optional fields in list items") {
+            val partial = """{"config_source":{"file_path":".circleci/managed.yml"},"checkout_source":null}"""
+            val page = """{"items":[$response,$partial],"next_page_token":"next-page"}"""
+            withResponse(page, "GET", path) { client ->
+                val result = client.listPipelineDefinitions("project-id", null).blockingSingle()
+                val managedConfig = PipelineDefinition.ConfigSource(filePath = ".circleci/managed.yml")
+                assertEquals(listOf(expected, PipelineDefinition(configSource = managedConfig)), result.items)
+                assertEquals("next-page", result.nextPageToken)
+            }
+        }
+    }
+
     test("creates a pipeline definition with both sources") {
         val request = CreatePipelineDefinitionRequest(
             "pipeline",
@@ -409,18 +526,70 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
     }
 
-    test("serializes usage export dates as start and end") {
+    val usageExportId = "e8235eed-f121-4ae3-9c72-2719d6572818"
+    val usageExportPath = "/organizations/org-id/usage_export_job"
+
+    test("serializes usage export dates and decodes the created job") {
         val start = "2025-01-01T00:00:00Z"
         val end = "2025-02-01T00:00:00Z"
-        val response = """{"usage_export_job_id":"e8235eed-f121-4ae3-9c72-2719d6572818"}"""
-        val body = withResponse(response, "POST", "/organizations/org-id/usage_export_job") { client ->
-            client.createUsageExport("org-id", CreateUsageExportRequest(start, end)).blockingSingle()
+        val response = """
+            {
+              "usage_export_job_id": "$usageExportId",
+              "state": "created",
+              "start": "$start",
+              "end": "$end",
+              "download_urls": []
+            }
+        """.trimIndent()
+        val body = withResponse(response, "POST", usageExportPath, status = 201) { client ->
+            val job = client.createUsageExport("org-id", CreateUsageExportRequest(start, end)).blockingSingle()
+            assertEquals(usageExportId, job.id)
+            assertEquals("created", job.state)
+            assertEquals(start, job.start)
+            assertEquals(end, job.end)
+            assertEquals(emptyList<String>(), job.downloadUrls)
         }
         val json = JsonParser.parseString(body).asJsonObject
         assertEquals(start, json.get("start")?.asString)
         assertEquals(end, json.get("end")?.asString)
         assertFalse(json.has("start_date"))
         assertFalse(json.has("end_date"))
+    }
+
+    test("preserves every download URL for a completed usage export") {
+        val firstUrl = "https://example.com/usage-1.csv?signature=first"
+        val secondUrl = "https://example.com/usage-2.csv?signature=second"
+        val response = """
+            {
+              "usage_export_job_id": "$usageExportId",
+              "state": "completed",
+              "download_urls": ["$firstUrl", "$secondUrl"]
+            }
+        """.trimIndent()
+        withResponse(response, "GET", "$usageExportPath/$usageExportId") { client ->
+            val job = client.getUsageExport("org-id", usageExportId).blockingSingle()
+            assertEquals(usageExportId, job.id)
+            assertEquals("completed", job.state)
+            assertEquals(listOf(firstUrl, secondUrl), job.downloadUrls)
+            assertNull(job.errorReason)
+        }
+    }
+
+    test("decodes the error reason for a failed usage export") {
+        val response = """
+            {
+              "usage_export_job_id": "$usageExportId",
+              "state": "failed",
+              "download_urls": [],
+              "error_reason": "Export generation failed"
+            }
+        """.trimIndent()
+        withResponse(response, "GET", "$usageExportPath/$usageExportId") { client ->
+            val job = client.getUsageExport("org-id", usageExportId).blockingSingle()
+            assertEquals("failed", job.state)
+            assertEquals(emptyList<String>(), job.downloadUrls)
+            assertEquals("Export generation failed", job.errorReason)
+        }
     }
 
     test("patches organization OIDC claims with a top-level audience array and TTL") {
@@ -432,6 +601,94 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
         val expected = """{"audience":["service-a","service-b"],"ttl":"1h"}"""
         assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+    }
+
+    test("decodes a webhook trigger response") {
+        val response = """
+            {
+              "id": "trigger-id",
+              "event_name": "monitor-alert",
+              "event_source": {
+                "provider": "webhook",
+                "webhook": {"url": "https://example.com/webhook?secret=test-secret", "sender": "datadog"}
+              },
+              "checkout_ref": "main",
+              "config_ref": "ci-config",
+              "disabled": false
+            }
+        """.trimIndent()
+
+        withResponse(response, "GET", "/projects/project-id/triggers/trigger-id") { client ->
+            val trigger = client.getTrigger("project-id", "trigger-id").blockingSingle()
+            assertEquals("trigger-id", trigger.id)
+            assertEquals("monitor-alert", trigger.eventName)
+            assertEquals("webhook", trigger.eventSource.provider)
+            val webhook = Trigger.Webhook("https://example.com/webhook?secret=test-secret", "datadog")
+            assertEquals(webhook, trigger.eventSource.webhook)
+            assertFalse(trigger.toString().contains("test-secret"))
+            assertEquals("main", trigger.checkoutRef)
+            assertEquals("ci-config", trigger.configRef)
+            assertEquals(false, trigger.disabled)
+            assertNull(trigger.eventPreset)
+            assertNull(trigger.parameters)
+        }
+    }
+
+    test("decodes the repository and event preset in a VCS trigger response") {
+        val response = """
+            {
+              "id": "trigger-id",
+              "event_preset": "all-pushes",
+              "event_source": {
+                "provider": "github_app",
+                "repo": {"full_name": "example/project", "external_id": "repo-id"}
+              }
+            }
+        """.trimIndent()
+
+        withResponse(response, "GET", "/projects/project-id/triggers/trigger-id") { client ->
+            val trigger = client.getTrigger("project-id", "trigger-id").blockingSingle()
+            assertEquals("all-pushes", trigger.eventPreset)
+            val repository = Trigger.Repository("example/project", "repo-id")
+            assertEquals(Trigger.EventSource("github_app", repo = repository), trigger.eventSource)
+            assertEquals(repository.fullName, trigger.eventSource.repo?.fullName)
+            assertEquals(repository.externalId, trigger.eventSource.repo?.externalId)
+        }
+    }
+
+    test("decodes a schedule trigger in the list response") {
+        val response = """
+            {
+              "items": [{
+                "id": "schedule-id",
+                "event_name": "weekday-build",
+                "event_source": {
+                  "provider": "schedule",
+                  "schedule": {
+                    "cron_expression": "0 9 * * 1-5",
+                    "attribution_actor": {"id": "actor-id"}
+                  }
+                },
+                "checkout_ref": "main",
+                "config_ref": "main",
+                "disabled": true,
+                "parameters": {"deploy_env": "staging"}
+              }]
+            }
+        """.trimIndent()
+
+        val path = "/projects/project-id/pipeline-definitions/definition-id/triggers"
+        withResponse(response, "GET", path) { client ->
+            val trigger = client.listPipelineDefinitionTriggers("project-id", "definition-id").blockingSingle().items.single()
+            assertEquals("schedule-id", trigger.id)
+            assertEquals("weekday-build", trigger.eventName)
+            assertEquals("schedule", trigger.eventSource.provider)
+            val schedule = Trigger.Schedule("0 9 * * 1-5", Trigger.AttributionActor("actor-id"))
+            assertEquals(schedule.cronExpression, trigger.eventSource.schedule?.cronExpression)
+            assertEquals(schedule.attributionActor, trigger.eventSource.schedule?.attributionActor)
+            assertEquals(true, trigger.disabled)
+            assertEquals(mapOf("deploy_env" to "staging"), trigger.parameters)
+        }
     }
 
     test("patches only the selected project OIDC claim") {

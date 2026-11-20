@@ -1,9 +1,12 @@
 package com.github.unhappychoice.circleci
 
+import com.github.unhappychoice.circleci.v1.request.AddHerokuKeyRequest
 import com.github.unhappychoice.circleci.v1.request.AddSshKeyRequest
+import com.github.unhappychoice.circleci.v1.response.EnvironmentVariable
 import com.github.unhappychoice.circleci.v2.request.ContinuePipelineRequest
 import com.github.unhappychoice.circleci.v2.request.CreateEnvVarRequest
 import com.github.unhappychoice.circleci.v2.request.CreateWebhookRequest
+import com.github.unhappychoice.circleci.v2.request.UpdateWebhookRequest
 import com.github.unhappychoice.circleci.v2.request.WebhookScopeRequest
 import com.github.unhappychoice.circleci.v2.response.Webhook
 import com.github.unhappychoice.circleci.v2.response.WebhookScope
@@ -14,10 +17,20 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
+import com.github.unhappychoice.circleci.v1.request.AddEnvironmentVariableRequest as V1AddEnvironmentVariableRequest
+import com.github.unhappychoice.circleci.v2.request.AddEnvironmentVariableRequest as V2AddEnvironmentVariableRequest
 
 object CredentialRedactionSpec : Spek({
     val v1Gson = GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create()
     val v2Gson = Gson()
+
+    test("redacts the Heroku API key and preserves the original property value") {
+        val key = "dummy-key"
+        val request = AddHerokuKeyRequest(key)
+
+        assertRedacted(request, "apikey", key)
+        assertEquals(key, request.apikey)
+    }
 
     test("redacts the SSH private key and preserves it in request JSON") {
         val key = "dummy-private-key"
@@ -49,12 +62,50 @@ object CredentialRedactionSpec : Spek({
         assertFalse(json["verify-tls"].asBoolean)
     }
 
+    test("redacts the webhook update signing secret and preserves it in request JSON") {
+        val secret = "dummy-update-signing-secret"
+        val request = UpdateWebhookRequest(signingSecret = secret)
+
+        assertRedacted(request, "signingSecret", secret)
+        assertEquals(secret, v2Gson.toJsonTree(request).asJsonObject["signing-secret"].asString)
+    }
+
     test("redacts the environment variable value and preserves it in request JSON") {
         val value = "dummy-environment-value"
         val request = CreateEnvVarRequest(value)
 
         assertRedacted(request, "value", value)
         assertEquals(value, v2Gson.toJsonTree(request).asJsonObject["value"].asString)
+    }
+
+    test("redacts the v2 context environment variable value and preserves it in request JSON") {
+        val value = "dummy-context-value"
+        val request = V2AddEnvironmentVariableRequest(value)
+
+        assertRedacted(request, "value", value)
+        assertEquals(value, v2Gson.toJsonTree(request).asJsonObject["value"].asString)
+    }
+
+    test("redacts the v1 environment variable value and preserves it in request JSON") {
+        val value = "dummy-v1-request-value"
+        val request = V1AddEnvironmentVariableRequest("EXAMPLE", value)
+
+        assertRedacted(request, "value", value)
+        assertTrue(request.toString().contains("name=EXAMPLE"))
+        val json = v1Gson.toJsonTree(request).asJsonObject
+        assertEquals("EXAMPLE", json["name"].asString)
+        assertEquals(value, json["value"].asString)
+    }
+
+    test("redacts the v1 environment variable value after deserializing response JSON") {
+        val value = "dummy-v1-response-value"
+        val json = """{"name":"EXAMPLE","value":"$value"}"""
+        val response = v1Gson.fromJson(json, EnvironmentVariable::class.java)
+
+        assertEquals("EXAMPLE", response.name)
+        assertEquals(value, response.value)
+        assertRedacted(response, "value", value)
+        assertTrue(response.toString().contains("name=EXAMPLE"))
     }
 
     test("redacts the webhook response signing secret") {
