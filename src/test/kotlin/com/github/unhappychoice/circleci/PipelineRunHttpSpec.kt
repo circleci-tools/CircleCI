@@ -5,7 +5,7 @@ import com.github.unhappychoice.circleci.v2.response.PipelineRunResult
 import com.google.gson.JsonParseException
 import com.sun.net.httpserver.HttpServer
 import io.reactivex.rxjava3.observers.TestObserver
-import org.junit.Assert.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
 

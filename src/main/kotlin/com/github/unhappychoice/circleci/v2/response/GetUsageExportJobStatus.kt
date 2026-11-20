@@ -3,10 +3,8 @@ package com.github.unhappychoice.circleci.v2.response
 import com.google.gson.annotations.SerializedName
 
 data class GetUsageExportJobStatus(
-    val id: String,
-    val status: String,
-    @SerializedName("created_at")
-    val createdAt: String,
-    @SerializedName("download_url")
-    val downloadUrl: String?
+    @SerializedName("usage_export_job_id") val id: String,
+    val state: String,
+    @SerializedName("download_urls") val downloadUrls: List<String>,
+    @SerializedName("error_reason") val errorReason: String? = null
 )

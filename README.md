@@ -15,7 +15,7 @@ that uses RxJava 3, update your imports and reactive integrations to RxJava 3.
 ## Quick start
 
 Use version `2.1.2` in the dependency declaration below.
-Set `CIRCLECI_TOKEN` to your CircleCI personal API token, then run the following in your Kotlin application to print the authenticated user's login.
+Set `CIRCLECI_TOKEN` to your CircleCI Cloud personal API token, then run the following in your Kotlin application to print the authenticated user's login.
 
 ```kotlin
 import com.github.unhappychoice.circleci.CircleCIAPIClient
@@ -28,6 +28,13 @@ fun main() {
     println(user.login)
 }
 ```
+
+With the public `CircleCIAPIClient(token)` constructor, `clientV2()` sends requests to
+CircleCI Cloud (`https://circleci.com/api/v2/`). The `CircleCIAPIClient.async(token)` factory
+on master uses the same URL.
+For example, `getMe()` sends the supplied token to `https://circleci.com/api/v2/me`.
+Connecting to a CircleCI Server instance requires configuring its API base URL,
+which this library's public API does not support.
 
 ## Asynchronous calls on master
 
@@ -60,8 +67,6 @@ val run = v3.getRun(created.data.id).blockingSingle().data
 println("${run.id}: ${run.attributes.phase} (${run.attributes.currentOutcome})")
 ```
 
-For CircleCI Server, use `clientV2()`.
-
 ### V2 context restrictions
 
 `getContextRestrictions` returns a `ContextProjectRestrictionsList` whose `items` are now
@@ -82,5 +87,6 @@ dependencies {
 }
 ```
 
-## LISENCE
-see [LISENCE](./LISENCE)
+## License
+
+[MIT License](./LICENSE)
