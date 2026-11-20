@@ -76,7 +76,8 @@ interface CircleCIAPIClientV2 {
     fun listComponents(
         @Query("org-id") orgId: String,
         @Query("page-size") pageSize: Int,
-        @Query("page-token") pageToken: String? = null
+        @Query("page-token") pageToken: String? = null,
+        @Query("project-id") projectId: String? = null
     ): Observable<ComponentListResponse>
 
     @GET("deploy/components/{component-id}")
@@ -85,7 +86,8 @@ interface CircleCIAPIClientV2 {
     @GET("deploy/components/{component-id}/versions")
     fun listComponentVersions(
         @Path("component-id") componentId: String,
-        @Query("page-token") pageToken: String? = null
+        @Query("page-token") pageToken: String? = null,
+        @Query("environment-id") environmentId: String? = null
     ): Observable<ComponentVersionListResponse>
 
     @GET("deploy/environments")
@@ -118,19 +120,30 @@ interface CircleCIAPIClientV2 {
         @Query("end-date") endDate: String? = null
     ): Observable<JobTimeseriesResponse>
 
+    @GET("insights/time-series/{project-slug}/workflows/{workflow-name}/jobs")
+    fun getJobTimeseries(
+        @Path("project-slug") projectSlug: String,
+        @Path("workflow-name") workflowName: String,
+        @Query("branch") branch: String? = null,
+        @Query("granularity") granularity: String? = null,
+        @Query("start-date") startDate: String? = null,
+        @Query("end-date") endDate: String? = null,
+        @Query("page-token") pageToken: String?
+    ): Observable<JobTimeseriesResponse>
+
     @GET("insights/{org-slug}/summary")
     fun getOrgSummaryData(
         @Path("org-slug") orgSlug: String,
         @Query("reporting-window") reportingWindow: String? = null,
-        @Query("project-names") projectNames: Any? = null
+        @Query("project-names") projectNames: List<String>? = null
     ): Observable<OrgSummaryData>
 
     @GET("insights/pages/{project-slug}/summary")
     fun getProjectWorkflowsPageData(
         @Path("project-slug") projectSlug: String,
         @Query("reporting-window") reportingWindow: String? = null,
-        @Query("branches") branches: Any? = null,
-        @Query("workflow-names") workflowNames: Any? = null
+        @Query("branches") branches: List<String>? = null,
+        @Query("workflow-names") workflowNames: List<String>? = null
     ): Observable<ProjectWorkflowsPageData>
 
     @GET("insights/{project-slug}/workflows")
@@ -617,10 +630,14 @@ interface CircleCIAPIClientV2 {
     @GET("webhook/{webhook-id}")
     fun getWebhookById(@Path("webhook-id") webhookId: String): Observable<Webhook>
 
+    fun getWebhooks(scopeId: String, scopeType: String): Observable<WebhookListResponse> =
+        getWebhooks(scopeId, scopeType, null)
+
     @GET("webhook")
     fun getWebhooks(
         @Query("scope-id") scopeId: String,
-        @Query("scope-type") scopeType: String
+        @Query("scope-type") scopeType: String,
+        @Query("is-enabled") isEnabled: Boolean?
     ): Observable<WebhookListResponse>
 
     @POST("webhook")

@@ -75,7 +75,12 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     )
 
     // Deploy endpoints
-    override fun listComponents(orgId: String, pageSize: Int, pageToken: String?): Observable<ComponentListResponse> = Observable.just(
+    override fun listComponents(
+        orgId: String,
+        pageSize: Int,
+        pageToken: String?,
+        projectId: String?
+    ): Observable<ComponentListResponse> = Observable.just(
         ComponentListResponse(
             items = listOf(Component(id = "id", name = "name", projectId = "project_id", createdAt = "created_at", updatedAt = "updated_at")),
             nextPageToken = "next_page_token"
@@ -86,9 +91,25 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         Component(id = "id", name = "name", projectId = "project_id", createdAt = "created_at", updatedAt = "updated_at")
     )
 
-    override fun listComponentVersions(componentId: String, pageToken: String?): Observable<ComponentVersionListResponse> = Observable.just(
+    override fun listComponentVersions(
+        componentId: String,
+        pageToken: String?,
+        environmentId: String?
+    ): Observable<ComponentVersionListResponse> = Observable.just(
         ComponentVersionListResponse(
-            items = listOf(ComponentVersion(id = "id", componentId = "component_id", version = "1.0.0", createdAt = "created_at")),
+            items = listOf(
+                ComponentVersion(
+                    name = "1.0.0",
+                    environmentId = "environment_id",
+                    namespace = "default",
+                    isLive = true,
+                    pipelineId = "pipeline_id",
+                    workflowId = "workflow_id",
+                    jobId = "job_id",
+                    jobNumber = 123,
+                    lastDeployedAt = "2026-01-13T18:51:40Z"
+                )
+            ),
             nextPageToken = "next_page_token"
         )
     )
@@ -124,6 +145,12 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     override fun getJobTimeseries(
         projectSlug: String, workflowName: String, branch: String?, granularity: String?, startDate: String?, endDate: String?
+    ): Observable<JobTimeseriesResponse> =
+        getJobTimeseries(projectSlug, workflowName, branch, granularity, startDate, endDate, pageToken = null)
+
+    override fun getJobTimeseries(
+        projectSlug: String, workflowName: String, branch: String?, granularity: String?, startDate: String?, endDate: String?,
+        pageToken: String?
     ): Observable<JobTimeseriesResponse> = Observable.just(
         JobTimeseriesResponse(
             items = listOf(
@@ -139,7 +166,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         )
     )
 
-    override fun getOrgSummaryData(orgSlug: String, reportingWindow: String?, projectNames: Any?): Observable<OrgSummaryData> = Observable.just(
+    override fun getOrgSummaryData(orgSlug: String, reportingWindow: String?, projectNames: List<String>?): Observable<OrgSummaryData> = Observable.just(
         OrgSummaryData(
             org_data = OrgSummaryData.OrgData(
                 metrics = OrgSummaryData.OrgMetrics(total_runs = 1, total_duration_secs = 1, total_credits_used = 1, success_rate = 1f, throughput = 1f),
@@ -157,7 +184,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     )
 
     override fun getProjectWorkflowsPageData(
-        projectSlug: String, reportingWindow: String?, branches: Any?, workflowNames: Any?
+        projectSlug: String, reportingWindow: String?, branches: List<String>?, workflowNames: List<String>?
     ): Observable<ProjectWorkflowsPageData> = Observable.just(
         ProjectWorkflowsPageData(
             org_id = "org_id", project_id = "project_id",
@@ -329,11 +356,21 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     // Usage endpoints
     override fun createUsageExport(orgId: String, request: CreateUsageExportRequest): Observable<UsageExportJob> = Observable.just(
-        UsageExportJob(id = "id", status = "running", createdAt = "2024-01-01T00:00:00Z", downloadUrl = "https://example.com/download")
+        UsageExportJob(
+            id = "id",
+            state = "created",
+            start = request.startDate,
+            end = request.endDate,
+            downloadUrls = emptyList()
+        )
     )
 
     override fun getUsageExport(orgId: String, usageExportJobId: String): Observable<GetUsageExportJobStatus> = Observable.just(
-        GetUsageExportJobStatus(id = usageExportJobId, status = "completed", createdAt = "2024-01-01T00:00:00Z", downloadUrl = "https://example.com/download")
+        GetUsageExportJobStatus(
+            id = usageExportJobId,
+            state = "completed",
+            downloadUrls = listOf("https://example.com/download")
+        )
     )
 
     // Policy Management endpoints
@@ -359,15 +396,15 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     )
 
     override fun getDecisionLogPolicyBundle(ownerId: String, context: String, decisionId: String): Observable<PolicyBundle> = Observable.just(
-        PolicyBundle(id = "bundle_id")
+        mapOf("policy-name" to listOf(Policy(name = "policy-name", content = "policy content")))
     )
 
     override fun getPolicyBundle(ownerId: String, context: String): Observable<PolicyBundle> = Observable.just(
-        PolicyBundle(id = "bundle_id")
+        mapOf("policy-name" to listOf(Policy(name = "policy-name", content = "policy content")))
     )
 
     override fun createPolicyBundle(ownerId: String, context: String, dry: Boolean?, request: BundlePayload): Observable<BundleDiff> = Observable.just(
-        BundleDiff(message = "Bundle created")
+        BundleDiff(created = request.policies.keys.toList())
     )
 
     override fun getPolicyDocument(ownerId: String, context: String, policyName: String): Observable<Policy> = Observable.just(
@@ -487,19 +524,22 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     // Trigger endpoints
     override fun listPipelineDefinitionTriggers(projectId: String, pipelineDefinitionId: String, pageToken: String?): Observable<TriggerList> = Observable.just(
-        TriggerList(items = listOf(createMockTrigger(pipelineDefinitionId, projectId)), nextPageToken = "next_page_token")
+        TriggerList(items = listOf(createMockTrigger()), nextPageToken = "next_page_token")
     )
 
     override fun createTrigger(projectId: String, pipelineDefinitionId: String, request: CreateTriggerRequest): Observable<Trigger> = Observable.just(
-        createMockTrigger(pipelineDefinitionId, projectId).copy(name = request.name, type = request.type)
+        createMockTrigger().copy(
+            eventName = request.eventName.orEmpty(),
+            eventSource = Trigger.EventSource(provider = request.eventSource.provider)
+        )
     )
 
     override fun getTrigger(projectId: String, triggerId: String): Observable<Trigger> = Observable.just(
-        createMockTrigger("pipeline_def_id", projectId).copy(id = triggerId)
+        createMockTrigger().copy(id = triggerId)
     )
 
     override fun updateTrigger(projectId: String, triggerId: String, request: UpdateTriggerRequest): Observable<Trigger> = Observable.just(
-        createMockTrigger("pipeline_def_id", projectId).copy(id = triggerId, name = request.name ?: "name")
+        createMockTrigger().copy(id = triggerId, eventName = request.name ?: "name")
     )
 
     override fun deleteTrigger(projectId: String, triggerId: String): Observable<TriggerDeleted> = Observable.just(
@@ -522,7 +562,10 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     // Webhook endpoints
     override fun getWebhookById(webhookId: String): Observable<Webhook> = Observable.just(createMockWebhook())
 
-    override fun getWebhooks(scopeId: String, scopeType: String): Observable<WebhookListResponse> = Observable.just(
+    override fun getWebhooks(scopeId: String, scopeType: String): Observable<WebhookListResponse> =
+        super.getWebhooks(scopeId, scopeType)
+
+    override fun getWebhooks(scopeId: String, scopeType: String, isEnabled: Boolean?): Observable<WebhookListResponse> = Observable.just(
         WebhookListResponse(items = listOf(createMockWebhook()), nextPageToken = "next_page_token")
     )
 
@@ -594,9 +637,10 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         signingSecret = "signing_secret", scope = WebhookScope(id = "id", type = "type"), events = listOf("event")
     )
 
-    private fun createMockTrigger(pipelineDefinitionId: String, projectId: String) = Trigger(
-        id = "id", pipelineDefinitionId = pipelineDefinitionId, projectId = projectId, name = "name",
-        description = "description", createdAt = "created_at", updatedAt = "updated_at", type = "scheduled", parameters = emptyMap()
+    private fun createMockTrigger() = Trigger(
+        id = "id",
+        eventName = "name",
+        eventSource = Trigger.EventSource(provider = "schedule")
     )
 }
 
