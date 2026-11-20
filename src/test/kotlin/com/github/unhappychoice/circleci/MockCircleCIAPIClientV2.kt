@@ -145,6 +145,12 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     override fun getJobTimeseries(
         projectSlug: String, workflowName: String, branch: String?, granularity: String?, startDate: String?, endDate: String?
+    ): Observable<JobTimeseriesResponse> =
+        getJobTimeseries(projectSlug, workflowName, branch, granularity, startDate, endDate, pageToken = null)
+
+    override fun getJobTimeseries(
+        projectSlug: String, workflowName: String, branch: String?, granularity: String?, startDate: String?, endDate: String?,
+        pageToken: String?
     ): Observable<JobTimeseriesResponse> = Observable.just(
         JobTimeseriesResponse(
             items = listOf(
