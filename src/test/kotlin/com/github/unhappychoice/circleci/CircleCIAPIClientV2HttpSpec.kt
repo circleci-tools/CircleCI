@@ -1,21 +1,32 @@
 package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.request.AddEnvironmentVariableRequest
+import com.github.unhappychoice.circleci.v2.request.ContinuePipelineRequest
 import com.github.unhappychoice.circleci.v2.request.CreateContextRestrictionRequest
 import com.github.unhappychoice.circleci.v2.request.CreatePipelineDefinitionRequest
+import com.github.unhappychoice.circleci.v2.request.CreateScheduleParameters
+import com.github.unhappychoice.circleci.v2.request.CreateScheduleTimetable
 import com.github.unhappychoice.circleci.v2.request.CreateTriggerRequest
 import com.github.unhappychoice.circleci.v2.request.CreateTriggerRequest.EventSource
+import com.github.unhappychoice.circleci.v2.request.CreateURLOrbAllowListEntryRequest
 import com.github.unhappychoice.circleci.v2.request.CreateUsageExportRequest
+import com.github.unhappychoice.circleci.v2.request.CreateWebhookRequest
 import com.github.unhappychoice.circleci.v2.request.PatchClaimsRequest
 import com.github.unhappychoice.circleci.v2.request.PipelineDefinitionRepository
 import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
+import com.github.unhappychoice.circleci.v2.request.ScheduleAttributionActor
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
+import com.github.unhappychoice.circleci.v2.request.UpdateTriggerRequest
+import com.github.unhappychoice.circleci.v2.request.WebhookScopeRequest
 import com.github.unhappychoice.circleci.v2.response.ComponentVersion
 import com.github.unhappychoice.circleci.v2.response.ComponentVersionListResponse
+import com.github.unhappychoice.circleci.v2.response.FlakyTests.FlakyTest
 import com.github.unhappychoice.circleci.v2.response.JobDetails
 import com.github.unhappychoice.circleci.v2.response.PipelineDefinition
+import com.github.unhappychoice.circleci.v2.response.PipelineListResponse
 import com.github.unhappychoice.circleci.v2.response.TestsResponse
 import com.github.unhappychoice.circleci.v2.response.Trigger
+import com.github.unhappychoice.circleci.v2.response.URLOrbAllowListEntryAcknowledgment
 import com.github.unhappychoice.circleci.v2.response.User
 import com.google.gson.JsonNull
 import com.google.gson.JsonParser
@@ -26,6 +37,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
 import retrofit2.HttpException
 import java.net.InetSocketAddress
@@ -36,6 +48,100 @@ import java.util.concurrent.TimeUnit.SECONDS
 object CircleCIAPIClientV2HttpSpec : Spek({
     test("creates a V2 client with the default base URL") {
         assertNotNull(CircleCIAPIClient("test-token").clientV2())
+    }
+
+    test("continues a pipeline with its configuration and parameters") {
+        val request = ContinuePipelineRequest("test-key", "version: 2.1", mapOf("deploy" to true))
+        val body = withResponse("""{"message":"Pipeline continued"}""", "POST", "/pipeline/continue") { client ->
+            client.continuePipeline(request).blockingSingle()
+        }
+        val expected = """{"continuation-key":"test-key","configuration":"version: 2.1","parameters":{"deploy":true}}"""
+        assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+    }
+
+    test("creates a schedule with its timetable and pipeline parameters") {
+        val request = CreateScheduleParameters(
+            name = "Nightly",
+            timetable = CreateScheduleTimetable(1, listOf(2), daysOfWeek = listOf("MON", "FRI")),
+            attributionActor = ScheduleAttributionActor.SYSTEM,
+            parameters = mapOf("branch" to "main", "deploy" to true)
+        )
+        val path = "/project/gh%2Fexample%2Fproject/schedule"
+        val body = withResponse("""{"id":"schedule-id"}""", "POST", path, 201) { client ->
+            client.createSchedule("gh/example/project", request).blockingSingle()
+        }
+        val expected = """
+            {
+                "name":"Nightly",
+                "timetable":{"per-hour":1,"hours-of-day":[2],"days-of-week":["MON","FRI"]},
+                "attribution-actor":"system",
+                "parameters":{"branch":"main","deploy":true}
+            }
+        """
+        assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+    }
+
+    test("creates a webhook with its scope, events, and TLS verification setting") {
+        val request = CreateWebhookRequest(
+            name = "Build notifications",
+            url = "https://example.com/webhook",
+            signingSecret = "test-secret",
+            scope = WebhookScopeRequest("project", "project-id"),
+            events = listOf("workflow-completed"),
+            verifyTls = false
+        )
+        val body = withResponse("""{"id":"webhook-id"}""", "POST", "/webhook", 201) { client ->
+            client.createWebhook(request).blockingSingle()
+        }
+        val expected = """
+            {
+                "name":"Build notifications",
+                "url":"https://example.com/webhook",
+                "signing-secret":"test-secret",
+                "scope":{"type":"project","id":"project-id"},
+                "events":["workflow-completed"],
+                "verify-tls":false
+            }
+        """
+        assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+    }
+
+    test("decodes Insights flaky-test counts and nullable metadata") {
+        val firstTest = """
+            {
+                "workflow-created-at": "2024-01-01T00:00:00Z",
+                "workflow-id": "123e4567-e89b-12d3-a456-426614174000",
+                "classname": "ExampleTest",
+                "pipeline-number": 7,
+                "workflow-name": "build-and-test",
+                "test-name": "testWithSource",
+                "job-name": "test",
+                "job-number": 9,
+                "times-flaked": 2147483648,
+                "source": "junit",
+                "file": "src/test/ExampleTest.kt"
+            }
+        """.trimIndent()
+        val secondTest = firstTest.replace("\"testWithSource\"", "\"testWithoutSource\"")
+            .replace("\"junit\"", "null").replace("\"src/test/ExampleTest.kt\"", "null")
+            .replace("2147483648", "3")
+        val response = """{"total-flaky-tests":2.0,"flaky-tests":[$firstTest,$secondTest]}"""
+        withResponse(response, "GET", "/insights/gh%2Forg%2Frepo/flaky-tests") { client ->
+            val result = client.getFlakyTests("gh/org/repo").blockingSingle()
+            assertEquals(2.0, result.`total-flaky-tests`, 0.0)
+            assertEquals(2, result.`flaky-tests`.size)
+            val (withSource, withoutSource) = result.`flaky-tests`
+            assertEquals(2147483648L, withSource.`times-flaked`)
+            assertEquals("junit", withSource.source)
+            assertEquals("src/test/ExampleTest.kt", withSource.file)
+            assertNull(withSource.`pipeline-id`)
+            assertNull(withSource.`test-result`)
+            assertTrue(FlakyTest::`pipeline-id`.returnType.isMarkedNullable)
+            assertTrue(FlakyTest::`test-result`.returnType.isMarkedNullable)
+            assertEquals(3L, withoutSource.`times-flaked`)
+            assertNull(withoutSource.source)
+            assertNull(withoutSource.file)
+        }
     }
 
     test("decodes deployed component versions using the CircleCI response schema") {
@@ -75,6 +181,15 @@ object CircleCIAPIClientV2HttpSpec : Spek({
     }
 
     val projectSlug = "gh/CircleCI-Public/api-preview-docs"
+
+    test("lists project pipelines without branch or pagination query parameters") {
+        val path = "/project/gh%2FCircleCI-Public%2Fapi-preview-docs/pipeline"
+        withResponse("""{"items":[],"next_page_token":"next"}""", "GET", path) { client ->
+            client.getProjectPipelines(projectSlug).test()
+                .assertResult(PipelineListResponse(emptyList(), "next"))
+        }
+    }
+
     val jobPath = "/project/gh%2FCircleCI-Public%2Fapi-preview-docs/job/123"
     val jobTestsPath = "/project/gh%2FCircleCI-Public%2Fapi-preview-docs/123/tests"
 
@@ -264,6 +379,25 @@ object CircleCIAPIClientV2HttpSpec : Spek({
                 error is HttpException && error.code() == 401 &&
                     error.response()?.errorBody()?.string() == response
             }
+        }
+    }
+
+    test("decodes the acknowledgment for creating a URL Orb allow-list entry") {
+        val response = """{"id":"entry-id","message":"Created."}"""
+        val path = "/organization/org-id/url-orb-allow-list"
+        val request = CreateURLOrbAllowListEntryRequest("Example", "https://example.com/", "none")
+        withResponse(response, "POST", path) { client ->
+            client.createUrlOrbAllowListEntry("org-id", request).test()
+                .assertResult(URLOrbAllowListEntryAcknowledgment("entry-id", "Created."))
+        }
+    }
+
+    test("decodes the acknowledgment for removing a URL Orb allow-list entry") {
+        val response = """{"id":"entry-id","message":"Removed."}"""
+        val path = "/organization/org-id/url-orb-allow-list/entry-id"
+        withResponse(response, "DELETE", path) { client ->
+            client.removeUrlOrbAllowListEntry("org-id", "entry-id").test()
+                .assertResult(URLOrbAllowListEntryAcknowledgment("entry-id", "Removed."))
         }
     }
 
@@ -462,6 +596,42 @@ object CircleCIAPIClientV2HttpSpec : Spek({
                     "event_name":"weekday-build","checkout_ref":"main","config_ref":"main",
                     "disabled":false,"parameters":{"deploy_env":"staging"}
                 }"""
+            )
+        }
+    }
+
+    group("updates a pipeline trigger") {
+        test("sends only the disabled flag when disabling a trigger") {
+            assertTriggerUpdate(UpdateTriggerRequest(disabled = true), """{"disabled":true}""")
+        }
+
+        test("sends schedule settings and pipeline parameters") {
+            val source = UpdateTriggerRequest.EventSource(schedule = EventSource.Schedule("0 9 * * 1-5", "system"))
+            assertTriggerUpdate(
+                UpdateTriggerRequest(
+                    eventSource = source, eventName = "weekday-build", checkoutRef = "main", configRef = "main",
+                    parameters = mapOf("deploy_env" to "staging")
+                ),
+                """{
+                    "event_source":{"schedule":{"cron_expression":"0 9 * * 1-5","attribution_actor":"system"}},
+                    "event_name":"weekday-build","checkout_ref":"main","config_ref":"main",
+                    "parameters":{"deploy_env":"staging"}
+                }"""
+            )
+        }
+
+        test("sends webhook sender settings") {
+            val source = UpdateTriggerRequest.EventSource(webhook = EventSource.Webhook("monitor"))
+            assertTriggerUpdate(
+                UpdateTriggerRequest(eventSource = source, eventName = "alert"),
+                """{"event_source":{"webhook":{"sender":"monitor"}},"event_name":"alert"}"""
+            )
+        }
+
+        test("sends the event preset and explicit false when enabling a trigger") {
+            assertTriggerUpdate(
+                UpdateTriggerRequest(eventPreset = "all-pushes", disabled = false),
+                """{"event_preset":"all-pushes","disabled":false}"""
             )
         }
     }
@@ -683,6 +853,14 @@ private fun assertTriggerRequest(request: CreateTriggerRequest, expected: String
     val path = "/projects/project-id/pipeline-definitions/definition-id/triggers"
     val body = withResponse("""{"id":"trigger-id"}""", "POST", path) { client ->
         assertEquals("trigger-id", client.createTrigger("project-id", "definition-id", request).blockingSingle().id)
+    }
+    assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+}
+
+private fun assertTriggerUpdate(request: UpdateTriggerRequest, expected: String) {
+    val path = "/projects/project-id/triggers/trigger-id"
+    val body = withResponse("""{"id":"trigger-id"}""", "PATCH", path) { client ->
+        assertEquals("trigger-id", client.updateTrigger("project-id", "trigger-id", request).blockingSingle().id)
     }
     assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
 }

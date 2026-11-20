@@ -276,13 +276,13 @@ interface CircleCIAPIClientV2 {
     fun createUrlOrbAllowListEntry(
         @Path("org-slug-or-id") orgSlugOrId: String,
         @Body request: CreateURLOrbAllowListEntryRequest
-    ): Observable<URLOrbAllowListEntry>
+    ): Observable<URLOrbAllowListEntryAcknowledgment>
 
     @DELETE("organization/{org-slug-or-id}/url-orb-allow-list/{allow-list-entry-id}")
     fun removeUrlOrbAllowListEntry(
         @Path("org-slug-or-id") orgSlugOrId: String,
         @Path("allow-list-entry-id") allowListEntryId: String
-    ): Observable<MessageResponse>
+    ): Observable<URLOrbAllowListEntryAcknowledgment>
 
     // Groups endpoints
     @GET("organizations/{org-id}/groups")
@@ -434,12 +434,12 @@ interface CircleCIAPIClientV2 {
     ): Observable<PipelineListResponse>
 
     @POST("pipeline/continue")
-    fun continuePipeline(@Body request: ContinuePipelineRequest?): Observable<MessageResponse>
+    fun continuePipeline(@Body request: ContinuePipelineRequest): Observable<MessageResponse>
 
     @POST("project/{project-slug}/pipeline")
     fun triggerNewPipeline(
         @Path("project-slug") projectSlug: String,
-        @Body request: TriggerNewPipelineRequest?
+        @Body request: TriggerNewPipelineRequest = TriggerNewPipelineRequest()
     ): Observable<TriggerNewPipelineResponse>
 
     @POST("project/{provider}/{organization}/{project}/pipeline/run")
@@ -614,7 +614,7 @@ interface CircleCIAPIClientV2 {
     @POST("project/{project-slug}/schedule")
     fun createSchedule(
         @Path("project-slug") projectSlug: String,
-        @Body params: CreateScheduleParameters?
+        @Body params: CreateScheduleParameters
     ): Observable<Schedule>
 
     @PATCH("schedule/{schedule-id}")
@@ -641,7 +641,7 @@ interface CircleCIAPIClientV2 {
     ): Observable<WebhookListResponse>
 
     @POST("webhook")
-    fun createWebhook(@Body request: CreateWebhookRequest?): Observable<Webhook>
+    fun createWebhook(@Body request: CreateWebhookRequest): Observable<Webhook>
 
     @PUT("webhook/{webhook-id}")
     fun updateWebhook(
@@ -658,6 +658,12 @@ interface CircleCIAPIClientV2 {
 
     @GET("workflow/{id}/job")
     fun getWorkflowJobs(@Path("id") workflowId: String): Observable<JobListResponse>
+
+    @GET("workflow/{id}/job")
+    fun getWorkflowJobs(
+        @Path("id") workflowId: String,
+        @Query("page-token") pageToken: String?
+    ): Observable<JobListResponse>
 
     @POST("workflow/{id}/cancel")
     fun cancelWorkflow(@Path("id") workflowId: String): Observable<MessageResponse>

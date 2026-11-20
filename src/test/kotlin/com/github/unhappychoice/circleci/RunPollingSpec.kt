@@ -1,6 +1,7 @@
 package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v3.request.TriggerRunRequest
+import com.github.unhappychoice.circleci.v3.response.RunListResponse
 import com.github.unhappychoice.circleci.v3.response.RunResponse
 import com.github.unhappychoice.circleci.v3.response.TriggerRunResponse
 import io.reactivex.rxjava3.core.Observable
@@ -108,6 +109,12 @@ private class RunPollingClient(vararg responses: Observable<RunResponse>) : Circ
 
     override fun triggerRun(request: TriggerRunRequest, projectId: String?): Observable<TriggerRunResponse> =
         error("Unexpected triggerRun call")
+
+    override fun listProjectRuns(projectId: String, pageSize: Int?, cursor: String?): Observable<RunListResponse> =
+        error("Unexpected listProjectRuns call")
+
+    override fun listMyRuns(pageSize: Int?, cursor: String?): Observable<RunListResponse> =
+        error("Unexpected listMyRuns call")
 
     override fun getRun(id: String): Observable<RunResponse> {
         requestedIds.add(id)
