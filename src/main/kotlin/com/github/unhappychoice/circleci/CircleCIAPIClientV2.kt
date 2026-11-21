@@ -205,10 +205,24 @@ interface CircleCIAPIClientV2 {
         @Path("job-number") jobNumber: String
     ): Observable<Artifact.ArtifactListResponse>
 
+    @GET("project/{project-slug}/{job-number}/artifacts")
+    fun getJobArtifacts(
+        @Path("project-slug") projectSlug: String,
+        @Path("job-number") jobNumber: String,
+        @Query("page-token") pageToken: String?
+    ): Observable<Artifact.ArtifactListResponse>
+
     @GET("project/{project-slug}/{job-number}/tests")
     fun getTests(
         @Path("project-slug") projectSlug: String,
         @Path("job-number") jobNumber: String
+    ): Observable<TestsResponse>
+
+    @GET("project/{project-slug}/{job-number}/tests")
+    fun getTests(
+        @Path("project-slug") projectSlug: String,
+        @Path("job-number") jobNumber: String,
+        @Query("page-token") pageToken: String?
     ): Observable<TestsResponse>
 
     @POST("project/{project-slug}/job/{job-number}/cancel")

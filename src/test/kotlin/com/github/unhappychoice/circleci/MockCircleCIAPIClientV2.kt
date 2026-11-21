@@ -280,11 +280,17 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     override fun getJobDetails(projectSlug: String, jobNumber: String): Observable<JobDetails> =
         Observable.error(UnsupportedOperationException("Job details are covered by the HTTP spec"))
 
-    override fun getJobArtifacts(projectSlug: String, jobNumber: String): Observable<Artifact.ArtifactListResponse> = Observable.just(
+    override fun getJobArtifacts(projectSlug: String, jobNumber: String): Observable<Artifact.ArtifactListResponse> =
+        getJobArtifacts(projectSlug, jobNumber, null)
+
+    override fun getJobArtifacts(projectSlug: String, jobNumber: String, pageToken: String?): Observable<Artifact.ArtifactListResponse> = Observable.just(
         Artifact.ArtifactListResponse(items = listOf(Artifact(path = "path", nodeIndex = 0, url = "url")), nextPageToken = "next_page_token")
     )
 
-    override fun getTests(projectSlug: String, jobNumber: String): Observable<TestsResponse> = Observable.just(
+    override fun getTests(projectSlug: String, jobNumber: String): Observable<TestsResponse> =
+        getTests(projectSlug, jobNumber, null)
+
+    override fun getTests(projectSlug: String, jobNumber: String, pageToken: String?): Observable<TestsResponse> = Observable.just(
         TestsResponse(
             items = listOf(TestsResponse.Test(message = "message", source = "source", runTime = 1.0, file = "file", result = "result", name = "name", classname = "classname")),
             nextPageToken = "next_page_token"
