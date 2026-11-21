@@ -10,5 +10,5 @@ data class UpdateWebhookRequest(
     @SerializedName("verify-tls") val verifyTls: Boolean? = null
 ) {
     override fun toString() =
-        "UpdateWebhookRequest(name=$name, url=$url, signingSecret=[REDACTED], events=$events, verifyTls=$verifyTls)"
+        "UpdateWebhookRequest(name=$name, url=[REDACTED], signingSecret=[REDACTED], events=$events, verifyTls=$verifyTls)"
 }
