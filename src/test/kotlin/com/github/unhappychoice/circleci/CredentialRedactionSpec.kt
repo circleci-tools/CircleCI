@@ -2,6 +2,8 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v1.request.AddHerokuKeyRequest
 import com.github.unhappychoice.circleci.v1.request.AddSshKeyRequest
+import com.github.unhappychoice.circleci.v1.request.TriggerNewBuildRequest
+import com.github.unhappychoice.circleci.v1.request.TriggerNewBuildWithBranchRequest
 import com.github.unhappychoice.circleci.v1.response.Build
 import com.github.unhappychoice.circleci.v1.response.EnvironmentVariable
 import com.github.unhappychoice.circleci.v2.request.ContinuePipelineRequest
@@ -56,6 +58,21 @@ object CredentialRedactionSpec : Spek({
 
         assertEquals("AddSshKeyRequest(hostname=example.test, private_key=[REDACTED])", request.toString())
         assertEquals(key, v1Gson.toJsonTree(request).asJsonObject["private_key"].asString)
+    }
+
+    test("redacts build parameters and preserves them in legacy trigger request JSON") {
+        val value = "dummy-secret"
+        val parameters = mapOf("DEPLOY_TOKEN" to value)
+        val requests = listOf(
+            TriggerNewBuildRequest(buildParameters = parameters),
+            TriggerNewBuildWithBranchRequest(buildParameters = parameters)
+        )
+
+        requests.forEach { request ->
+            assertRedacted(request, "buildParameters", value)
+            val json = v1Gson.toJsonTree(request).asJsonObject
+            assertEquals(value, json.getAsJsonObject("build_parameters")["DEPLOY_TOKEN"].asString)
+        }
     }
 
     test("redacts the continuation key and preserves it in request JSON") {
