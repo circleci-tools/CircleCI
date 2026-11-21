@@ -4,6 +4,7 @@ import com.github.unhappychoice.circleci.v3.request.TriggerRunRequest
 import com.github.unhappychoice.circleci.v3.response.RunListResponse
 import com.github.unhappychoice.circleci.v3.response.RunResponse
 import com.google.gson.JsonParser
+import com.google.gson.JsonSyntaxException
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import mockwebserver3.RecordedRequest
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.spekframework.spek2.Spek
+import retrofit2.HttpException
 import java.util.concurrent.TimeUnit.SECONDS
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -105,6 +107,27 @@ object CircleCIAPIClientV3HttpSpec : Spek({
 
             assertEquals("queued", response.data.attributes.phase)
             assertNull(response.data.attributes.currentOutcome)
+        }
+    }
+
+    test("getRun exposes the HTTP status and body when rate limited") {
+        MockWebServer().use { server ->
+            server.start()
+            val body = """{"message":"Rate limit exceeded"}"""
+            server.enqueue(MockResponse(code = 429, body = body))
+
+            server.client().getRun(runId).test().assertNoValues().assertNotComplete().assertError { error ->
+                error is HttpException && error.code() == 429 && error.response()?.errorBody()?.string() == body
+            }
+        }
+    }
+
+    test("getRun rejects a success response with non-object run attributes") {
+        MockWebServer().use { server ->
+            server.start()
+            server.enqueue(MockResponse(body = """{"data":{"id":"$runId","attributes":[]}}"""))
+
+            server.client().getRun(runId).test().assertFailure(JsonSyntaxException::class.java)
         }
     }
 
