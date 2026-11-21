@@ -8,4 +8,7 @@ data class UsageExportJob(
     val start: String,
     val end: String,
     @SerializedName("download_urls") val downloadUrls: List<String>
-)
+) {
+    override fun toString() =
+        "UsageExportJob(id=$id, state=$state, start=$start, end=$end, downloadUrls=[REDACTED])"
+}
