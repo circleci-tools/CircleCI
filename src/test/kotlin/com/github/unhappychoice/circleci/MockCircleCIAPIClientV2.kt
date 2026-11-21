@@ -521,7 +521,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     // Rollback endpoint
     override fun rollbackProject(projectId: String, request: RollbackProjectRequest): Observable<RollbackProjectResponse> = Observable.just(
-        RollbackProjectResponse(message = "Rollback initiated")
+        RollbackProjectResponse(id = "123e4567-e89b-12d3-a456-426614174000", rollbackType = "PIPELINE")
     )
 
     // Trigger endpoints
