@@ -7,5 +7,6 @@ data class OidcClaims(
     @SerializedName("audience_updated_at") val audienceUpdatedAt: String?,
     @SerializedName("org_id") val orgId: String?,
     @SerializedName("project_id") val projectId: String?,
-    @SerializedName("ttl") val ttl: String?
+    @SerializedName("ttl") val ttl: String?,
+    @SerializedName("ttl_updated_at") val ttlUpdatedAt: String? = null
 )
