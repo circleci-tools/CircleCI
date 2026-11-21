@@ -1,15 +1,19 @@
 package com.github.unhappychoice.circleci
 
+import com.github.unhappychoice.circleci.v2.response.Artifact
 import com.github.unhappychoice.circleci.v2.response.PipelineValues
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializer
 import com.google.gson.reflect.TypeToken
+import io.reactivex.rxjava3.core.Single
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.apache.commons.codec.binary.Base64
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.InputStream
 import java.time.OffsetDateTime
 
 class CircleCIAPIClient private constructor(
@@ -43,6 +47,15 @@ class CircleCIAPIClient private constructor(
   fun client1_1(): CircleCIAPIClientV1_1 = serviceV1_1
   fun clientV2(): CircleCIAPIClientV2 = serviceV2
   fun clientV3(): CircleCIAPIClientV3 = serviceV3
+
+  /**
+   * Consumes a V2 artifact on an OkHttp dispatcher thread. The stream is valid only during
+   * [consume] and is closed before success or failure is delivered. Disposing cancels the call.
+   */
+  fun <T : Any> downloadArtifact(artifact: Artifact, consume: (InputStream) -> T): Single<T> =
+    Single.defer { artifactDownloader.download(artifact, consume) }
+
+  private val artifactDownloader by lazy { ArtifactDownloader(transport, baseUrl.toHttpUrl(), headerToken()) }
 
   private val transport by lazy { baseTransport ?: OkHttpClient() }
 

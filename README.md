@@ -107,6 +107,33 @@ val nextPage = firstPage.page.next?.let { cursor ->
 }
 ```
 
+### Download a V2 job artifact
+
+List the job's artifacts, select the path you want, and copy its stream to a local file.
+
+```kotlin
+import com.github.unhappychoice.circleci.CircleCIAPIClient
+import java.io.File
+
+val api = CircleCIAPIClient(token)
+val page = api.clientV2().getJobArtifacts("gh/my-org/my-project", "123").blockingSingle()
+val artifact = page.items.first { it.path == "reports/junit.xml" }
+api.downloadArtifact(artifact) { input ->
+    File("junit.xml").outputStream().use { output -> input.copyTo(output) }
+}.blockingGet()
+```
+
+If the selected path is on a later page, pass `nextPageToken` to `getJobArtifacts`.
+The download starts on subscription and runs the callback on an OkHttp thread.
+Read or copy the stream within the callback. The client closes the response when
+the callback exits, including on failure. Dispose the subscription to cancel
+the HTTP call and interrupt pending network reads.
+
+Downloads require HTTPS. For CircleCI Cloud, the client sends `Circle-Token` to
+`circleci.com`, `dl.circleci.com`, and subdomains of `circle-artifacts.com` on port 443.
+It keeps the token on same-origin redirects and drops it when the origin changes.
+This supports storage redirects such as the [S3 redirects described by CircleCI](https://circleci.com/docs/guides/security/security/).
+
 ### V2 context environment variables
 
 `addEnvironmentVariableToContext` returns `Observable<EnvironmentVariable>`.
