@@ -397,17 +397,23 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
     """.trimIndent()
 
-    test("rolls back a project with a reason") {
+    test("rolls back a project with a reason, namespace, and pipeline parameters") {
         val body = withResponse(rollbackResponse, "POST", rollbackPath, 202) { client ->
-            client.rollbackProject("project-id", rollbackRequest.copy(reason = "Restore the previous release"))
-                .blockingSingle()
+            val request = rollbackRequest.copy(
+                reason = "Restore the previous release",
+                namespace = "payments",
+                parameters = mapOf("region" to "us-east-1", "dry-run" to true, "replicas" to 2)
+            )
+            client.rollbackProject("project-id", request).blockingSingle()
         }
         val expected = JsonParser.parseString(rollbackBody).asJsonObject
         expected.addProperty("reason", "Restore the previous release")
+        expected.addProperty("namespace", "payments")
+        expected.add("parameters", JsonParser.parseString("""{"region":"us-east-1","dry-run":true,"replicas":2}"""))
         assertEquals(expected, JsonParser.parseString(body))
     }
 
-    test("rolls back a project without a reason") {
+    test("omits optional fields when rolling back a project") {
         val body = withResponse(rollbackResponse, "POST", rollbackPath, 202) { client ->
             val response = client.rollbackProject("project-id", rollbackRequest).blockingSingle()
             assertEquals("123e4567-e89b-12d3-a456-426614174000", response.id)
