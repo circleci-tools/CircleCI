@@ -254,6 +254,15 @@ object CircleCIAPIClientV2HttpSpec : Spek({
                 client.getProjectWorkflowJobMetrics(projectSlug, "build-and-test").blockingSingle()
             }
         }
+
+        test("sends the existing queries through the six-argument overload") {
+            val query = "page-token=next&all-branches=true&branch=main&reporting-window=last-30-days"
+            withResponse(response, "GET", "$path?$query") { client ->
+                client.getProjectWorkflowJobMetrics(
+                    projectSlug, "build-and-test", "next", true, "main", "last-30-days"
+                ).blockingSingle()
+            }
+        }
     }
 
     test("lists project pipelines without branch or pagination query parameters") {
