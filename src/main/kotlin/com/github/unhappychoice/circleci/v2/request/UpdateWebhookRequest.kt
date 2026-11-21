@@ -10,6 +10,27 @@ data class UpdateWebhookRequest(
     @SerializedName("verify-tls") val verifyTls: Boolean? = null,
     @SerializedName("is-enabled") val isEnabled: Boolean? = null
 ) {
+    @Deprecated("Retained for JVM binary compatibility", level = DeprecationLevel.HIDDEN)
+    constructor(
+        name: String? = null,
+        url: String? = null,
+        signingSecret: String? = null,
+        events: List<String>? = null,
+        verifyTls: Boolean? = null
+    ) : this(name, url, signingSecret, events, verifyTls, isEnabled = null)
+
+    @Deprecated("Retained for JVM binary compatibility", level = DeprecationLevel.HIDDEN)
+    fun copy(
+        name: String? = this.name,
+        url: String? = this.url,
+        signingSecret: String? = this.signingSecret,
+        events: List<String>? = this.events,
+        verifyTls: Boolean? = this.verifyTls
+    ): UpdateWebhookRequest = copy(
+        name, url, signingSecret, events, verifyTls,
+        isEnabled = this.isEnabled
+    )
+
     override fun toString() =
         "UpdateWebhookRequest(name=$name, url=$url, signingSecret=[REDACTED], " +
             "events=$events, verifyTls=$verifyTls, isEnabled=$isEnabled)"

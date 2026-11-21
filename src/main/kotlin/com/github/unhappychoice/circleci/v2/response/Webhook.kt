@@ -15,6 +15,36 @@ data class Webhook(
     @SerializedName("verify_tls") val verifyTls: Boolean? = null,
     @SerializedName("auto_disabled_at") val autoDisabledAt: String? = null
 ) {
+    @Deprecated("Retained for JVM binary compatibility", level = DeprecationLevel.HIDDEN)
+    constructor(
+        id: String,
+        name: String,
+        url: String,
+        createdAt: String,
+        updatedAt: String,
+        signingSecret: String,
+        scope: WebhookScope,
+        events: List<String>
+    ) : this(
+        id, name, url, createdAt, updatedAt, signingSecret, scope, events,
+        isEnabled = null, verifyTls = null, autoDisabledAt = null
+    )
+
+    @Deprecated("Retained for JVM binary compatibility", level = DeprecationLevel.HIDDEN)
+    fun copy(
+        id: String = this.id,
+        name: String = this.name,
+        url: String = this.url,
+        createdAt: String = this.createdAt,
+        updatedAt: String = this.updatedAt,
+        signingSecret: String = this.signingSecret,
+        scope: WebhookScope = this.scope,
+        events: List<String> = this.events
+    ): Webhook = copy(
+        id, name, url, createdAt, updatedAt, signingSecret, scope, events,
+        isEnabled = this.isEnabled, verifyTls = this.verifyTls, autoDisabledAt = this.autoDisabledAt
+    )
+
     override fun toString() =
         "Webhook(id=$id, name=$name, url=$url, createdAt=$createdAt, updatedAt=$updatedAt, " +
             "signingSecret=[REDACTED], scope=$scope, events=$events, isEnabled=$isEnabled, " +
