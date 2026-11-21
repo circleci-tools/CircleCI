@@ -20,6 +20,7 @@ import com.github.unhappychoice.circleci.v2.request.UpdateTriggerRequest
 import com.github.unhappychoice.circleci.v2.request.WebhookScopeRequest
 import com.github.unhappychoice.circleci.v2.response.ComponentVersion
 import com.github.unhappychoice.circleci.v2.response.ComponentVersionListResponse
+import com.github.unhappychoice.circleci.v2.response.ContextRestriction
 import com.github.unhappychoice.circleci.v2.response.FlakyTests.FlakyTest
 import com.github.unhappychoice.circleci.v2.response.JobDetails
 import com.github.unhappychoice.circleci.v2.response.PipelineDefinition
@@ -429,12 +430,48 @@ object CircleCIAPIClientV2HttpSpec : Spek({
     }
 
     test("lists context restrictions with an encoded page token") {
-        val response = """{"items":[{"id":"restriction-id"}],"next_page_token":"next-page"}"""
+        val response = """
+            {
+              "items": [
+                {
+                  "id": "project-restriction-id",
+                  "context_id": "context-id",
+                  "restriction_type": "project",
+                  "restriction_value": "project-id",
+                  "name": "Example project"
+                },
+                {
+                  "id": "expression-restriction-id",
+                  "context_id": "context-id",
+                  "restriction_type": "expression",
+                  "restriction_value": "pipeline.git.branch == \"main\"",
+                  "name": null
+                },
+                {
+                  "id": "group-restriction-id",
+                  "context_id": "context-id",
+                  "restriction_type": "group",
+                  "restriction_value": "group-id",
+                  "name": "Example group"
+                }
+              ],
+              "next_page_token": "next-page"
+            }
+        """.trimIndent()
         val path = "/context/context-id/restrictions?page-token=page%20%2B%20token"
         withResponse(response, "GET", path) { client ->
             val result = client.getContextRestrictions("context-id", "page + token").blockingSingle()
             assertEquals("next-page", result.nextPageToken)
-            assertEquals("restriction-id", (result.items.single() as Map<*, *>)["id"])
+            assertEquals(
+                listOf(
+                    ContextRestriction("project-restriction-id", "context-id", "project", "project-id", "Example project"),
+                    ContextRestriction(
+                        "expression-restriction-id", "context-id", "expression", "pipeline.git.branch == \"main\"", null
+                    ),
+                    ContextRestriction("group-restriction-id", "context-id", "group", "group-id", "Example group")
+                ),
+                result.items
+            )
         }
     }
 
