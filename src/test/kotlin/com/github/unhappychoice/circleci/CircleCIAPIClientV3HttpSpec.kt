@@ -24,40 +24,62 @@ object CircleCIAPIClientV3HttpSpec : Spek({
         assertEquals("CircleCI API token contains invalid header characters", error.message)
     }
 
-    test("triggers a run with only a known pipeline ID") {
-        MockWebServer().use { server ->
-            server.enqueue(createdRun())
-            val response = server.client().triggerRun(TriggerRunRequest(pipelineId)).blockingSingle()
+    mapOf(
+        "{}" to TriggerRunRequest(pipelineId),
+        """{"config":{"branch":"main"}}""" to TriggerRunRequest(pipelineId, config = TriggerRunRequest.Ref(branch = "main")),
+        """{"checkout":{"tag":"v1"}}""" to TriggerRunRequest(pipelineId, checkout = TriggerRunRequest.Ref(tag = "v1"))
+    ).forEach { (attributes, request) ->
+        test("triggers a run with attributes $attributes") {
+            MockWebServer().use { server ->
+                server.enqueue(createdRun())
+                val response = server.client().triggerRun(request).blockingSingle()
 
-            assertEquals(runId, response.data.id)
-            val request = server.takeRequest(5, SECONDS)!!
-            assertRequest(request, "POST", "/api/v3/runs")
-            assertEquals(
-                JsonParser.parseString("""{"data":{"attributes":{},"references":{"pipeline":{"id":"$pipelineId"}}}}"""),
-                JsonParser.parseString(request.body.readUtf8())
-            )
+                assertEquals(runId, response.data.id)
+                val recorded = server.takeRequest(5, SECONDS)!!
+                assertRequest(recorded, "POST", "/api/v3/runs")
+                val expected = """{"data":{"attributes":$attributes,"references":{"pipeline":{"id":"$pipelineId"}}}}"""
+                assertEquals(JsonParser.parseString(expected), JsonParser.parseString(recorded.body.readUtf8()))
+            }
         }
     }
 
-    test("serializes config, checkout, parameters, and project scope") {
-        MockWebServer().use { server ->
-            server.enqueue(createdRun())
-            val request = TriggerRunRequest(
-                pipelineId,
-                config = TriggerRunRequest.Ref(branch = "main"),
-                checkout = TriggerRunRequest.Ref(tag = "v1.0.0"),
-                parameters = mapOf("deploy" to true, "retries" to 2, "environment" to "staging")
-            )
-            server.client().triggerRun(request, projectId).blockingSingle()
+    test("rejects refs with both branch and tag or neither") {
+        assertThrows(IllegalArgumentException::class.java) { TriggerRunRequest.Ref(branch = "main", tag = "v1") }
+        assertThrows(IllegalArgumentException::class.java) { TriggerRunRequest.Ref() }
+    }
 
-            val recorded = server.takeRequest(5, SECONDS)!!
-            assertRequest(recorded, "POST", "/api/v3/runs?filter%5Bproject_id%5D=$projectId")
-            val expected = """
-                {"data":{"attributes":{"config":{"branch":"main"},"checkout":{"tag":"v1.0.0"},
-                "parameters":{"deploy":true,"retries":2,"environment":"staging"}},
-                "references":{"pipeline":{"id":"$pipelineId"}}}}
-            """.trimIndent()
-            assertEquals(JsonParser.parseString(expected), JsonParser.parseString(recorded.body.readUtf8()))
+    test("rejects mixed config and checkout reference types") {
+        val branch = TriggerRunRequest.Ref(branch = "main")
+        val tag = TriggerRunRequest.Ref(tag = "v1")
+        assertThrows(IllegalArgumentException::class.java) { TriggerRunRequest(pipelineId, config = branch, checkout = tag) }
+        assertThrows(IllegalArgumentException::class.java) { TriggerRunRequest(pipelineId, config = tag, checkout = branch) }
+    }
+
+    listOf("branch" to "main", "tag" to "v1.0.0").forEach { (field, value) ->
+        test("serializes config, checkout, parameters, and project scope for $field and $value") {
+            val selection = TriggerRunRequest.Ref(
+                branch = value.takeIf { field == "branch" },
+                tag = value.takeIf { field == "tag" }
+            )
+            MockWebServer().use { server ->
+                server.enqueue(createdRun())
+                val request = TriggerRunRequest(
+                    pipelineId,
+                    config = selection,
+                    checkout = selection,
+                    parameters = mapOf("deploy" to true, "retries" to 2, "environment" to "staging")
+                )
+                server.client().triggerRun(request, projectId).blockingSingle()
+
+                val recorded = server.takeRequest(5, SECONDS)!!
+                assertRequest(recorded, "POST", "/api/v3/runs?filter%5Bproject_id%5D=$projectId")
+                val expected = """
+                    {"data":{"attributes":{"config":{"$field":"$value"},"checkout":{"$field":"$value"},
+                    "parameters":{"deploy":true,"retries":2,"environment":"staging"}},
+                    "references":{"pipeline":{"id":"$pipelineId"}}}}
+                """.trimIndent()
+                assertEquals(JsonParser.parseString(expected), JsonParser.parseString(recorded.body.readUtf8()))
+            }
         }
     }
 

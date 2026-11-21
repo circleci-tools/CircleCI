@@ -6,7 +6,17 @@ class TriggerRunRequest(
     checkout: Ref? = null,
     parameters: Map<String, Any>? = null
 ) {
-    data class Ref(val branch: String? = null, val tag: String? = null)
+    data class Ref(val branch: String? = null, val tag: String? = null) {
+        init {
+            require((branch != null) xor (tag != null)) { "Specify exactly one of branch or tag" }
+        }
+    }
+
+    init {
+        require(config == null || checkout == null || (config.branch != null) == (checkout.branch != null)) {
+            "Config and checkout must use the same reference type"
+        }
+    }
 
     private val data = Data(Attributes(config, checkout, parameters), References(Pipeline(pipelineId)))
 
