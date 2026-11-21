@@ -806,13 +806,17 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         assertFalse(json.has("end_date"))
     }
 
-    test("preserves every download URL for a completed usage export") {
+    test("preserves ordered download URLs and redacts them from both usage export response strings") {
         val firstUrl = "https://example.com/usage-1.csv?signature=first"
         val secondUrl = "https://example.com/usage-2.csv?signature=second"
+        val start = "2025-01-01T00:00:00Z"
+        val end = "2025-02-01T00:00:00Z"
         val response = """
             {
               "usage_export_job_id": "$usageExportId",
               "state": "completed",
+              "start": "$start",
+              "end": "$end",
               "download_urls": ["$firstUrl", "$secondUrl"]
             }
         """.trimIndent()
@@ -822,6 +826,18 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertEquals("completed", job.state)
             assertEquals(listOf(firstUrl, secondUrl), job.downloadUrls)
             assertNull(job.errorReason)
+            assertEquals(
+                "GetUsageExportJobStatus(id=$usageExportId, state=completed, downloadUrls=[REDACTED], errorReason=null)",
+                job.toString()
+            )
+        }
+        withResponse(response, "POST", usageExportPath, status = 201) { client ->
+            val job = client.createUsageExport("org-id", CreateUsageExportRequest(start, end)).blockingSingle()
+            assertEquals(listOf(firstUrl, secondUrl), job.downloadUrls)
+            assertEquals(
+                "UsageExportJob(id=$usageExportId, state=completed, start=$start, end=$end, downloadUrls=[REDACTED])",
+                job.toString()
+            )
         }
     }
 
