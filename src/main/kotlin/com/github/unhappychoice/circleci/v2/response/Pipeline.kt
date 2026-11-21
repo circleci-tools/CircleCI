@@ -36,7 +36,7 @@ data class Pipeline(
         val branch: String?,
         @SerializedName("review_id") val reviewId: String?,
         @SerializedName("review_url") val reviewUrl: String?,
-        val revision: String,
+        val revision: String?,
         val tag: String?,
         val commit: Commit?,
         @SerializedName("origin_repository_url") val originRepositoryUrl: String
