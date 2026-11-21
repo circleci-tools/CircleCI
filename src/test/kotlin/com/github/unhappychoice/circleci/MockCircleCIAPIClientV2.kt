@@ -514,6 +514,8 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         ProjectEnvironmentVariableListResponse(items = listOf(ProjectEnvironmentVariable(name = "name", value = "value")), nextPageToken = "next_page_token")
     )
 
+    override fun getProjectEnvironmentVariables(projectSlug: String, pageToken: String?) = getProjectEnvironmentVariables(projectSlug)
+
     override fun createProjectEnvironmentVariable(projectSlug: String, request: CreateEnvVarRequest?): Observable<ProjectEnvironmentVariable> = Observable.just(
         ProjectEnvironmentVariable(name = "name", value = "value")
     )
