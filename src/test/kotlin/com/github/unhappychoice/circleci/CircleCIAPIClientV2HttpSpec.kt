@@ -360,7 +360,9 @@ object CircleCIAPIClientV2HttpSpec : Spek({
 
     test("rolls back a project without a reason") {
         val body = withResponse(rollbackResponse, "POST", rollbackPath, 202) { client ->
-            client.rollbackProject("project-id", rollbackRequest).blockingSingle()
+            val response = client.rollbackProject("project-id", rollbackRequest).blockingSingle()
+            assertEquals("123e4567-e89b-12d3-a456-426614174000", response.id)
+            assertEquals("PIPELINE", response.rollbackType)
         }
         assertEquals(JsonParser.parseString(rollbackBody), JsonParser.parseString(body))
     }

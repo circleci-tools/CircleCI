@@ -833,7 +833,8 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val response = subscriber.values().first()
-                expect(response.message).not.to.be.`null`
+                expect(response.id).not.to.be.`null`
+                expect(response.rollbackType).to.equal("PIPELINE")
             }
         }
 
