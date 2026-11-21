@@ -16,21 +16,22 @@ import kotlin.time.Duration
  * are forwarded immediately. Disposing stops polling. Later reruns may change the observed outcome.
  */
 fun CircleCIAPIClientV3.waitForRun(id: String, pollInterval: Duration, timeout: Duration): Single<RunResponse> =
-    waitForRun(id, pollInterval, timeout, Schedulers.io())
+    waitForRun(id, pollInterval, timeout, Schedulers.io(), Schedulers.single())
 
 internal fun CircleCIAPIClientV3.waitForRun(
     id: String,
     pollInterval: Duration,
     timeout: Duration,
-    scheduler: Scheduler
+    requestScheduler: Scheduler,
+    timerScheduler: Scheduler
 ): Single<RunResponse> {
     require(pollInterval.isPositive() && pollInterval.isFinite()) { "Poll interval must be positive and finite" }
     require(timeout.isPositive() && timeout.isFinite()) { "Timeout must be positive and finite" }
 
     return Observable.defer { getRun(id) }
-        .subscribeOn(scheduler)
-        .repeatWhen { completed -> completed.delay(pollInterval.inWholeNanoseconds, NANOSECONDS, scheduler) }
+        .subscribeOn(requestScheduler)
+        .repeatWhen { completed -> completed.delay(pollInterval.inWholeNanoseconds, NANOSECONDS, timerScheduler) }
         .filter { it.data.attributes.phase == "ended" }
         .firstOrError()
-        .timeout(timeout.inWholeNanoseconds, NANOSECONDS, scheduler)
+        .timeout(timeout.inWholeNanoseconds, NANOSECONDS, timerScheduler)
 }

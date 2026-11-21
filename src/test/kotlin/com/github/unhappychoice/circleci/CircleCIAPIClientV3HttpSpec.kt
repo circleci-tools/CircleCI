@@ -4,14 +4,16 @@ import com.github.unhappychoice.circleci.v3.request.TriggerRunRequest
 import com.github.unhappychoice.circleci.v3.response.RunListResponse
 import com.github.unhappychoice.circleci.v3.response.RunResponse
 import com.google.gson.JsonParser
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.RecordedRequest
+import com.google.gson.JsonSyntaxException
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import mockwebserver3.RecordedRequest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.spekframework.spek2.Spek
+import retrofit2.HttpException
 import java.util.concurrent.TimeUnit.SECONDS
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -31,6 +33,7 @@ object CircleCIAPIClientV3HttpSpec : Spek({
     ).forEach { (attributes, request) ->
         test("triggers a run with attributes $attributes") {
             MockWebServer().use { server ->
+                server.start()
                 server.enqueue(createdRun())
                 val response = server.client().triggerRun(request).blockingSingle()
 
@@ -38,7 +41,7 @@ object CircleCIAPIClientV3HttpSpec : Spek({
                 val recorded = server.takeRequest(5, SECONDS)!!
                 assertRequest(recorded, "POST", "/api/v3/runs")
                 val expected = """{"data":{"attributes":$attributes,"references":{"pipeline":{"id":"$pipelineId"}}}}"""
-                assertEquals(JsonParser.parseString(expected), JsonParser.parseString(recorded.body.readUtf8()))
+                assertEquals(JsonParser.parseString(expected), JsonParser.parseString(requireNotNull(recorded.body).utf8()))
             }
         }
     }
@@ -62,6 +65,7 @@ object CircleCIAPIClientV3HttpSpec : Spek({
                 tag = value.takeIf { field == "tag" }
             )
             MockWebServer().use { server ->
+                server.start()
                 server.enqueue(createdRun())
                 val request = TriggerRunRequest(
                     pipelineId,
@@ -78,13 +82,14 @@ object CircleCIAPIClientV3HttpSpec : Spek({
                     "parameters":{"deploy":true,"retries":2,"environment":"staging"}},
                     "references":{"pipeline":{"id":"$pipelineId"}}}}
                 """.trimIndent()
-                assertEquals(JsonParser.parseString(expected), JsonParser.parseString(recorded.body.readUtf8()))
+                assertEquals(JsonParser.parseString(expected), JsonParser.parseString(requireNotNull(recorded.body).utf8()))
             }
         }
     }
 
     test("decodes the phase and current outcome for a run") {
         MockWebServer().use { server ->
+            server.start()
             server.enqueue(run("ended", "\"succeeded\""))
             val response = server.client().getRun(runId).blockingSingle()
 
@@ -96,6 +101,7 @@ object CircleCIAPIClientV3HttpSpec : Spek({
 
     test("decodes a queued run with a null outcome") {
         MockWebServer().use { server ->
+            server.start()
             server.enqueue(run("queued", "null"))
             val response = server.client().getRun(runId).blockingSingle()
 
@@ -104,8 +110,30 @@ object CircleCIAPIClientV3HttpSpec : Spek({
         }
     }
 
+    test("getRun exposes the HTTP status and body when rate limited") {
+        MockWebServer().use { server ->
+            server.start()
+            val body = """{"message":"Rate limit exceeded"}"""
+            server.enqueue(MockResponse(code = 429, body = body))
+
+            server.client().getRun(runId).test().assertNoValues().assertNotComplete().assertError { error ->
+                error is HttpException && error.code() == 429 && error.response()?.errorBody()?.string() == body
+            }
+        }
+    }
+
+    test("getRun rejects a success response with non-object run attributes") {
+        MockWebServer().use { server ->
+            server.start()
+            server.enqueue(MockResponse(body = """{"data":{"id":"$runId","attributes":[]}}"""))
+
+            server.client().getRun(runId).test().assertFailure(JsonSyntaxException::class.java)
+        }
+    }
+
     test("waits for a run to end through the v3 HTTP client") {
         MockWebServer().use { server ->
+            server.start()
             server.enqueue(run("started", "\"failed\""))
             server.enqueue(run("ended", "\"succeeded\""))
             val expected = RunResponse(RunResponse.Data(runId, RunResponse.Attributes("ended", "succeeded")))
@@ -123,9 +151,10 @@ object CircleCIAPIClientV3HttpSpec : Spek({
 
     test("lists project runs and follows the opaque next cursor") {
         MockWebServer().use { server ->
+            server.start()
             val cursor = "a+/=%2F&? #"
             server.enqueue(runPage("""{"branch":"main","revision":"abc123"}""", """{"next":"$cursor","prev":null}"""))
-            server.enqueue(MockResponse().setBody("""{"data":[],"page":{"next":null,"prev":"back"}}"""))
+            server.enqueue(MockResponse(body = """{"data":[],"page":{"next":null,"prev":"back"}}"""))
             val client = server.client()
             val first = client.listProjectRuns(projectId).blockingSingle()
             val summary = first.data.single()
@@ -145,7 +174,7 @@ object CircleCIAPIClientV3HttpSpec : Spek({
             val second = client.listProjectRuns(projectId, pageSize = 10, cursor = first.page.next).blockingSingle()
             val request = server.takeRequest(5, SECONDS)!!
             assertRequest(request, "GET", "$path&page%5Blimit%5D=10&page%5Bcursor%5D=a%2B%2F%3D%252F%26%3F%20%23")
-            assertEquals(cursor, request.requestUrl!!.queryParameter("page[cursor]"))
+            assertEquals(cursor, request.url.queryParameter("page[cursor]"))
             assertEquals(emptyList<Any>(), second.data)
             assertNull(second.page.next)
             assertEquals("back", second.page.prev)
@@ -154,6 +183,7 @@ object CircleCIAPIClientV3HttpSpec : Spek({
 
     test("lists the authenticated user's runs without default pagination parameters") {
         MockWebServer().use { server ->
+            server.start()
             server.enqueue(runPage("null", "{}"))
             val response = server.client().listMyRuns().blockingSingle()
 
@@ -166,8 +196,9 @@ object CircleCIAPIClientV3HttpSpec : Spek({
 
     test("follows the next cursor while retaining the authenticated user filter") {
         MockWebServer().use { server ->
+            server.start()
             server.enqueue(runPage("null", """{"next":"next+/="}"""))
-            server.enqueue(MockResponse().setBody("""{"data":[],"page":{}}"""))
+            server.enqueue(MockResponse(body = """{"data":[],"page":{}}"""))
             val client = server.client()
             val first = client.listMyRuns(pageSize = 5).blockingSingle()
             val path = "/api/v3/runs?filter%5Buser_id%5D=me&page%5Blimit%5D=5"
@@ -182,6 +213,7 @@ object CircleCIAPIClientV3HttpSpec : Spek({
 
     test("delivers v3 responses asynchronously when created with the async factory") {
         MockWebServer().use { server ->
+            server.start()
             server.enqueue(run("ended", "\"succeeded\""))
             val subscribingThread = Thread.currentThread()
             val client = CircleCIAPIClient.async("test-token", server.url("/api/").toString()).clientV3()
@@ -203,16 +235,17 @@ private const val runId = "33333333-3333-4333-8333-333333333333"
 
 private fun MockWebServer.client() = CircleCIAPIClient("test-token", url("/api/").toString()).clientV3()
 
-private fun createdRun() = MockResponse().setResponseCode(201).setBody(
-    """{"data":{"id":"$runId","attributes":{"created_at":"2026-11-18T00:00:00Z"}}}"""
+private fun createdRun() = MockResponse(
+    code = 201,
+    body = """{"data":{"id":"$runId","attributes":{"created_at":"2026-11-18T00:00:00Z"}}}"""
 )
 
-private fun run(phase: String, outcome: String) = MockResponse().setBody(
-    """{"data":{"id":"$runId","attributes":{"phase":"$phase","current_outcome":$outcome,"number":1}}}"""
+private fun run(phase: String, outcome: String) = MockResponse(
+    body = """{"data":{"id":"$runId","attributes":{"phase":"$phase","current_outcome":$outcome,"number":1}}}"""
 )
 
-private fun runPage(vcs: String, page: String) = MockResponse().setBody(
-    """
+private fun runPage(vcs: String, page: String) = MockResponse(
+    body = """
     {
       "data": [{
         "id": "$runId",
@@ -231,7 +264,7 @@ private fun runPage(vcs: String, page: String) = MockResponse().setBody(
 
 private fun assertRequest(request: RecordedRequest, method: String, path: String) {
     assertEquals(method, request.method)
-    assertEquals(path, request.path)
-    assertEquals("Bearer test-token", request.getHeader("Authorization"))
-    assertNull(request.getHeader("Circle-Token"))
+    assertEquals(path, request.target)
+    assertEquals("Bearer test-token", request.headers["Authorization"])
+    assertNull(request.headers["Circle-Token"])
 }

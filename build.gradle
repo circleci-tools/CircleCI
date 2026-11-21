@@ -61,7 +61,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:6.1.3'
-    testImplementation "com.squareup.okhttp3:mockwebserver:$okhttpVersion"
+    testImplementation "com.squareup.okhttp3:mockwebserver3:$okhttpVersion"
     testImplementation "com.squareup.okhttp3:okhttp-tls:$okhttpVersion"
     testImplementation "com.winterbe:expekt:0.5.0"
     testImplementation "org.spekframework.spek2:spek-dsl-jvm:$spek_version"
@@ -78,8 +78,9 @@ test {
 }
 
 jacocoTestReport {
-    // The v3 interface's DefaultImpls class only forwards to the JVM default argument methods.
+    // These interfaces' DefaultImpls classes contain compiler-generated compatibility forwarders.
     classDirectories.setFrom(sourceSets.main.output.classesDirs.asFileTree.matching {
+        exclude 'com/github/unhappychoice/circleci/CircleCIAPIClientV2$DefaultImpls.class'
         exclude 'com/github/unhappychoice/circleci/CircleCIAPIClientV3$DefaultImpls.class'
     })
     reports {

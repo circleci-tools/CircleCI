@@ -46,7 +46,7 @@ data class Webhook(
     )
 
     override fun toString() =
-        "Webhook(id=$id, name=$name, url=$url, createdAt=$createdAt, updatedAt=$updatedAt, " +
+        "Webhook(id=$id, name=$name, url=[REDACTED], createdAt=$createdAt, updatedAt=$updatedAt, " +
             "signingSecret=[REDACTED], scope=$scope, events=$events, isEnabled=$isEnabled, " +
             "verifyTls=$verifyTls, autoDisabledAt=$autoDisabledAt)"
 }

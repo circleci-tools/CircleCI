@@ -35,7 +35,7 @@ data class CreateWebhookRequest(
     )
 
     override fun toString() =
-        "CreateWebhookRequest(name=$name, url=$url, signingSecret=[REDACTED], scope=$scope, " +
+        "CreateWebhookRequest(name=$name, url=[REDACTED], signingSecret=[REDACTED], scope=$scope, " +
             "events=$events, verifyTls=$verifyTls, isEnabled=$isEnabled)"
 }
 

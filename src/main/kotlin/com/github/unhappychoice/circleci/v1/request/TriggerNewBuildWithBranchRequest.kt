@@ -4,4 +4,7 @@ data class TriggerNewBuildWithBranchRequest(
   val revision: String? = null,
   val parallel: Int? = null,
   val buildParameters: Map<String, Any?>? = null
-)
+) {
+  override fun toString() =
+    "TriggerNewBuildWithBranchRequest(revision=$revision, parallel=$parallel, buildParameters=[REDACTED])"
+}

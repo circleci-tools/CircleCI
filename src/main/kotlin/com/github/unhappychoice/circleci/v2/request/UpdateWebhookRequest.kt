@@ -32,6 +32,6 @@ data class UpdateWebhookRequest(
     )
 
     override fun toString() =
-        "UpdateWebhookRequest(name=$name, url=$url, signingSecret=[REDACTED], " +
+        "UpdateWebhookRequest(name=$name, url=[REDACTED], signingSecret=[REDACTED], " +
             "events=$events, verifyTls=$verifyTls, isEnabled=$isEnabled)"
 }

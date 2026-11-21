@@ -3,8 +3,9 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v2.response.DeployEnvironment
 import com.github.unhappychoice.circleci.v2.response.DeployEnvironmentLabel
 import com.github.unhappychoice.circleci.v2.response.DeployEnvironmentListResponse
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import okhttp3.Headers.Companion.headersOf
 import org.spekframework.spek2.Spek
 
 object DeployEnvironmentHttpSpec : Spek({
@@ -43,7 +44,8 @@ object DeployEnvironmentHttpSpec : Spek({
 
 private fun withEnvironmentResponse(body: String, verify: (CircleCIAPIClientV2) -> Unit) {
     MockWebServer().use { server ->
-        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody(body))
+        server.start()
+        server.enqueue(MockResponse(headers = headersOf("Content-Type", "application/json"), body = body))
         val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
         verify(client)
     }

@@ -5,4 +5,7 @@ data class TriggerNewBuildRequest(
   val revision: String? = null,
   val parallel: Int? = null,
   val buildParameters: Map<String, Any?>? = null
-)
+) {
+  override fun toString() =
+    "TriggerNewBuildRequest(tag=$tag, revision=$revision, parallel=$parallel, buildParameters=[REDACTED])"
+}

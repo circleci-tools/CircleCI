@@ -2,6 +2,8 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v1.request.AddHerokuKeyRequest
 import com.github.unhappychoice.circleci.v1.request.AddSshKeyRequest
+import com.github.unhappychoice.circleci.v1.request.TriggerNewBuildRequest
+import com.github.unhappychoice.circleci.v1.request.TriggerNewBuildWithBranchRequest
 import com.github.unhappychoice.circleci.v1.response.Build
 import com.github.unhappychoice.circleci.v1.response.EnvironmentVariable
 import com.github.unhappychoice.circleci.v2.request.ContinuePipelineRequest
@@ -58,6 +60,21 @@ object CredentialRedactionSpec : Spek({
         assertEquals(key, v1Gson.toJsonTree(request).asJsonObject["private_key"].asString)
     }
 
+    test("redacts build parameters and preserves them in legacy trigger request JSON") {
+        val value = "dummy-secret"
+        val parameters = mapOf("DEPLOY_TOKEN" to value)
+        val requests = listOf(
+            TriggerNewBuildRequest(buildParameters = parameters),
+            TriggerNewBuildWithBranchRequest(buildParameters = parameters)
+        )
+
+        requests.forEach { request ->
+            assertRedacted(request, "buildParameters", value)
+            val json = v1Gson.toJsonTree(request).asJsonObject
+            assertEquals(value, json.getAsJsonObject("build_parameters")["DEPLOY_TOKEN"].asString)
+        }
+    }
+
     test("redacts the continuation key and preserves it in request JSON") {
         val key = "dummy-continuation-key"
         val request = ContinuePipelineRequest(key, "version: 2.1", null)
@@ -66,26 +83,37 @@ object CredentialRedactionSpec : Spek({
         assertEquals(key, v2Gson.toJsonTree(request).asJsonObject["continuation-key"].asString)
     }
 
-    test("redacts the webhook request signing secret and preserves it in request JSON") {
+    test("redacts the webhook create credentials and preserves them in request JSON") {
         val secret = "dummy-request-signing-secret"
+        val token = "dummy-create-token"
+        val url = "https://receiver.example.test/hooks/$token"
         val request = CreateWebhookRequest(
-            "example", "https://example.test", secret, WebhookScopeRequest("project", "project-id"),
+            "example", url, secret, WebhookScopeRequest("project", "project-id"),
             listOf("workflow-completed"), verifyTls = false
         )
 
         assertRedacted(request, "signingSecret", secret)
+        assertRedacted(request, "url", token)
+        assertEquals(url, request.url)
         assertTrue(request.toString().contains("verifyTls=false"))
         val json = v2Gson.toJsonTree(request).asJsonObject
         assertEquals(secret, json["signing-secret"].asString)
+        assertEquals(url, json["url"].asString)
         assertFalse(json["verify-tls"].asBoolean)
     }
 
-    test("redacts the webhook update signing secret and preserves it in request JSON") {
+    test("redacts the webhook update credentials and preserves them in request JSON") {
         val secret = "dummy-update-signing-secret"
-        val request = UpdateWebhookRequest(signingSecret = secret)
+        val token = "dummy-update-token"
+        val url = "https://receiver.example.test/hooks/$token"
+        val request = UpdateWebhookRequest(url = url, signingSecret = secret)
 
         assertRedacted(request, "signingSecret", secret)
-        assertEquals(secret, v2Gson.toJsonTree(request).asJsonObject["signing-secret"].asString)
+        assertRedacted(request, "url", token)
+        assertEquals(url, request.url)
+        val json = v2Gson.toJsonTree(request).asJsonObject
+        assertEquals(secret, json["signing-secret"].asString)
+        assertEquals(url, json["url"].asString)
     }
 
     test("redacts the environment variable value and preserves it in request JSON") {
@@ -126,15 +154,22 @@ object CredentialRedactionSpec : Spek({
         assertTrue(response.toString().contains("name=EXAMPLE"))
     }
 
-    test("redacts the webhook response signing secret") {
+    test("redacts the webhook response credentials and preserves them in JSON") {
         val secret = "dummy-response-signing-secret"
+        val token = "dummy-response-token"
+        val url = "https://receiver.example.test/hooks/$token"
         val webhook = Webhook(
-            "webhook-id", "example", "https://example.test", "created", "updated", secret,
+            "webhook-id", "example", url, "created", "updated", secret,
             WebhookScope("project", "project-id"), listOf("workflow-completed")
         )
 
         assertRedacted(webhook, "signingSecret", secret)
-        assertEquals(secret, v2Gson.toJsonTree(webhook).asJsonObject["signing_secret"].asString)
+        assertRedacted(webhook, "url", token)
+        assertEquals(url, webhook.url)
+        val json = v2Gson.toJsonTree(webhook).asJsonObject
+        assertEquals(secret, json["signing_secret"].asString)
+        assertEquals(url, json["url"].asString)
+        assertEquals(url, v2Gson.fromJson(json, Webhook::class.java).url)
     }
 })
 
