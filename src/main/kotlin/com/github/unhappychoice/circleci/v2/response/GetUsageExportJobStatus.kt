@@ -7,4 +7,7 @@ data class GetUsageExportJobStatus(
     val state: String,
     @SerializedName("download_urls") val downloadUrls: List<String>,
     @SerializedName("error_reason") val errorReason: String? = null
-)
+) {
+    override fun toString() =
+        "GetUsageExportJobStatus(id=$id, state=$state, downloadUrls=[REDACTED], errorReason=$errorReason)"
+}
