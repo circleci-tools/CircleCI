@@ -45,7 +45,7 @@ interface CircleCIAPIClientV2 {
         @Path("context-id") contextId: String,
         @Path("env-var-name") envVarName: String,
         @Body request: AddEnvironmentVariableRequest
-    ): Observable<Any>
+    ): Observable<EnvironmentVariable>
 
     @DELETE("context/{context-id}/environment-variable/{env-var-name}")
     fun deleteEnvironmentVariableFromContext(
