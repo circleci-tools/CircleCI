@@ -4,9 +4,9 @@ import com.github.unhappychoice.circleci.v2.request.TriggerNewPipelineRequest
 import com.github.unhappychoice.circleci.v2.response.TriggerNewPipelineResponse
 import com.google.gson.JsonParser
 import io.reactivex.rxjava3.core.Observable
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import org.junit.Assert.assertEquals
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 
 object TriggerNewPipelineSpec : Spek({
@@ -16,15 +16,16 @@ object TriggerNewPipelineSpec : Spek({
 
     fun triggerAndReadBody(trigger: (CircleCIAPIClientV2) -> Observable<TriggerNewPipelineResponse>): String =
         MockWebServer().use { server ->
-            server.enqueue(MockResponse().setResponseCode(201).setBody(responseJson))
+            server.start()
+            server.enqueue(MockResponse(code = 201, body = responseJson))
             val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
 
             trigger(client).test().assertResult(response)
 
             val request = server.takeRequest()
             assertEquals("POST", request.method)
-            assertEquals(listOf("api", "v2", "project", projectSlug, "pipeline"), request.requestUrl?.pathSegments)
-            request.body.readUtf8()
+            assertEquals(listOf("api", "v2", "project", projectSlug, "pipeline"), request.url.pathSegments)
+            requireNotNull(request.body).utf8()
         }
 
     test("sends an empty JSON object when options are omitted") {

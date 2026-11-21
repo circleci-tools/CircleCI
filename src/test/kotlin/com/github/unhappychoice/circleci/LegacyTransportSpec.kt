@@ -3,17 +3,18 @@ package com.github.unhappychoice.circleci
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.SECONDS
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
 
 @Suppress("DEPRECATION")
 object LegacyTransportSpec : Spek({
     test("leaves the legacy transport uninitialized after a V2 request") {
         MockWebServer().use { server ->
+            server.start()
             server.enqueue(userResponse())
             val api = CircleCIAPIClient.async("test-token", server.url("/api/").toString())
             assertFalse(api.isLegacyTransportInitialized())
@@ -26,6 +27,7 @@ object LegacyTransportSpec : Spek({
 
     test("shares the legacy connection pool across concurrent first access and authenticates both versions") {
         MockWebServer().use { server ->
+            server.start()
             repeat(2) { server.enqueue(userResponse()) }
             val api = CircleCIAPIClient("test-token", server.url("/api/").toString())
             val barrier = CyclicBarrier(2)
@@ -49,9 +51,9 @@ object LegacyTransportSpec : Spek({
 
                 listOf("/api/v1/me", "/api/v1.1/me").forEachIndexed { index, path ->
                     val request = checkNotNull(server.takeRequest(5, SECONDS))
-                    assertEquals(path, request.path)
-                    assertEquals("Basic dGVzdC10b2tlbjo=", request.getHeader("Authorization"))
-                    assertEquals(index, request.sequenceNumber)
+                    assertEquals(path, request.target)
+                    assertEquals("Basic dGVzdC10b2tlbjo=", request.headers["Authorization"])
+                    assertEquals(index, request.exchangeIndex)
                 }
             } finally {
                 executor.shutdownNow()
@@ -66,4 +68,4 @@ private fun CircleCIAPIClient.isLegacyTransportInitialized(): Boolean {
     return (delegate.get(this) as Lazy<*>).isInitialized()
 }
 
-private fun userResponse() = MockResponse().setBody("""{"id":"user-id","login":"octocat","name":"Octocat"}""")
+private fun userResponse() = MockResponse(body = """{"id":"user-id","login":"octocat","name":"Octocat"}""")

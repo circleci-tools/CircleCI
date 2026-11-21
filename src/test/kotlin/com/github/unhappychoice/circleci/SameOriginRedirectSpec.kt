@@ -1,12 +1,12 @@
 package com.github.unhappychoice.circleci
 
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.HeldCertificate
 import okio.BufferedSink
@@ -29,14 +29,15 @@ object SameOriginRedirectSpec : Spek({
     val json = "application/json".toMediaType()
 
     fun withOrigin(block: (MockWebServer) -> Unit) = MockWebServer().use { origin ->
-        origin.useHttps(serverTls.sslSocketFactory(), false)
+        origin.useHttps(serverTls.sslSocketFactory())
+        origin.start()
         block(origin)
     }
 
     fun MockWebServer.redirect(code: Int = 302, location: String? = "/next") {
-        val response = MockResponse().setResponseCode(code)
+        val response = MockResponse.Builder().code(code)
         location?.let { response.addHeader("Location", it) }
-        enqueue(response)
+        enqueue(response.build())
     }
 
     fun OkHttpClient.get(origin: MockWebServer) =
@@ -52,19 +53,19 @@ object SameOriginRedirectSpec : Spek({
                 client.newCall(request).execute().use { assertEquals(200, it.code) }
 
                 assertEquals(2, origin.requestCount)
-                assertEquals(payload, origin.takeRequest().body.readUtf8())
+                assertEquals(payload, origin.takeRequest().body?.utf8())
                 val redirected = origin.takeRequest()
-                assertEquals("/next", redirected.path)
-                assertEquals("test-token", redirected.getHeader("Circle-Token"))
+                assertEquals("/next", redirected.target)
+                assertEquals("test-token", redirected.headers["Circle-Token"])
                 if (code == 302) {
                     assertEquals("GET", redirected.method)
                     assertEquals(0L, redirected.bodySize)
                     listOf("Content-Type", "Content-Length", "Transfer-Encoding").forEach {
-                        assertNull(redirected.getHeader(it))
+                        assertNull(redirected.headers[it])
                     }
                 } else {
                     assertEquals("POST", redirected.method)
-                    assertEquals(payload, redirected.body.readUtf8())
+                    assertEquals(payload, redirected.body?.utf8())
                 }
             }
         }
@@ -85,7 +86,7 @@ object SameOriginRedirectSpec : Spek({
             client.newCall(request).execute().use { assertEquals(307, it.code) }
 
             assertEquals(1, origin.requestCount)
-            assertEquals(payload, origin.takeRequest().body.readUtf8())
+            assertEquals(payload, origin.takeRequest().body?.utf8())
         }
     }
 
@@ -102,7 +103,7 @@ object SameOriginRedirectSpec : Spek({
     test("returns the response after following 20 redirects") {
         withOrigin { origin ->
             repeat(20) { origin.redirect() }
-            origin.enqueue(MockResponse().setBody("done"))
+            origin.enqueue(MockResponse(body = "done"))
 
             client.get(origin).execute().use { assertEquals("done", it.body.string()) }
 

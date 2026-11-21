@@ -1,8 +1,9 @@
 package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.response.WorkflowSummary
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import okhttp3.Headers.Companion.headersOf
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 
@@ -14,9 +15,11 @@ object WorkflowSummaryResponseSpec : Spek({
             val windowEnd = "2025-01-03T00:00:00Z"
 
             MockWebServer().use { server ->
+                server.start()
                 val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
-                server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody(
-                    """
+                server.enqueue(MockResponse(
+                    headers = headersOf("Content-Type", "application/json"),
+                    body = """
                     {
                       "metrics": {
                         "total_runs": 5,

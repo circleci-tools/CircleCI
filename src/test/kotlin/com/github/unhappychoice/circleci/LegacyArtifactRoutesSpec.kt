@@ -2,9 +2,10 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v1.response.Artifact
 import io.reactivex.rxjava3.core.Observable
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import org.junit.Assert.assertEquals
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import okhttp3.Headers.Companion.headersOf
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 
 @Suppress("DEPRECATION")
@@ -20,8 +21,9 @@ object LegacyArtifactRoutesSpec : Spek({
 
   fun assertArtifactRoute(path: String, getArtifacts: (CircleCIAPIClient) -> Observable<List<Artifact>>) {
     MockWebServer().use { server ->
+      server.start()
       val fixture = checkNotNull(Artifact::class.java.getResource("/com/github/unhappychoice/circleci/json/artifacts.json"))
-      server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody(fixture.readText()))
+      server.enqueue(MockResponse(headers = headersOf("Content-Type", "application/json"), body = fixture.readText()))
 
       val client = CircleCIAPIClient("test-token", server.url("/api/").toString())
       getArtifacts(client).test().assertResult(artifacts)
@@ -29,7 +31,7 @@ object LegacyArtifactRoutesSpec : Spek({
       assertEquals(1, server.requestCount)
       val request = server.takeRequest()
       assertEquals("GET", request.method)
-      assertEquals(path, request.path)
+      assertEquals(path, request.target)
     }
   }
 

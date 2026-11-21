@@ -1,10 +1,11 @@
 package com.github.unhappychoice.circleci
 
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import okhttp3.Headers.Companion.headersOf
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.HeldCertificate
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -24,25 +25,26 @@ object AuthenticatedTransportSpec : Spek({
 
     test("V2 and V3 reuse an HTTPS connection with version-specific authentication") {
         MockWebServer().use { origin ->
-            origin.useHttps(serverTls.sslSocketFactory(), false)
-            origin.enqueue(MockResponse().setBody("""{"login":"test-user"}"""))
-            origin.enqueue(MockResponse().setBody("""{"data":{"id":"run-id","attributes":{"phase":"queued"}}}"""))
+            origin.useHttps(serverTls.sslSocketFactory())
+            origin.start()
+            origin.enqueue(MockResponse(body = """{"login":"test-user"}"""))
+            origin.enqueue(MockResponse(body = """{"data":{"id":"run-id","attributes":{"phase":"queued"}}}"""))
             val client = CircleCIAPIClient("test-token", origin.url("/api/").toString(), OkHttpClient().withTestTls())
 
             assertEquals("test-user", client.clientV2().getMe().blockingSingle().login)
             assertEquals("run-id", client.clientV3().getRun("run-id").blockingSingle().data.id)
 
             val v2 = origin.takeRequest(5, SECONDS)!!
-            assertEquals("/api/v2/me", v2.path)
-            assertEquals(0, v2.sequenceNumber)
-            assertEquals("test-token", v2.getHeader("Circle-Token"))
-            assertNull(v2.getHeader("Authorization"))
+            assertEquals("/api/v2/me", v2.target)
+            assertEquals(0, v2.exchangeIndex)
+            assertEquals("test-token", v2.headers["Circle-Token"])
+            assertNull(v2.headers["Authorization"])
 
             val v3 = origin.takeRequest(5, SECONDS)!!
-            assertEquals("/api/v3/runs/run-id", v3.path)
-            assertEquals(1, v3.sequenceNumber)
-            assertEquals("Bearer test-token", v3.getHeader("Authorization"))
-            assertNull(v3.getHeader("Circle-Token"))
+            assertEquals("/api/v3/runs/run-id", v3.target)
+            assertEquals(1, v3.exchangeIndex)
+            assertEquals("Bearer test-token", v3.headers["Authorization"])
+            assertNull(v3.headers["Circle-Token"])
         }
     }
 
@@ -52,15 +54,17 @@ object AuthenticatedTransportSpec : Spek({
         test("V2 GET does not forward its token to $destination") {
             MockWebServer().use { origin ->
                 MockWebServer().use { target ->
-                    origin.useHttps(serverTls.sslSocketFactory(), false)
-                    if (!downgrade) target.useHttps(serverTls.sslSocketFactory(), false)
+                    origin.useHttps(serverTls.sslSocketFactory())
+                    if (!downgrade) target.useHttps(serverTls.sslSocketFactory())
+                    origin.start()
+                    target.start()
                     target.enqueue(MockResponse())
-                    origin.enqueue(MockResponse().setResponseCode(302).addHeader("Location", target.url("/me")))
+                    origin.enqueue(MockResponse(code = 302, headers = headersOf("Location", target.url("/me").toString())))
 
                     val request = Request.Builder().url(origin.url("/me")).build()
                     api.okHttpV2.withTestTls().newCall(request).execute().use { assertEquals(302, it.code) }
 
-                    assertEquals("test-token", origin.takeRequest().getHeader("Circle-Token"))
+                    assertEquals("test-token", origin.takeRequest().headers["Circle-Token"])
                     assertEquals(1, origin.requestCount)
                     assertEquals(0, target.requestCount)
                 }
@@ -70,18 +74,20 @@ object AuthenticatedTransportSpec : Spek({
         test("V1 POST does not forward its body on a 307 to $destination") {
             MockWebServer().use { origin ->
                 MockWebServer().use { target ->
-                    origin.useHttps(serverTls.sslSocketFactory(), false)
-                    if (!downgrade) target.useHttps(serverTls.sslSocketFactory(), false)
+                    origin.useHttps(serverTls.sslSocketFactory())
+                    if (!downgrade) target.useHttps(serverTls.sslSocketFactory())
+                    origin.start()
+                    target.start()
                     target.enqueue(MockResponse())
-                    origin.enqueue(MockResponse().setResponseCode(307).addHeader("Location", target.url("/ssh-key")))
+                    origin.enqueue(MockResponse(code = 307, headers = headersOf("Location", target.url("/ssh-key").toString())))
 
                     val body = """{"private_key":"test-private-key"}"""
                     val request = Request.Builder().url(origin.url("/ssh-key")).post(body.toRequestBody()).build()
                     api.okHttpV1.withTestTls().newCall(request).execute().use { assertEquals(307, it.code) }
 
                     val received = origin.takeRequest()
-                    assertEquals("Basic dGVzdC10b2tlbjo=", received.getHeader("Authorization"))
-                    assertEquals(body, received.body.readUtf8())
+                    assertEquals("Basic dGVzdC10b2tlbjo=", received.headers["Authorization"])
+                    assertEquals(body, received.body?.utf8())
                     assertEquals(1, origin.requestCount)
                     assertEquals(0, target.requestCount)
                 }
@@ -91,9 +97,10 @@ object AuthenticatedTransportSpec : Spek({
 
     test("V2 authenticates ordinary requests and follows redirects on the same HTTPS origin") {
         MockWebServer().use { origin ->
-            origin.useHttps(serverTls.sslSocketFactory(), false)
+            origin.useHttps(serverTls.sslSocketFactory())
+            origin.start()
             origin.enqueue(MockResponse())
-            origin.enqueue(MockResponse().setResponseCode(302).addHeader("Location", "/new-me"))
+            origin.enqueue(MockResponse(code = 302, headers = headersOf("Location", "/new-me")))
             origin.enqueue(MockResponse())
 
             val client = api.okHttpV2.withTestTls()
@@ -105,17 +112,18 @@ object AuthenticatedTransportSpec : Spek({
             assertEquals(3, origin.requestCount)
             listOf("/me", "/me", "/new-me").forEach { path ->
                 val received = origin.takeRequest()
-                assertEquals(path, received.path)
-                assertEquals("test-token", received.getHeader("Circle-Token"))
+                assertEquals(path, received.target)
+                assertEquals("test-token", received.headers["Circle-Token"])
             }
         }
     }
 
     test("Retrofit decodes a V2 response after an authenticated HTTPS redirect") {
         MockWebServer().use { origin ->
-            origin.useHttps(serverTls.sslSocketFactory(), false)
-            origin.enqueue(MockResponse().setResponseCode(302).addHeader("Location", "/new-me"))
-            origin.enqueue(MockResponse().setBody("""{"login":"test-user"}"""))
+            origin.useHttps(serverTls.sslSocketFactory())
+            origin.start()
+            origin.enqueue(MockResponse(code = 302, headers = headersOf("Location", "/new-me")))
+            origin.enqueue(MockResponse(body = """{"login":"test-user"}"""))
 
             val service = api.retrofitV2(origin.url("/").toString()).newBuilder()
                 .client(api.okHttpV2.withTestTls())
@@ -126,8 +134,8 @@ object AuthenticatedTransportSpec : Spek({
             assertEquals(2, origin.requestCount)
             listOf("/me", "/new-me").forEach { path ->
                 val received = origin.takeRequest()
-                assertEquals(path, received.path)
-                assertEquals("test-token", received.getHeader("Circle-Token"))
+                assertEquals(path, received.target)
+                assertEquals("test-token", received.headers["Circle-Token"])
             }
         }
     }

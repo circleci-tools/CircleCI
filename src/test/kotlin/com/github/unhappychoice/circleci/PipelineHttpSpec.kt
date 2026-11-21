@@ -1,8 +1,9 @@
 package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.response.Pipeline
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import okhttp3.Headers.Companion.headersOf
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -25,9 +26,11 @@ object PipelineHttpSpec : Spek({
 
 private fun getPipelineVcs(revisionJson: String): Pipeline.Vcs =
     MockWebServer().use { server ->
+        server.start()
         server.enqueue(
-            MockResponse().setHeader("Content-Type", "application/json").setBody(
-                """
+            MockResponse(
+                headers = headersOf("Content-Type", "application/json"),
+                body = """
                 {
                   "id": "pipeline-id",
                   "errors": [],
