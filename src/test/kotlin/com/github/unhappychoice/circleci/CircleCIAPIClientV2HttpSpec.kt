@@ -18,6 +18,7 @@ import com.github.unhappychoice.circleci.v2.request.ScheduleAttributionActor
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
 import com.github.unhappychoice.circleci.v2.request.UpdateTriggerRequest
 import com.github.unhappychoice.circleci.v2.request.WebhookScopeRequest
+import com.github.unhappychoice.circleci.v2.response.Collaboration
 import com.github.unhappychoice.circleci.v2.response.ComponentVersion
 import com.github.unhappychoice.circleci.v2.response.ComponentVersionListResponse
 import com.github.unhappychoice.circleci.v2.response.ContextRestriction
@@ -51,6 +52,23 @@ import java.util.concurrent.TimeUnit.SECONDS
 object CircleCIAPIClientV2HttpSpec : Spek({
     test("creates a V2 client with the default base URL") {
         assertNotNull(CircleCIAPIClient("test-token").clientV2())
+    }
+
+    test("decodes collaborations with null and UUID organization IDs") {
+        val organizationId = "123e4567-e89b-12d3-a456-426614174000"
+        val response = """
+            [
+              {"id":null,"vcs-type":"github","name":"legacy","avatar_url":"https://example.com/legacy","slug":"gh/legacy"},
+              {"id":"$organizationId","vcs-type":"github","name":"example","avatar_url":"https://example.com/org","slug":"gh/example"}
+            ]
+        """.trimIndent()
+        withResponse(response, "GET", "/me/collaborations") { client ->
+            val expected = listOf(
+                Collaboration(null, "github", "legacy", "https://example.com/legacy", "gh/legacy"),
+                Collaboration(organizationId, "github", "example", "https://example.com/org", "gh/example")
+            )
+            assertEquals(expected, client.getCollaborations().blockingSingle())
+        }
     }
 
     test("lists project checkout keys with a SHA-256 fingerprint digest") {

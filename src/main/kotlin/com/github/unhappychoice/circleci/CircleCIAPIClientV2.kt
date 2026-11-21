@@ -547,6 +547,12 @@ interface CircleCIAPIClientV2 {
     @GET("project/{project-slug}/envvar")
     fun getProjectEnvironmentVariables(@Path("project-slug") projectSlug: String): Observable<ProjectEnvironmentVariableListResponse>
 
+    @GET("project/{project-slug}/envvar")
+    fun getProjectEnvironmentVariables(
+        @Path("project-slug") projectSlug: String,
+        @Query("page-token") pageToken: String?
+    ): Observable<ProjectEnvironmentVariableListResponse>
+
     @POST("project/{project-slug}/envvar")
     fun createProjectEnvironmentVariable(
         @Path("project-slug") projectSlug: String,
