@@ -60,19 +60,19 @@ private const val TOKEN_HEADER = "Circle-Token"
 private object ArtifactRedirectInterceptor : Interceptor {
   override fun intercept(chain: Interceptor.Chain): Response {
     var request = chain.request()
-    repeat(21) { redirects ->
+    var redirects = 0
+    while (true) {
       val response = chain.proceed(request)
       if (!response.isRedirect) return response
       response.use {
         val target = response.header("Location")?.let(request.url::resolve)
         if (target == null || !target.isArtifactUrl()) throw ProtocolException("Invalid artifact redirect URL")
-        if (redirects == 20) throw ProtocolException("Too many artifact redirects")
+        if (redirects++ == 20) throw ProtocolException("Too many artifact redirects")
         request = request.newBuilder().url(target).apply {
           if (!request.url.hasSameOrigin(target)) removeHeader(TOKEN_HEADER)
         }.build()
       }
     }
-    error("Unreachable redirect state")
   }
 }
 

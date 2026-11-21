@@ -15,6 +15,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.net.ProtocolException
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 
 object ArtifactDownloadSpec : Spek({
@@ -125,6 +126,56 @@ object ArtifactDownloadSpec : Spek({
         }
     }
 
+    test("rejects invalid artifact URLs without sending a request") {
+        artifactServer().use { origin ->
+            val api = artifactClient(origin)
+            val url = origin.url("/artifact")
+            listOf("not a URL", url.newBuilder().scheme("http").build().toString(),
+                url.newBuilder().username("user").build().toString(),
+                url.newBuilder().password("secret").build().toString()).forEach { invalid ->
+                api.downloadArtifact(Artifact(invalid, "report", 0)) { it.read() }
+                    .test().assertNoValues().assertError(IllegalArgumentException::class.java)
+            }
+            assertEquals(0, origin.requestCount)
+        }
+    }
+
+    test("does not send a request when disposed on subscription") {
+        artifactServer().use { origin ->
+            artifactClient(origin).downloadArtifact(artifactAt(origin)) { it.read() }
+                .test(true).assertNoValues().assertNoErrors().assertNotComplete()
+            assertNull(origin.takeRequest(100, MILLISECONDS))
+        }
+    }
+
+    test("rejects redirects with a missing or unresolvable location") {
+        artifactServer().use { origin ->
+            origin.enqueue(MockResponse(code = 302))
+            origin.enqueue(redirect("https://[invalid]/"))
+            val download = artifactClient(origin).downloadArtifact(artifactAt(origin)) { it.read() }
+            repeat(2) {
+                download.test().awaitDone(5, SECONDS).assertNoValues().assertError {
+                    it is ProtocolException && it.message == "Invalid artifact redirect URL"
+                }
+            }
+            assertEquals(2, origin.requestCount)
+        }
+    }
+
+    test("follows at most twenty redirects") {
+        artifactServer().use { origin ->
+            repeat(20) { origin.enqueue(redirect("/artifact")) }
+            origin.enqueue(MockResponse(body = "ok"))
+            repeat(21) { origin.enqueue(redirect("/artifact")) }
+            val download = artifactClient(origin).downloadArtifact(artifactAt(origin)) { it.reader().readText() }
+            assertEquals("ok", download.blockingGet())
+            download.test().awaitDone(5, SECONDS).assertNoValues().assertError {
+                it is ProtocolException && it.message == "Too many artifact redirects"
+            }
+            assertEquals(42, origin.requestCount)
+        }
+    }
+
     test("authenticates only documented CircleCI HTTPS origins") {
         val apiUrl = "https://circleci.com/api/".toHttpUrl()
         listOf("https://circleci.com/a", "https://dl.circleci.com/a",
@@ -136,6 +187,7 @@ object ArtifactDownloadSpec : Spek({
             "https://fake-circle-artifacts.com/a", "https://bucket.s3.amazonaws.com/a").forEach {
             assertFalse(canAuthenticateArtifact(it.toHttpUrl(), apiUrl), it)
         }
+        assertFalse(canAuthenticateArtifact("https://circleci.com/a".toHttpUrl(), "http://circleci.com:443/".toHttpUrl()))
     }
 })
 
