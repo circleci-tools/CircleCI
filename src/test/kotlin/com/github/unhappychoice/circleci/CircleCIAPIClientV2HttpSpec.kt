@@ -779,7 +779,7 @@ object CircleCIAPIClientV2HttpSpec : Spek({
     val usageExportId = "e8235eed-f121-4ae3-9c72-2719d6572818"
     val usageExportPath = "/organizations/org-id/usage_export_job"
 
-    test("serializes usage export dates and decodes the created job") {
+    test("serializes only dates when shared organization IDs are omitted and decodes the created job") {
         val start = "2025-01-01T00:00:00Z"
         val end = "2025-02-01T00:00:00Z"
         val response = """
@@ -802,8 +802,29 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         val json = JsonParser.parseString(body).asJsonObject
         assertEquals(start, json.get("start")?.asString)
         assertEquals(end, json.get("end")?.asString)
-        assertFalse(json.has("start_date"))
-        assertFalse(json.has("end_date"))
+        assertEquals(setOf("start", "end"), json.keySet())
+    }
+
+    test("serializes shared organization IDs in the usage export request") {
+        val start = "2025-01-01T00:00:00Z"
+        val end = "2025-02-01T00:00:00Z"
+        val sharedOrgIds = listOf("b9291e0d-a11e-41fb-8517-c545388b5953", "48931ceb-8a7c-4962-918c-6e819b5f260e")
+        val response = """
+            {
+              "usage_export_job_id": "$usageExportId",
+              "state": "created",
+              "start": "$start",
+              "end": "$end",
+              "download_urls": []
+            }
+        """.trimIndent()
+        val body = withResponse(response, "POST", usageExportPath, status = 201) { client ->
+            client.createUsageExport("org-id", CreateUsageExportRequest(start, end, sharedOrgIds)).blockingSingle()
+        }
+        val json = JsonParser.parseString(body).asJsonObject
+        assertEquals(start, json.get("start")?.asString)
+        assertEquals(end, json.get("end")?.asString)
+        assertEquals(sharedOrgIds, json.getAsJsonArray("shared_org_ids").map { it.asString })
     }
 
     test("preserves every download URL for a completed usage export") {
