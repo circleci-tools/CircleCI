@@ -824,6 +824,32 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
     }
 
+    listOf(
+        "with a TTL update timestamp" to "2026-01-01T00:00:00Z",
+        "without a TTL update timestamp" to null
+    ).forEach { (scenario, timestamp) ->
+        val timestampField = timestamp?.let { ""","ttl_updated_at":"$it"""" }.orEmpty()
+
+        test("decodes organization OIDC claims $scenario") {
+            val response = """{"org_id":"org-id","ttl":"1h"$timestampField}"""
+            withResponse(response, "GET", "/org/org-id/oidc-custom-claims") { client ->
+                val claims = client.getOrgClaims("org-id").blockingSingle()
+                assertEquals("1h", claims.ttl)
+                assertEquals(timestamp, claims.ttlUpdatedAt)
+            }
+        }
+
+        test("decodes project OIDC claims $scenario") {
+            val response = """{"org_id":"org-id","project_id":"project-id","ttl":"1h"$timestampField}"""
+            val path = "/org/org-id/project/project-id/oidc-custom-claims"
+            withResponse(response, "GET", path) { client ->
+                val claims = client.getProjectClaims("org-id", "project-id").blockingSingle()
+                assertEquals("1h", claims.ttl)
+                assertEquals(timestamp, claims.ttlUpdatedAt)
+            }
+        }
+    }
+
     test("patches organization OIDC claims with a top-level audience array and TTL") {
         val response = """{"org_id":"org-id"}"""
         val path = "/org/org-id/oidc-custom-claims"
