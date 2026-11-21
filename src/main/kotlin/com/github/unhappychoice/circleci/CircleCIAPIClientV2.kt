@@ -529,7 +529,7 @@ interface CircleCIAPIClientV2 {
     @POST("project/{project-slug}/checkout-key")
     fun createProjectCheckoutKey(
         @Path("project-slug") projectSlug: String,
-        @Body request: CreateCheckoutKeyRequest?
+        @Body request: CreateCheckoutKeyRequest
     ): Observable<CheckoutKey>
 
     @GET("project/{project-slug}/checkout-key/{fingerprint}")
@@ -550,7 +550,7 @@ interface CircleCIAPIClientV2 {
     @POST("project/{project-slug}/envvar")
     fun createProjectEnvironmentVariable(
         @Path("project-slug") projectSlug: String,
-        @Body request: CreateEnvVarRequest?
+        @Body request: CreateEnvVarRequest
     ): Observable<ProjectEnvironmentVariable>
 
     @GET("project/{project-slug}/envvar/{name}")

@@ -771,7 +771,7 @@ object CircleCIAPIClientV2Spec : Spek({
             }
 
             test("#createProjectEnvironmentVariable() should return response") {
-                val request = CreateEnvVarRequest("value")
+                val request = CreateEnvVarRequest(name = "name", value = "value")
                 val subscriber = client.createProjectEnvironmentVariable(projectSlug, request).test()
                 expect(subscriber.isFinished()).to.be.`true`
 

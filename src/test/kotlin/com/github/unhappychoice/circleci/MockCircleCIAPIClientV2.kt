@@ -500,7 +500,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     override fun getProjectCheckoutKeys(projectSlug: String, digest: String?): Observable<CheckoutKeyListResponse> =
         getProjectCheckoutKeys(projectSlug)
 
-    override fun createProjectCheckoutKey(projectSlug: String, request: CreateCheckoutKeyRequest?): Observable<CheckoutKey> = Observable.just(
+    override fun createProjectCheckoutKey(projectSlug: String, request: CreateCheckoutKeyRequest): Observable<CheckoutKey> = Observable.just(
         CheckoutKey(publicKey = "public_key", type = "type", fingerprint = "fingerprint", preferred = false, createdAt = OffsetDateTime.now())
     )
 
@@ -514,7 +514,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         ProjectEnvironmentVariableListResponse(items = listOf(ProjectEnvironmentVariable(name = "name", value = "value")), nextPageToken = "next_page_token")
     )
 
-    override fun createProjectEnvironmentVariable(projectSlug: String, request: CreateEnvVarRequest?): Observable<ProjectEnvironmentVariable> = Observable.just(
+    override fun createProjectEnvironmentVariable(projectSlug: String, request: CreateEnvVarRequest): Observable<ProjectEnvironmentVariable> = Observable.just(
         ProjectEnvironmentVariable(name = "name", value = "value")
     )
 
