@@ -25,6 +25,7 @@ import com.github.unhappychoice.circleci.v2.response.FlakyTests.FlakyTest
 import com.github.unhappychoice.circleci.v2.response.JobDetails
 import com.github.unhappychoice.circleci.v2.response.PipelineDefinition
 import com.github.unhappychoice.circleci.v2.response.PipelineListResponse
+import com.github.unhappychoice.circleci.v2.response.RestrictionCreated
 import com.github.unhappychoice.circleci.v2.response.TestsResponse
 import com.github.unhappychoice.circleci.v2.response.Trigger
 import com.github.unhappychoice.circleci.v2.response.URLOrbAllowListEntryAcknowledgment
@@ -477,16 +478,46 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
     }
 
-    test("creates a context restriction") {
-        val response = """{"id":"restriction-id","message":"Restriction created"}"""
-        val body = withResponse(response, "POST", "/context/context-id/restrictions") { client ->
-            val result = client.createContextRestriction(
-                "context-id", CreateContextRestrictionRequest("project-id")
-            ).blockingSingle()
-            assertEquals("restriction-id", result.id)
-            assertEquals("Restriction created", result.message)
+    group("creates context restrictions") {
+        val path = "/context/context-id/restrictions"
+        val id = "497f6eca-6276-4993-bfeb-53cbbbba6f08"
+
+        test("creates a project restriction and decodes the project name") {
+            val projectId = "405d8375-3514-403b-8c43-83ae74cfe0e9"
+            val response = """
+                {
+                  "id": "$id",
+                  "project_id": "$projectId",
+                  "name": "project-name",
+                  "restriction_type": "project",
+                  "restriction_value": "$projectId"
+                }
+            """.trimIndent()
+            val body = withResponse(response, "POST", path, 201) { client ->
+                client.createContextRestriction("context-id", CreateContextRestrictionRequest("project", projectId))
+                    .test().assertResult(RestrictionCreated(id, "project", projectId, "project-name"))
+            }
+            val expected = """{"restriction_type":"project","restriction_value":"$projectId"}"""
+            assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
         }
-        assertEquals("project-id", JsonParser.parseString(body).asJsonObject["restriction"].asString)
+
+        test("creates an expression restriction and decodes a null name") {
+            val expression = "pipeline.git.branch == \"main\""
+            val response = """
+                {
+                  "id": "$id",
+                  "name": null,
+                  "restriction_type": "expression",
+                  "restriction_value": "pipeline.git.branch == \"main\""
+                }
+            """.trimIndent()
+            val body = withResponse(response, "POST", path, 201) { client ->
+                client.createContextRestriction("context-id", CreateContextRestrictionRequest("expression", expression))
+                    .test().assertResult(RestrictionCreated(id, "expression", expression, null))
+            }
+            val expected = """{"restriction_type":"expression","restriction_value":"pipeline.git.branch == \"main\""}"""
+            assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+        }
     }
 
     group("decodes pipeline definitions") {
