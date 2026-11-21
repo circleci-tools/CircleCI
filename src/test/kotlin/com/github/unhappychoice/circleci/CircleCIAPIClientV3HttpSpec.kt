@@ -24,18 +24,22 @@ object CircleCIAPIClientV3HttpSpec : Spek({
         assertEquals("CircleCI API token contains invalid header characters", error.message)
     }
 
-    test("triggers a run with only a known pipeline ID") {
-        MockWebServer().use { server ->
-            server.enqueue(createdRun())
-            val response = server.client().triggerRun(TriggerRunRequest(pipelineId)).blockingSingle()
+    mapOf(
+        "{}" to TriggerRunRequest(pipelineId),
+        """{"config":{"branch":"main"}}""" to TriggerRunRequest(pipelineId, config = TriggerRunRequest.Ref(branch = "main")),
+        """{"checkout":{"tag":"v1"}}""" to TriggerRunRequest(pipelineId, checkout = TriggerRunRequest.Ref(tag = "v1"))
+    ).forEach { (attributes, request) ->
+        test("triggers a run with attributes $attributes") {
+            MockWebServer().use { server ->
+                server.enqueue(createdRun())
+                val response = server.client().triggerRun(request).blockingSingle()
 
-            assertEquals(runId, response.data.id)
-            val request = server.takeRequest(5, SECONDS)!!
-            assertRequest(request, "POST", "/api/v3/runs")
-            assertEquals(
-                JsonParser.parseString("""{"data":{"attributes":{},"references":{"pipeline":{"id":"$pipelineId"}}}}"""),
-                JsonParser.parseString(request.body.readUtf8())
-            )
+                assertEquals(runId, response.data.id)
+                val recorded = server.takeRequest(5, SECONDS)!!
+                assertRequest(recorded, "POST", "/api/v3/runs")
+                val expected = """{"data":{"attributes":$attributes,"references":{"pipeline":{"id":"$pipelineId"}}}}"""
+                assertEquals(JsonParser.parseString(expected), JsonParser.parseString(recorded.body.readUtf8()))
+            }
         }
     }
 
