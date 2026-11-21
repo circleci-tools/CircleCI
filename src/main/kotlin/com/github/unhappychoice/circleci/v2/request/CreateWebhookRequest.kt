@@ -8,11 +8,12 @@ data class CreateWebhookRequest(
     @SerializedName("signing-secret") val signingSecret: String,
     @SerializedName("scope") val scope: WebhookScopeRequest,
     val events: List<String>,
-    @SerializedName("verify-tls") val verifyTls: Boolean = true
+    @SerializedName("verify-tls") val verifyTls: Boolean = true,
+    @SerializedName("is-enabled") val isEnabled: Boolean? = null
 ) {
     override fun toString() =
         "CreateWebhookRequest(name=$name, url=$url, signingSecret=[REDACTED], scope=$scope, " +
-            "events=$events, verifyTls=$verifyTls)"
+            "events=$events, verifyTls=$verifyTls, isEnabled=$isEnabled)"
 }
 
 data class WebhookScopeRequest(
