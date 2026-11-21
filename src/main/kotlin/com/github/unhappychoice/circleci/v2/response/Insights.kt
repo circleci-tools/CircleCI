@@ -40,11 +40,11 @@ data class WorkflowRunsResponse(
     data class WorkflowRunItem(
         val id: String,
         @SerializedName("branch") val branch: String?,
-        @SerializedName("duration") val duration: Long,
+        @SerializedName("duration") val duration: Long?,
         @SerializedName("created_at") val createdAt: String,
         @SerializedName("stopped_at") val stoppedAt: String?,
         @SerializedName("credits_used") val creditsUsed: Long,
-        val status: String
+        val status: String?
     )
 }
 
