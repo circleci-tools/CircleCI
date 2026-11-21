@@ -1,7 +1,8 @@
 package com.github.unhappychoice.circleci
 
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import okhttp3.Headers.Companion.headersOf
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -22,9 +23,11 @@ object WorkflowJobsHttpSpec : Spek({
 
     test("getWorkflowJobs preserves dependency conditions and accepts jobs without requires") {
         MockWebServer().use { server ->
+            server.start()
             server.enqueue(
-                MockResponse().setHeader("Content-Type", "application/json").setBody(
-                    """
+                MockResponse(
+                    headers = headersOf("Content-Type", "application/json"),
+                    body = """
                     {
                       "items": [
                         {
@@ -58,30 +61,31 @@ object WorkflowJobsHttpSpec : Spek({
             assertEquals(mapOf("build" to listOf("success")), jobs[0].requires)
             assertEquals(mapOf("build" to listOf("failed", "canceled")), jobs[1].requires)
             assertNull(jobs[2].requires)
-            assertEquals("/api/v2/workflow/workflow-id/job", server.takeRequest().path)
+            assertEquals("/api/v2/workflow/workflow-id/job", server.takeRequest().target)
         }
     }
 
     test("fetches the next workflow job page using the returned token") {
         MockWebServer().use { server ->
+            server.start()
             val path = "/api/v2/workflow/workflow-id/job"
-            server.enqueue(MockResponse().setBody("""{"items":[{"id":"build"}],"next_page_token":"page + token"}"""))
-            server.enqueue(MockResponse().setBody("""{"items":[{"id":"test"}],"next_page_token":null}"""))
-            server.enqueue(MockResponse().setBody("""{"items":[],"next_page_token":null}"""))
+            server.enqueue(MockResponse(body = """{"items":[{"id":"build"}],"next_page_token":"page + token"}"""))
+            server.enqueue(MockResponse(body = """{"items":[{"id":"test"}],"next_page_token":null}"""))
+            server.enqueue(MockResponse(body = """{"items":[],"next_page_token":null}"""))
             val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
 
             val firstPage = client.getWorkflowJobs("workflow-id").blockingSingle()
-            assertEquals(path, server.takeRequest(1, SECONDS)?.path)
+            assertEquals(path, server.takeRequest(1, SECONDS)?.target)
             assertEquals("build", firstPage.items.single().id)
             assertEquals("page + token", firstPage.nextPageToken)
 
             val secondPage = client.getWorkflowJobs("workflow-id", firstPage.nextPageToken).blockingSingle()
-            assertEquals("$path?page-token=page%20%2B%20token", server.takeRequest(1, SECONDS)?.path)
+            assertEquals("$path?page-token=page%20%2B%20token", server.takeRequest(1, SECONDS)?.target)
             assertEquals("test", secondPage.items.single().id)
             assertNull(secondPage.nextPageToken)
 
             assertTrue(client.getWorkflowJobs("workflow-id", null).blockingSingle().items.isEmpty())
-            assertEquals(path, server.takeRequest(1, SECONDS)?.path)
+            assertEquals(path, server.takeRequest(1, SECONDS)?.target)
         }
     }
 })

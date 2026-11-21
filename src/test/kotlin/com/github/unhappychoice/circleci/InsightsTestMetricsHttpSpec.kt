@@ -1,7 +1,7 @@
 package com.github.unhappychoice.circleci
 
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
@@ -9,7 +9,8 @@ import org.spekframework.spek2.Spek
 object InsightsTestMetricsHttpSpec : Spek({
     test("decodes class names for the most failed and slowest tests") {
         MockWebServer().use { server ->
-            server.enqueue(MockResponse().setBody("""
+            server.start()
+            server.enqueue(MockResponse(body = """
                 {
                   "average_test_count": 2,
                   "most_failed_tests": [{

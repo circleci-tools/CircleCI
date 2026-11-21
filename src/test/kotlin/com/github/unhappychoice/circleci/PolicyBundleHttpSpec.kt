@@ -3,8 +3,9 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v2.request.BundlePayload
 import com.github.unhappychoice.circleci.v2.response.BundleDiff
 import com.google.gson.JsonParser
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import okhttp3.Headers.Companion.headersOf
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 
@@ -19,10 +20,13 @@ object PolicyBundleHttpSpec : Spek({
     listOf(true to 200, false to 201).forEach { (dry, status) ->
         test("createPolicyBundle sends the policy map and decodes the diff for HTTP $status with dry=$dry") {
             MockWebServer().use { server ->
+                server.start()
                 server.enqueue(
-                    MockResponse().setResponseCode(status)
-                        .setHeader("Content-Type", "application/json")
-                        .setBody("""{"created":["new-policy"],"deleted":["old-policy"],"modified":["existing-policy"]}""")
+                    MockResponse(
+                        code = status,
+                        headers = headersOf("Content-Type", "application/json"),
+                        body = """{"created":["new-policy"],"deleted":["old-policy"],"modified":["existing-policy"]}""",
+                    )
                 )
                 val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
 
@@ -36,8 +40,8 @@ object PolicyBundleHttpSpec : Spek({
 
                 val request = server.takeRequest()
                 assertEquals("POST", request.method)
-                assertEquals("/api/v2/owner/owner-id/context/config/policy-bundle?dry=$dry", request.path)
-                assertEquals(expectedRequest, JsonParser.parseString(request.body.readUtf8()))
+                assertEquals("/api/v2/owner/owner-id/context/config/policy-bundle?dry=$dry", request.target)
+                assertEquals(expectedRequest, JsonParser.parseString(requireNotNull(request.body).utf8()))
             }
         }
     }

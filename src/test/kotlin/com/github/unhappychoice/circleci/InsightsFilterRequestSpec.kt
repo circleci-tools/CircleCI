@@ -1,8 +1,8 @@
 package com.github.unhappychoice.circleci
 
 import io.reactivex.rxjava3.core.Observable
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -41,13 +41,14 @@ object InsightsFilterRequestSpec : Spek({
             val omittedFiltersMask = 0b111100
 
             MockWebServer().use { server ->
-                server.enqueue(MockResponse().setBody("""{"items":[],"next_page_token":null}"""))
+                server.start()
+                server.enqueue(MockResponse(body = """{"items":[],"next_page_token":null}"""))
                 val arguments = listOf(server.client(), projectSlug, "ci", null, null, null, null) +
                     paginationArguments + listOf(omittedFiltersMask, null)
 
                 (bridge.invoke(null, *arguments.toTypedArray()) as Observable<*>).blockingSingle()
 
-                val request = requireNotNull(server.takeRequest().requestUrl)
+                val request = server.takeRequest().url
                 assertEquals(paginationArguments, request.queryParameterValues("page-token"))
             }
         }
@@ -55,14 +56,15 @@ object InsightsFilterRequestSpec : Spek({
 
     test("fetches the next job time series page with the same filters") {
         MockWebServer().use { server ->
+            server.start()
             val client = server.client()
             val branch = "release/v1"
             val granularity = "daily"
             val startDate = "2025-01-01T00:00:00Z"
             val endDate = "2025-01-03T00:00:00Z"
             val token = "next+/=&page"
-            server.enqueue(MockResponse().setBody("""{"items":[{"name":"build"}],"next_page_token":"$token"}"""))
-            server.enqueue(MockResponse().setBody("""{"items":[{"name":"test"}],"next_page_token":null}"""))
+            server.enqueue(MockResponse(body = """{"items":[{"name":"build"}],"next_page_token":"$token"}"""))
+            server.enqueue(MockResponse(body = """{"items":[{"name":"test"}],"next_page_token":null}"""))
 
             val first = client.getJobTimeseries(projectSlug, "ci", branch, granularity, startDate, endDate).blockingSingle()
             assertEquals("build", first.items.single().name)
@@ -73,8 +75,8 @@ object InsightsFilterRequestSpec : Spek({
             assertEquals("test", second.items.single().name)
             assertEquals(null, second.next_page_token)
 
-            val firstRequest = requireNotNull(server.takeRequest().requestUrl)
-            val secondRequest = requireNotNull(server.takeRequest().requestUrl)
+            val firstRequest = server.takeRequest().url
+            val secondRequest = server.takeRequest().url
             assertEquals("/api/v2/insights/time-series/gh%2Fexample%2Fproject/workflows/ci/jobs", firstRequest.encodedPath)
             assertEquals(listOf(branch), firstRequest.queryParameterValues("branch"))
             assertEquals(listOf(granularity), firstRequest.queryParameterValues("granularity"))
@@ -87,11 +89,12 @@ object InsightsFilterRequestSpec : Spek({
 
     test("omits job time series queries when optional arguments are unspecified") {
         MockWebServer().use { server ->
-            server.enqueue(MockResponse().setBody("""{"items":[],"next_page_token":null}"""))
+            server.start()
+            server.enqueue(MockResponse(body = """{"items":[],"next_page_token":null}"""))
 
             server.client().getJobTimeseries(projectSlug, "ci").blockingSingle()
 
-            val request = requireNotNull(server.takeRequest().requestUrl)
+            val request = server.takeRequest().url
             assertEquals(emptySet<String>(), request.queryParameterNames)
         }
     }
@@ -99,11 +102,12 @@ object InsightsFilterRequestSpec : Spek({
     listOf("next-page", null).forEach { pageToken ->
         test("sends job time series queries with default filters and page token $pageToken") {
             MockWebServer().use { server ->
-                server.enqueue(MockResponse().setBody("""{"items":[],"next_page_token":null}"""))
+                server.start()
+                server.enqueue(MockResponse(body = """{"items":[],"next_page_token":null}"""))
 
                 server.client().getJobTimeseries(projectSlug, "ci", pageToken = pageToken).blockingSingle()
 
-                val request = requireNotNull(server.takeRequest().requestUrl)
+                val request = server.takeRequest().url
                 val expectedQueries = if (pageToken == null) emptySet() else setOf("page-token")
                 assertEquals(expectedQueries, request.queryParameterNames)
                 assertEquals(pageToken, request.queryParameter("page-token"))
@@ -114,18 +118,19 @@ object InsightsFilterRequestSpec : Spek({
     listOf(2, 1).forEach { count ->
         test("sends $count query entries for each Insights filter") {
             MockWebServer().use { server ->
+                server.start()
                 val client = server.client()
                 val projects = listOf("frontend", "backend").take(count)
                 val branches = listOf("main", "release/v1").take(count)
                 val workflows = listOf("build", "deploy").take(count)
-                repeat(2) { server.enqueue(MockResponse().setBody("{}")) }
+                repeat(2) { server.enqueue(MockResponse(body = "{}")) }
 
                 client.getOrgSummaryData(orgSlug, projectNames = projects).blockingFirst()
                 client.getProjectWorkflowsPageData(projectSlug, branches = branches, workflowNames = workflows)
                     .blockingFirst()
 
-                val orgRequest = requireNotNull(server.takeRequest().requestUrl)
-                val projectRequest = requireNotNull(server.takeRequest().requestUrl)
+                val orgRequest = server.takeRequest().url
+                val projectRequest = server.takeRequest().url
                 assertEquals(projects, orgRequest.queryParameterValues("project-names"))
                 assertEquals(branches, projectRequest.queryParameterValues("branches"))
                 assertEquals(workflows, projectRequest.queryParameterValues("workflow-names"))
@@ -135,14 +140,15 @@ object InsightsFilterRequestSpec : Spek({
 
     test("omits query entries for unspecified Insights filters") {
         MockWebServer().use { server ->
+            server.start()
             val client = server.client()
-            repeat(2) { server.enqueue(MockResponse().setBody("{}")) }
+            repeat(2) { server.enqueue(MockResponse(body = "{}")) }
 
             client.getOrgSummaryData(orgSlug).blockingFirst()
             client.getProjectWorkflowsPageData(projectSlug).blockingFirst()
 
-            val orgRequest = requireNotNull(server.takeRequest().requestUrl)
-            val projectRequest = requireNotNull(server.takeRequest().requestUrl)
+            val orgRequest = server.takeRequest().url
+            val projectRequest = server.takeRequest().url
             assertEquals(emptyList<String>(), orgRequest.queryParameterValues("project-names"))
             assertEquals(emptyList<String>(), projectRequest.queryParameterValues("branches"))
             assertEquals(emptyList<String>(), projectRequest.queryParameterValues("workflow-names"))

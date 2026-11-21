@@ -3,8 +3,9 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v2.request.CreateGroupRequest
 import com.github.unhappychoice.circleci.v2.response.Group
 import com.github.unhappychoice.circleci.v2.response.GroupListResponse
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import okhttp3.Headers.Companion.headersOf
 import org.spekframework.spek2.Spek
 
 object GroupHttpSpec : Spek({
@@ -48,7 +49,8 @@ object GroupHttpSpec : Spek({
 
 private fun withGroupResponse(body: String, status: Int = 200, verify: (CircleCIAPIClientV2) -> Unit) {
     MockWebServer().use { server ->
-        server.enqueue(MockResponse().setResponseCode(status).setHeader("Content-Type", "application/json").setBody(body))
+        server.start()
+        server.enqueue(MockResponse(code = status, headers = headersOf("Content-Type", "application/json"), body = body))
         val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
         verify(client)
     }
