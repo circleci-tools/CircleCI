@@ -123,7 +123,7 @@ data class TestMetricsResponse(
 ) {
     data class FailedTest(
         @SerializedName("test_name") val testName: String,
-        @SerializedName("class_name") val className: String,
+        @SerializedName("classname") val className: String,
         val file: String?,
         @SerializedName("failed_runs") val failedRuns: Long,
         @SerializedName("total_runs") val totalRuns: Long
@@ -131,7 +131,7 @@ data class TestMetricsResponse(
 
     data class SlowTest(
         @SerializedName("test_name") val testName: String,
-        @SerializedName("class_name") val className: String,
+        @SerializedName("classname") val className: String,
         val file: String?,
         @SerializedName("p95_duration") val p95Duration: Float
     )
