@@ -107,6 +107,15 @@ val nextPage = firstPage.page.next?.let { cursor ->
 }
 ```
 
+### V2 context environment variables
+
+`addEnvironmentVariableToContext` returns `Observable<EnvironmentVariable>`.
+Use the `variable`, `contextId`, `createdAt`, and `updatedAt` properties in place of
+map lookups. Both timestamps are `OffsetDateTime` values.
+Update explicit `Observable<Any>` declarations and custom client overrides to
+`Observable<EnvironmentVariable>`. If a caller still requires `Observable<Any>`,
+use `.map<Any> { it }` at that boundary.
+
 ### V2 context restrictions
 
 `getContextRestrictions` returns a `ContextProjectRestrictionsList` whose `items` are now

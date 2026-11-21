@@ -458,15 +458,23 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
     }
 
-    test("adds a context environment variable") {
-        val response = """{"variable":"VAR","context_id":"context-id","created_at":"2025-01-02T03:04:05Z"}"""
+    test("returns typed metadata when adding or updating a context environment variable") {
+        val response = """
+            {
+              "variable": "VAR",
+              "context_id": "context-id",
+              "created_at": "2025-01-02T03:04:05.042Z",
+              "updated_at": "2025-01-03T04:05:06.123456Z"
+            }
+        """.trimIndent()
         val body = withResponse(response, "PUT", "/context/context-id/environment-variable/VAR") { client ->
             val result = client.addEnvironmentVariableToContext(
                 "context-id", "VAR", AddEnvironmentVariableRequest("test-value")
-            ).blockingSingle() as Map<*, *>
-            assertEquals("VAR", result["variable"])
-            assertEquals("context-id", result["context_id"])
-            assertEquals("2025-01-02T03:04:05Z", result["created_at"])
+            ).blockingSingle()
+            assertEquals("VAR", result.variable)
+            assertEquals("context-id", result.contextId)
+            assertEquals(OffsetDateTime.parse("2025-01-02T03:04:05.042Z"), result.createdAt)
+            assertEquals(OffsetDateTime.parse("2025-01-03T04:05:06.123456Z"), result.updatedAt)
         }
         assertEquals("test-value", JsonParser.parseString(body).asJsonObject["value"].asString)
     }
