@@ -263,6 +263,14 @@ object CircleCIAPIClientV2HttpSpec : Spek({
                 ).blockingSingle()
             }
         }
+
+        test("omits the job-name query when the filter is explicitly null") {
+            withResponse(response, "GET", "$path?page-token=next") { client ->
+                client.getProjectWorkflowJobMetrics(
+                    projectSlug, "build-and-test", pageToken = "next", jobName = null
+                ).blockingSingle()
+            }
+        }
     }
 
     test("lists project pipelines without branch or pagination query parameters") {
