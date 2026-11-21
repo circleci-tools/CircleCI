@@ -65,9 +65,11 @@ private fun assertLegacyMethods(
     )
     assertEquals(original, type.getConstructor(*parameterTypes).newInstance(*arguments))
     assertEquals(withSettings, copy.invoke(withSettings, *arguments))
+    val allDefaults = (1 shl parameterTypes.size) - 1
+    val placeholders = parameterTypes.map { if (it == Boolean::class.javaPrimitiveType) true else null }.toTypedArray()
     assertEquals(
         withSettings,
-        copyWithDefaults.invoke(null, withSettings, "ignored", *arguments.drop(1).toTypedArray(), 0b1, null)
+        copyWithDefaults.invoke(null, withSettings, *placeholders, allDefaults, null)
     )
 }
 
