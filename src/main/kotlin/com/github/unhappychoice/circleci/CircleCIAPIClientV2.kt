@@ -110,15 +110,15 @@ interface CircleCIAPIClientV2 {
     @GET("insights/{project-slug}/flaky-tests")
     fun getFlakyTests(@Path("project-slug") projectSlug: String): Observable<FlakyTests>
 
-    @GET("insights/time-series/{project-slug}/workflows/{workflow-name}/jobs")
     fun getJobTimeseries(
-        @Path("project-slug") projectSlug: String,
-        @Path("workflow-name") workflowName: String,
-        @Query("branch") branch: String? = null,
-        @Query("granularity") granularity: String? = null,
-        @Query("start-date") startDate: String? = null,
-        @Query("end-date") endDate: String? = null
-    ): Observable<JobTimeseriesResponse>
+        projectSlug: String,
+        workflowName: String,
+        branch: String? = null,
+        granularity: String? = null,
+        startDate: String? = null,
+        endDate: String? = null
+    ): Observable<JobTimeseriesResponse> =
+        getJobTimeseries(projectSlug, workflowName, branch, granularity, startDate, endDate, pageToken = null)
 
     @GET("insights/time-series/{project-slug}/workflows/{workflow-name}/jobs")
     fun getJobTimeseries(
@@ -682,8 +682,8 @@ interface CircleCIAPIClientV2 {
     @GET("workflow/{id}")
     fun getWorkflowById(@Path("id") workflowId: String): Observable<Workflow>
 
-    @GET("workflow/{id}/job")
-    fun getWorkflowJobs(@Path("id") workflowId: String): Observable<JobListResponse>
+    fun getWorkflowJobs(workflowId: String): Observable<JobListResponse> =
+        getWorkflowJobs(workflowId, pageToken = null)
 
     @GET("workflow/{id}/job")
     fun getWorkflowJobs(

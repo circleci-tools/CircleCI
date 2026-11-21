@@ -6,9 +6,20 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
+import retrofit2.http.GET
 import java.util.concurrent.TimeUnit.SECONDS
 
 object WorkflowJobsHttpSpec : Spek({
+    test("declares the workflow jobs route on the token-aware overload") {
+        val client = CircleCIAPIClientV2::class.java
+        val firstPage = client.getMethod("getWorkflowJobs", String::class.java)
+        val paginated = client.getMethod("getWorkflowJobs", String::class.java, String::class.java)
+
+        assertTrue(firstPage.isDefault)
+        assertNull(firstPage.getAnnotation(GET::class.java))
+        assertEquals("workflow/{id}/job", paginated.getAnnotation(GET::class.java)?.value)
+    }
+
     test("getWorkflowJobs preserves dependency conditions and accepts jobs without requires") {
         MockWebServer().use { server ->
             server.enqueue(

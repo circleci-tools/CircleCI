@@ -4,7 +4,10 @@ import io.reactivex.rxjava3.core.Observable
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
+import retrofit2.http.GET
 
 object InsightsFilterRequestSpec : Spek({
     val orgSlug = "gh/example"
@@ -12,10 +15,17 @@ object InsightsFilterRequestSpec : Spek({
 
     fun MockWebServer.client() = CircleCIAPIClient("test-token", url("/api/").toString()).clientV2()
 
-    test("preserves the six-argument JVM method and Kotlin default argument bridge") {
+    test("keeps the first-page JVM method and Kotlin default argument bridge while sharing the route") {
         val client = CircleCIAPIClientV2::class.java
         val parameters = Array(6) { String::class.java }
-        client.getMethod("getJobTimeseries", *parameters)
+        val firstPage = client.getMethod("getJobTimeseries", *parameters)
+        val paginated = client.getMethod("getJobTimeseries", *parameters, String::class.java)
+        assertTrue(firstPage.isDefault)
+        assertNull(firstPage.getAnnotation(GET::class.java))
+        assertEquals(
+            "insights/time-series/{project-slug}/workflows/{workflow-name}/jobs",
+            paginated.getAnnotation(GET::class.java)?.value
+        )
         val bridgeParameters = listOf(client) + parameters + listOf(Int::class.javaPrimitiveType!!, Any::class.java)
         client.getMethod("getJobTimeseries\$default", *bridgeParameters.toTypedArray())
     }
