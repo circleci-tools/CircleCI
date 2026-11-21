@@ -21,9 +21,42 @@ object PipelineHttpSpec : Spek({
 
         assertEquals("abc123", vcs.revision)
     }
+
+    val lookups: Map<String, (CircleCIAPIClientV2) -> Pipeline> = mapOf(
+        "getPipelineById" to { it.getPipelineById("pipeline-id").blockingSingle() },
+        "getPipelineByNumber" to { it.getPipelineByNumber("gh/unhappychoice/circleci", 42).blockingSingle() }
+    )
+    lookups.forEach { (name, lookup) ->
+        test("$name preserves warnings with and without a URL") {
+            val pipeline = getPipeline(warningsField = warningsField, lookup = lookup)
+
+            assertEquals(emptyList<Pipeline.PipelineError>(), pipeline.errors)
+            assertEquals(
+                listOf(
+                    Pipeline.PipelineWarning("config", "Check the config", "Config warning", "https://example.com/config"),
+                    Pipeline.PipelineWarning("vcs", "Check the branch", "Branch warning")
+                ),
+                pipeline.warnings
+            )
+        }
+
+        test("$name decodes a pipeline without a warnings field") {
+            val pipeline = getPipeline(lookup = lookup)
+
+            assertEquals("pipeline-id", pipeline.id)
+            assertNull(pipeline.warnings)
+        }
+    }
 })
 
 private fun getPipelineVcs(revisionJson: String): Pipeline.Vcs =
+    requireNotNull(getPipeline(revisionJson) { it.getPipelineById("pipeline-id").blockingSingle() }.vcs)
+
+private fun getPipeline(
+    revisionJson: String = "null",
+    warningsField: String = "",
+    lookup: (CircleCIAPIClientV2) -> Pipeline
+): Pipeline =
     MockWebServer().use { server ->
         server.enqueue(
             MockResponse().setHeader("Content-Type", "application/json").setBody(
@@ -31,6 +64,7 @@ private fun getPipelineVcs(revisionJson: String): Pipeline.Vcs =
                 {
                   "id": "pipeline-id",
                   "errors": [],
+                  $warningsField
                   "project_slug": "gh/unhappychoice/circleci",
                   "number": 42,
                   "state": "created",
@@ -51,5 +85,21 @@ private fun getPipelineVcs(revisionJson: String): Pipeline.Vcs =
             )
         )
         val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
-        requireNotNull(client.getPipelineById("pipeline-id").blockingSingle().vcs)
+        lookup(client)
     }
+
+private val warningsField = """
+    "warnings": [
+      {
+        "type": "config",
+        "message": "Check the config",
+        "description": "Config warning",
+        "url": "https://example.com/config"
+      },
+      {
+        "type": "vcs",
+        "message": "Check the branch",
+        "description": "Branch warning"
+      }
+    ],
+""".trimIndent()

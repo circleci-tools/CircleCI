@@ -12,11 +12,19 @@ data class Pipeline(
     val state: String,
     @SerializedName("created_at") val createdAt: String,
     val trigger: Trigger,
-    val vcs: Vcs?
+    val vcs: Vcs?,
+    val warnings: List<PipelineWarning>? = null
 ) {
     data class PipelineError(
         val type: String,
         val message: String
+    )
+
+    data class PipelineWarning(
+        val type: String,
+        val message: String,
+        val description: String,
+        val url: String? = null
     )
 
     data class Trigger(
