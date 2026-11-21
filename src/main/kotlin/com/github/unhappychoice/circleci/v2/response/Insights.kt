@@ -79,7 +79,8 @@ data class JobMetricsResponse(
 
 data class WorkflowSummary(
     val metrics: Metrics,
-    val trends: Trends
+    val trends: Trends,
+    @SerializedName("workflow_names") val workflowNames: List<String>? = null
 ) {
     data class Metrics(
         @SerializedName("total_runs") val totalRuns: Long,
@@ -87,9 +88,12 @@ data class WorkflowSummary(
         @SerializedName("successful_runs") val successfulRuns: Long,
         @SerializedName("success_rate") val successRate: Float,
         val throughput: Float,
-        @SerializedName("mttr") val mttr: Long,
+        @SerializedName("mttr") val mttr: Long?,
         @SerializedName("duration_metrics") val durationMetrics: DurationMetrics,
-        @SerializedName("total_credits_used") val totalCreditsUsed: Long
+        @SerializedName("total_credits_used") val totalCreditsUsed: Long?,
+        @SerializedName("completed_runs") val completedRuns: Long? = null,
+        @SerializedName("window_start") val windowStart: String? = null,
+        @SerializedName("window_end") val windowEnd: String? = null
     )
 
     data class Trends(
@@ -99,16 +103,18 @@ data class WorkflowSummary(
         @SerializedName("success_rate") val successRate: Float,
         val throughput: Float,
         @SerializedName("mttr") val mttr: Float,
-        @SerializedName("total_credits_used") val totalCreditsUsed: Float
+        @SerializedName("total_credits_used") val totalCreditsUsed: Float,
+        @SerializedName("p95_duration_secs") val p95DurationSecs: Float? = null,
+        @SerializedName("median_duration_secs") val medianDurationSecs: Float? = null
     )
 
     data class DurationMetrics(
-        val min: Long,
-        val mean: Long,
-        val median: Long,
-        val p95: Long,
-        val max: Long,
-        @SerializedName("standard_deviation") val standardDeviation: Float
+        val min: Long?,
+        val mean: Long?,
+        val median: Long?,
+        val p95: Long?,
+        val max: Long?,
+        @SerializedName("standard_deviation") val standardDeviation: Float?
     )
 }
 
