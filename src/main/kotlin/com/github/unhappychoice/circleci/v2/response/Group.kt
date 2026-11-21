@@ -5,7 +5,8 @@ import com.google.gson.annotations.SerializedName
 data class Group(
     val id: String,
     val name: String,
-    @SerializedName("organization_id") val organizationId: String
+    @SerializedName("organization_id") val organizationId: String? = null,
+    val description: String? = null
 )
 
 data class GroupListResponse(
