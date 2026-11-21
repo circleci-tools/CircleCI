@@ -90,7 +90,7 @@ object CredentialRedactionSpec : Spek({
 
     test("redacts the environment variable value and preserves it in request JSON") {
         val value = "dummy-environment-value"
-        val request = CreateEnvVarRequest(value)
+        val request = CreateEnvVarRequest(name = "EXAMPLE", value = value)
 
         assertRedacted(request, "value", value)
         assertEquals(value, v2Gson.toJsonTree(request).asJsonObject["value"].asString)
