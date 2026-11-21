@@ -241,7 +241,8 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     )
 
     override fun getProjectWorkflowJobMetrics(
-        projectSlug: String, workflowName: String, pageToken: String?, allBranches: Boolean?, branch: String?, reportingWindow: String?
+        projectSlug: String, workflowName: String, pageToken: String?, allBranches: Boolean?, branch: String?,
+        reportingWindow: String?, jobName: String?
     ): Observable<JobMetricsResponse> = Observable.just(
         JobMetricsResponse(
             items = listOf(

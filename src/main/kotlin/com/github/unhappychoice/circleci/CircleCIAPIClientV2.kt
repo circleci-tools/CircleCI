@@ -173,7 +173,8 @@ interface CircleCIAPIClientV2 {
         @Query("page-token") pageToken: String? = null,
         @Query("all-branches") allBranches: Boolean? = null,
         @Query("branch") branch: String? = null,
-        @Query("reporting-window") reportingWindow: String? = null
+        @Query("reporting-window") reportingWindow: String? = null,
+        @Query("job-name") jobName: String? = null
     ): Observable<JobMetricsResponse>
 
     @GET("insights/{project-slug}/workflows/{workflow-name}/summary")
