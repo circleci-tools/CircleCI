@@ -2,9 +2,10 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.response.Policy
 import com.github.unhappychoice.circleci.v2.response.PolicyBundle
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import org.junit.Assert.assertEquals
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import okhttp3.Headers.Companion.headersOf
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 
 object PolicyBundleDecodingSpec : Spek({
@@ -23,13 +24,14 @@ object PolicyBundleDecodingSpec : Spek({
 
 private fun assertPolicyBundle(path: String, read: (CircleCIAPIClientV2) -> PolicyBundle) {
     MockWebServer().use { server ->
-        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody(bundleJson))
+        server.start()
+        server.enqueue(MockResponse(headers = headersOf("Content-Type", "application/json"), body = bundleJson))
         val client = CircleCIAPIClient("token", server.url("/api/").toString()).clientV2()
 
         assertEquals(expectedBundle, read(client))
         val request = server.takeRequest()
         assertEquals("GET", request.method)
-        assertEquals(path, request.path)
+        assertEquals(path, request.target)
     }
 }
 

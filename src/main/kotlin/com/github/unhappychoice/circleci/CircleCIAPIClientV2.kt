@@ -45,7 +45,7 @@ interface CircleCIAPIClientV2 {
         @Path("context-id") contextId: String,
         @Path("env-var-name") envVarName: String,
         @Body request: AddEnvironmentVariableRequest
-    ): Observable<Any>
+    ): Observable<EnvironmentVariable>
 
     @DELETE("context/{context-id}/environment-variable/{env-var-name}")
     fun deleteEnvironmentVariableFromContext(
@@ -110,15 +110,15 @@ interface CircleCIAPIClientV2 {
     @GET("insights/{project-slug}/flaky-tests")
     fun getFlakyTests(@Path("project-slug") projectSlug: String): Observable<FlakyTests>
 
-    @GET("insights/time-series/{project-slug}/workflows/{workflow-name}/jobs")
     fun getJobTimeseries(
-        @Path("project-slug") projectSlug: String,
-        @Path("workflow-name") workflowName: String,
-        @Query("branch") branch: String? = null,
-        @Query("granularity") granularity: String? = null,
-        @Query("start-date") startDate: String? = null,
-        @Query("end-date") endDate: String? = null
-    ): Observable<JobTimeseriesResponse>
+        projectSlug: String,
+        workflowName: String,
+        branch: String? = null,
+        granularity: String? = null,
+        startDate: String? = null,
+        endDate: String? = null
+    ): Observable<JobTimeseriesResponse> =
+        getJobTimeseries(projectSlug, workflowName, branch, granularity, startDate, endDate, pageToken = null)
 
     @GET("insights/time-series/{project-slug}/workflows/{workflow-name}/jobs")
     fun getJobTimeseries(
@@ -174,6 +174,17 @@ interface CircleCIAPIClientV2 {
         @Query("all-branches") allBranches: Boolean? = null,
         @Query("branch") branch: String? = null,
         @Query("reporting-window") reportingWindow: String? = null
+    ): Observable<JobMetricsResponse>
+
+    @GET("insights/{project-slug}/workflows/{workflow-name}/jobs")
+    fun getProjectWorkflowJobMetrics(
+        @Path("project-slug") projectSlug: String,
+        @Path("workflow-name") workflowName: String,
+        @Query("page-token") pageToken: String? = null,
+        @Query("all-branches") allBranches: Boolean? = null,
+        @Query("branch") branch: String? = null,
+        @Query("reporting-window") reportingWindow: String? = null,
+        @Query("job-name") jobName: String?
     ): Observable<JobMetricsResponse>
 
     @GET("insights/{project-slug}/workflows/{workflow-name}/summary")
@@ -682,8 +693,8 @@ interface CircleCIAPIClientV2 {
     @GET("workflow/{id}")
     fun getWorkflowById(@Path("id") workflowId: String): Observable<Workflow>
 
-    @GET("workflow/{id}/job")
-    fun getWorkflowJobs(@Path("id") workflowId: String): Observable<JobListResponse>
+    fun getWorkflowJobs(workflowId: String): Observable<JobListResponse> =
+        getWorkflowJobs(workflowId, pageToken = null)
 
     @GET("workflow/{id}/job")
     fun getWorkflowJobs(

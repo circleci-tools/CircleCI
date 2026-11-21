@@ -231,6 +231,48 @@ object CircleCIAPIClientV2HttpSpec : Spek({
 
     val projectSlug = "gh/CircleCI-Public/api-preview-docs"
 
+    group("lists project workflow job metrics") {
+        val path = "/insights/gh%2FCircleCI-Public%2Fapi-preview-docs/workflows/build-and-test/jobs"
+        val response = """{"items":[],"next_page_token":null}"""
+
+        test("sends the job-name filter") {
+            withResponse(response, "GET", "$path?job-name=lint") { client ->
+                client.getProjectWorkflowJobMetrics(projectSlug, "build-and-test", jobName = "lint").blockingSingle()
+            }
+        }
+
+        test("sends the job-name filter with a page token") {
+            withResponse(response, "GET", "$path?page-token=next&job-name=lint") { client ->
+                client.getProjectWorkflowJobMetrics(
+                    projectSlug, "build-and-test", pageToken = "next", jobName = "lint"
+                ).blockingSingle()
+            }
+        }
+
+        test("omits the job-name query when the filter is unspecified") {
+            withResponse(response, "GET", path) { client ->
+                client.getProjectWorkflowJobMetrics(projectSlug, "build-and-test").blockingSingle()
+            }
+        }
+
+        test("sends the existing queries through the six-argument overload") {
+            val query = "page-token=next&all-branches=true&branch=main&reporting-window=last-30-days"
+            withResponse(response, "GET", "$path?$query") { client ->
+                client.getProjectWorkflowJobMetrics(
+                    projectSlug, "build-and-test", "next", true, "main", "last-30-days"
+                ).blockingSingle()
+            }
+        }
+
+        test("omits the job-name query when the filter is explicitly null") {
+            withResponse(response, "GET", "$path?page-token=next") { client ->
+                client.getProjectWorkflowJobMetrics(
+                    projectSlug, "build-and-test", pageToken = "next", jobName = null
+                ).blockingSingle()
+            }
+        }
+    }
+
     test("lists project pipelines without branch or pagination query parameters") {
         val path = "/project/gh%2FCircleCI-Public%2Fapi-preview-docs/pipeline"
         withResponse("""{"items":[],"next_page_token":"next"}""", "GET", path) { client ->
@@ -397,17 +439,23 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
     """.trimIndent()
 
-    test("rolls back a project with a reason") {
+    test("rolls back a project with a reason, namespace, and pipeline parameters") {
         val body = withResponse(rollbackResponse, "POST", rollbackPath, 202) { client ->
-            client.rollbackProject("project-id", rollbackRequest.copy(reason = "Restore the previous release"))
-                .blockingSingle()
+            val request = rollbackRequest.copy(
+                reason = "Restore the previous release",
+                namespace = "payments",
+                parameters = mapOf("region" to "us-east-1", "dry-run" to true, "replicas" to 2)
+            )
+            client.rollbackProject("project-id", request).blockingSingle()
         }
         val expected = JsonParser.parseString(rollbackBody).asJsonObject
         expected.addProperty("reason", "Restore the previous release")
+        expected.addProperty("namespace", "payments")
+        expected.add("parameters", JsonParser.parseString("""{"region":"us-east-1","dry-run":true,"replicas":2}"""))
         assertEquals(expected, JsonParser.parseString(body))
     }
 
-    test("rolls back a project without a reason") {
+    test("omits optional fields when rolling back a project") {
         val body = withResponse(rollbackResponse, "POST", rollbackPath, 202) { client ->
             val response = client.rollbackProject("project-id", rollbackRequest).blockingSingle()
             assertEquals("123e4567-e89b-12d3-a456-426614174000", response.id)
@@ -458,15 +506,23 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
     }
 
-    test("adds a context environment variable") {
-        val response = """{"variable":"VAR","context_id":"context-id","created_at":"2025-01-02T03:04:05Z"}"""
+    test("returns typed metadata when adding or updating a context environment variable") {
+        val response = """
+            {
+              "variable": "VAR",
+              "context_id": "context-id",
+              "created_at": "2025-01-02T03:04:05.042Z",
+              "updated_at": "2025-01-03T04:05:06.123456Z"
+            }
+        """.trimIndent()
         val body = withResponse(response, "PUT", "/context/context-id/environment-variable/VAR") { client ->
             val result = client.addEnvironmentVariableToContext(
                 "context-id", "VAR", AddEnvironmentVariableRequest("test-value")
-            ).blockingSingle() as Map<*, *>
-            assertEquals("VAR", result["variable"])
-            assertEquals("context-id", result["context_id"])
-            assertEquals("2025-01-02T03:04:05Z", result["created_at"])
+            ).blockingSingle()
+            assertEquals("VAR", result.variable)
+            assertEquals("context-id", result.contextId)
+            assertEquals(OffsetDateTime.parse("2025-01-02T03:04:05.042Z"), result.createdAt)
+            assertEquals(OffsetDateTime.parse("2025-01-03T04:05:06.123456Z"), result.updatedAt)
         }
         assertEquals("test-value", JsonParser.parseString(body).asJsonObject["value"].asString)
     }
@@ -779,7 +835,7 @@ object CircleCIAPIClientV2HttpSpec : Spek({
     val usageExportId = "e8235eed-f121-4ae3-9c72-2719d6572818"
     val usageExportPath = "/organizations/org-id/usage_export_job"
 
-    test("serializes usage export dates and decodes the created job") {
+    test("serializes only dates when shared organization IDs are omitted and decodes the created job") {
         val start = "2025-01-01T00:00:00Z"
         val end = "2025-02-01T00:00:00Z"
         val response = """
@@ -802,17 +858,42 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         val json = JsonParser.parseString(body).asJsonObject
         assertEquals(start, json.get("start")?.asString)
         assertEquals(end, json.get("end")?.asString)
-        assertFalse(json.has("start_date"))
-        assertFalse(json.has("end_date"))
+        assertEquals(setOf("start", "end"), json.keySet())
     }
 
-    test("preserves every download URL for a completed usage export") {
+    test("serializes shared organization IDs in the usage export request") {
+        val start = "2025-01-01T00:00:00Z"
+        val end = "2025-02-01T00:00:00Z"
+        val sharedOrgIds = listOf("b9291e0d-a11e-41fb-8517-c545388b5953", "48931ceb-8a7c-4962-918c-6e819b5f260e")
+        val response = """
+            {
+              "usage_export_job_id": "$usageExportId",
+              "state": "created",
+              "start": "$start",
+              "end": "$end",
+              "download_urls": []
+            }
+        """.trimIndent()
+        val body = withResponse(response, "POST", usageExportPath, status = 201) { client ->
+            client.createUsageExport("org-id", CreateUsageExportRequest(start, end, sharedOrgIds)).blockingSingle()
+        }
+        val json = JsonParser.parseString(body).asJsonObject
+        assertEquals(start, json.get("start")?.asString)
+        assertEquals(end, json.get("end")?.asString)
+        assertEquals(sharedOrgIds, json.getAsJsonArray("shared_org_ids").map { it.asString })
+    }
+
+    test("preserves ordered download URLs and redacts them from both usage export response strings") {
         val firstUrl = "https://example.com/usage-1.csv?signature=first"
         val secondUrl = "https://example.com/usage-2.csv?signature=second"
+        val start = "2025-01-01T00:00:00Z"
+        val end = "2025-02-01T00:00:00Z"
         val response = """
             {
               "usage_export_job_id": "$usageExportId",
               "state": "completed",
+              "start": "$start",
+              "end": "$end",
               "download_urls": ["$firstUrl", "$secondUrl"]
             }
         """.trimIndent()
@@ -822,6 +903,18 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertEquals("completed", job.state)
             assertEquals(listOf(firstUrl, secondUrl), job.downloadUrls)
             assertNull(job.errorReason)
+            assertEquals(
+                "GetUsageExportJobStatus(id=$usageExportId, state=completed, downloadUrls=[REDACTED], errorReason=null)",
+                job.toString()
+            )
+        }
+        withResponse(response, "POST", usageExportPath, status = 201) { client ->
+            val job = client.createUsageExport("org-id", CreateUsageExportRequest(start, end)).blockingSingle()
+            assertEquals(listOf(firstUrl, secondUrl), job.downloadUrls)
+            assertEquals(
+                "UsageExportJob(id=$usageExportId, state=completed, start=$start, end=$end, downloadUrls=[REDACTED])",
+                job.toString()
+            )
         }
     }
 

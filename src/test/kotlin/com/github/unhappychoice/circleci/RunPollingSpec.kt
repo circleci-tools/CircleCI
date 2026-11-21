@@ -47,7 +47,7 @@ object RunPollingSpec : Spek({
         val first = PublishSubject.create<RunResponse>()
         val ended = runResponse("ended", "failed")
         val client = RunPollingClient(first, Observable.just(ended))
-        val result = client.waitForRun("run-id", 2.seconds, 20.seconds, scheduler).test()
+        val result = client.waitForRun("run-id", 2.seconds, 20.seconds, scheduler, scheduler).test()
 
         scheduler.advanceTimeBy(5, SECONDS)
         assertEquals(listOf("run-id"), client.requestedIds)
@@ -66,7 +66,7 @@ object RunPollingSpec : Spek({
         val scheduler = TestScheduler()
         val active = PublishSubject.create<RunResponse>()
         val client = RunPollingClient(Observable.just(runResponse("queued")), active)
-        val result = client.waitForRun("run-id", 2.seconds, 5.seconds, scheduler).test()
+        val result = client.waitForRun("run-id", 2.seconds, 5.seconds, scheduler, scheduler).test()
 
         scheduler.advanceTimeBy(4, SECONDS)
         result.assertEmpty()
@@ -81,7 +81,7 @@ object RunPollingSpec : Spek({
     test("disposing while waiting for the next poll prevents another request") {
         val scheduler = TestScheduler()
         val client = RunPollingClient(Observable.just(runResponse("queued")))
-        val result = client.waitForRun("run-id", 2.seconds, 10.seconds, scheduler).test()
+        val result = client.waitForRun("run-id", 2.seconds, 10.seconds, scheduler, scheduler).test()
 
         scheduler.triggerActions()
         result.dispose()
@@ -94,7 +94,7 @@ object RunPollingSpec : Spek({
         val scheduler = TestScheduler()
         val error = HttpException(Response.error<RunResponse>(429, "".toResponseBody()))
         val client = RunPollingClient(Observable.error(error))
-        val result = client.waitForRun("run-id", 2.seconds, 10.seconds, scheduler).test()
+        val result = client.waitForRun("run-id", 2.seconds, 10.seconds, scheduler, scheduler).test()
 
         scheduler.triggerActions()
         result.assertError(error).assertNoValues()

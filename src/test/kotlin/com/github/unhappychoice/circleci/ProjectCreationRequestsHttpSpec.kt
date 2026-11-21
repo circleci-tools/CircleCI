@@ -4,9 +4,9 @@ import com.github.unhappychoice.circleci.v2.request.CreateCheckoutKeyRequest
 import com.github.unhappychoice.circleci.v2.request.CreateEnvVarRequest
 import com.google.gson.JsonParser
 import io.reactivex.rxjava3.core.Observable
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import org.junit.Assert.assertEquals
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 
 object ProjectCreationRequestsHttpSpec : Spek({
@@ -19,15 +19,16 @@ object ProjectCreationRequestsHttpSpec : Spek({
         create: (CircleCIAPIClientV2) -> Observable<*>
     ) {
         MockWebServer().use { server ->
-            server.enqueue(MockResponse().setResponseCode(201).setBody(responseJson))
+            server.start()
+            server.enqueue(MockResponse(code = 201, body = responseJson))
             val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
 
             create(client).test().assertComplete().assertNoErrors().assertValueCount(1)
 
             val request = server.takeRequest()
             assertEquals("POST", request.method)
-            assertEquals(listOf("api", "v2", "project", projectSlug, endpoint), request.requestUrl?.pathSegments)
-            assertEquals(JsonParser.parseString(expectedBody), JsonParser.parseString(request.body.readUtf8()))
+            assertEquals(listOf("api", "v2", "project", projectSlug, endpoint), request.url.pathSegments)
+            assertEquals(JsonParser.parseString(expectedBody), JsonParser.parseString(requireNotNull(request.body).utf8()))
         }
     }
 
