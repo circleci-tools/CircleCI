@@ -4,7 +4,6 @@ import com.github.unhappychoice.circleci.v2.response.JobMetricsResponse
 import com.github.unhappychoice.circleci.v2.response.WorkflowMetricsResponse
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
-import okhttp3.Headers.Companion.headersOf
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 
@@ -52,9 +51,8 @@ object InsightsMetricsHttpSpec : Spek({
 private fun metricsResponse(value: Long?, workflow: Boolean): MockResponse {
     val recoveryMetrics = if (workflow) """"mttr": $value, "total_recoveries": $value,""" else ""
     val credits = if (workflow) value else 0L
-    return MockResponse(
-        headers = headersOf("Content-Type", "application/json"),
-        body = """
+    return MockResponse.Builder().setHeader("Content-Type", "application/json").body(
+        """
         {
           "items": [{
             "name": "build",
@@ -79,5 +77,5 @@ private fun metricsResponse(value: Long?, workflow: Boolean): MockResponse {
           "next_page_token": null
         }
         """.trimIndent()
-    )
+    ).build()
 }

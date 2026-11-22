@@ -8,8 +8,62 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
+import retrofit2.HttpException
+import java.util.concurrent.TimeUnit.SECONDS
 
 object PipelineHttpSpec : Spek({
+    test("listPipelines forwards the organization, mine filter, and next page token") {
+        MockWebServer().use { server ->
+            server.start()
+            val firstPageJson = """
+                {
+                  "items": [{
+                    "id": "pipeline-id",
+                    "errors": [],
+                    "project_slug": "gh/example/project",
+                    "number": 42,
+                    "state": "created",
+                    "created_at": "2020-01-01T00:00:00Z",
+                    "trigger": {
+                      "type": "webhook",
+                      "received_at": "2020-01-01T00:00:00Z",
+                      "actor": {"login": "example"}
+                    }
+                  }],
+                  "next_page_token": "page + token"
+                }
+            """.trimIndent()
+            server.enqueue(MockResponse(body = firstPageJson))
+            server.enqueue(MockResponse(body = """{"items":[],"next_page_token":null}"""))
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
+
+            val firstPage = client.listPipelines(orgSlug = "gh/example", mine = true).blockingSingle()
+            assertEquals("/api/v2/pipeline?org-slug=gh%2Fexample&mine=true", server.takeRequest(1, SECONDS)?.target)
+            assertEquals("pipeline-id", firstPage.items.single().id)
+            assertEquals("page + token", firstPage.nextPageToken)
+
+            val nextPage = client.listPipelines("gh/example", firstPage.nextPageToken, mine = true).blockingSingle()
+            val nextTarget = "/api/v2/pipeline?org-slug=gh%2Fexample&page-token=page%20%2B%20token&mine=true"
+            assertEquals(nextTarget, server.takeRequest(1, SECONDS)?.target)
+            assertTrue(nextPage.items.isEmpty())
+            assertNull(nextPage.nextPageToken)
+        }
+    }
+
+    test("listPipelines exposes the HTTP status and error body when access is forbidden") {
+        MockWebServer().use { server ->
+            server.start()
+            val response = """{"message":"Forbidden"}"""
+            server.enqueue(MockResponse(code = 403, body = response))
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
+
+            client.listPipelines().test().assertNoValues().assertNotComplete().assertError { error ->
+                error is HttpException && error.code() == 403 && error.response()?.errorBody()?.string() == response
+            }
+            assertEquals("/api/v2/pipeline", server.takeRequest(1, SECONDS)?.target)
+        }
+    }
+
     test("getPipelineById decodes a null revision on a present VCS object") {
         val vcs = getPipelineVcs("null")
 
