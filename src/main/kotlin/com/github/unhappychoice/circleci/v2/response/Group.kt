@@ -13,4 +13,8 @@ data class GroupListResponse @JvmOverloads constructor(
     val items: List<Group>,
     @SerializedName("next_page_token") val nextPageToken: String?,
     @SerializedName("total_count") val totalCount: Int? = null
-)
+) {
+    @Deprecated("Retained for binary compatibility", level = DeprecationLevel.HIDDEN)
+    fun copy(items: List<Group> = this.items, nextPageToken: String? = this.nextPageToken): GroupListResponse =
+        copy(items, nextPageToken, totalCount)
+}
