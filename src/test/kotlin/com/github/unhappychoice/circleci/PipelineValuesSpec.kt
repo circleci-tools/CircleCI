@@ -1,7 +1,8 @@
 package com.github.unhappychoice.circleci
 
-import com.github.unhappychoice.circleci.v2.response.PipelineValues
 import com.sun.net.httpserver.HttpServer
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
@@ -15,7 +16,8 @@ object PipelineValuesSpec : Spek({
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         try {
             server.createContext("/api/v2/pipeline/pipeline-id/values") { exchange ->
-                val body = """{"some.key":"some-value","different.key":true}""".toByteArray()
+                val body = """{"some.key":"some-value","different.key":true,"replicas":2,"marker":9007199254740993,"large":9223372036854775808}"""
+                    .toByteArray()
                 exchange.responseHeaders.set("Content-Type", "application/json")
                 exchange.sendResponseHeaders(200, body.size.toLong())
                 exchange.responseBody.use { it.write(body) }
@@ -23,8 +25,13 @@ object PipelineValuesSpec : Spek({
             server.start()
 
             val client = CircleCIAPIClient("test-token").clientV2("http://127.0.0.1:${server.address.port}/api/v2/")
-            client.getPipelineValuesById("pipeline-id").test()
-                .assertResult(PipelineValues(mapOf("some.key" to "some-value", "different.key" to true)))
+            val values = client.getPipelineValuesById("pipeline-id").blockingFirst().values
+            assertEquals(setOf("some.key", "different.key", "replicas", "marker", "large"), values.keys)
+            assertEquals("some-value", values["some.key"])
+            assertEquals(true, values["different.key"])
+            assertEquals("2", assertInstanceOf(Number::class.java, values["replicas"]).toString())
+            assertEquals("9007199254740993", assertInstanceOf(Number::class.java, values["marker"]).toString())
+            assertEquals("9223372036854775808", assertInstanceOf(Number::class.java, values["large"]).toString())
         } finally {
             server.stop(0)
         }

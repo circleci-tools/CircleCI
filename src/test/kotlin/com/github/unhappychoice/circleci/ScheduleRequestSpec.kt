@@ -14,11 +14,9 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
-import retrofit2.Retrofit
-import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
-import retrofit2.converter.gson.GsonConverterFactory
 
 object ScheduleRequestSpec : Spek({
+    val parametersJson = """{"replicas":2,"marker":9007199254740993,"threshold":0.1234567890123456789}"""
     lateinit var request: Request
     val httpClient = OkHttpClient.Builder().addInterceptor { chain ->
         request = chain.request()
@@ -27,16 +25,20 @@ object ScheduleRequestSpec : Spek({
             .protocol(Protocol.HTTP_1_1)
             .code(if (request.method == "POST") 201 else 200)
             .message("OK")
-            .body("""{"id":"schedule-id"}""".toResponseBody())
+            .body("""{"id":"schedule-id","parameters":$parametersJson}""".toResponseBody())
             .build()
     }.build()
-    val client = Retrofit.Builder()
-        .baseUrl("https://circleci.com/api/v2/")
-        .client(httpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
-        .build()
-        .create(CircleCIAPIClientV2::class.java)
+    val client = CircleCIAPIClient("test-token", "https://circleci.com/api/", httpClient).clientV2()
+
+    test("updateSchedule preserves numeric parameters returned by getScheduleById") {
+        val schedule = client.getScheduleById("schedule-id").blockingFirst()
+        client.updateSchedule(schedule.id, UpdateScheduleParameters(parameters = schedule.parameters)).blockingFirst()
+
+        assertEquals("PATCH", request.method)
+        val buffer = Buffer()
+        requireNotNull(request.body).writeTo(buffer)
+        assertEquals("""{"parameters":$parametersJson}""", buffer.readUtf8())
+    }
 
     test("createSchedule sends the timetable, attribution actor, and pipeline parameters") {
         val parameters = CreateScheduleParameters(
