@@ -74,7 +74,7 @@ class CircleCIAPIClient private constructor(
   @Deprecated("V1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
   fun client(): CircleCIAPIClientV1 = serviceV1
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
-  fun clinet1_1(): CircleCIAPIClientV1_1 = client1_1()
+  fun clinet1_1(): CircleCIAPIClientV1_1 = serviceV1_1
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
   fun client1_1(): CircleCIAPIClientV1_1 = serviceV1_1
   fun clientV2(): CircleCIAPIClientV2 = serviceV2
