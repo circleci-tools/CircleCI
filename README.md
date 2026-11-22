@@ -105,6 +105,14 @@ val nextPage = firstPage.page.next?.let { cursor ->
 }
 ```
 
+### Legacy SSH key creation
+
+The V1 and V1.1 `addSshKey` methods return an RxJava 3 `Completable`.
+Use `blockingAwait()` or a completion callback to handle success. The methods
+complete when CircleCI returns a successful HTTP response, including an empty
+response, and HTTP failures still reach the error handler. Update explicit return
+types and custom client overrides from `Observable<SSHKey>` to `Completable`.
+
 ### V2 context environment variables
 
 `addEnvironmentVariableToContext` returns `Observable<EnvironmentVariable>`.
