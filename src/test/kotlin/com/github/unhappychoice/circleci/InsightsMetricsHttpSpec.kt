@@ -51,7 +51,7 @@ object InsightsMetricsHttpSpec : Spek({
 private fun metricsResponse(value: Long?, workflow: Boolean): MockResponse {
     val recoveryMetrics = if (workflow) """"mttr": $value, "total_recoveries": $value,""" else ""
     val credits = if (workflow) value else 0L
-    return MockResponse.Builder().addHeader("Content-Type", "application/json").body(
+    return MockResponse.Builder().setHeader("Content-Type", "application/json").body(
         """
         {
           "items": [{

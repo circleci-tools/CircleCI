@@ -8,6 +8,9 @@ data class TriggerPipelineRunRequest(
     val checkout: Ref? = null,
     val parameters: Map<String, Any>? = null
 ) {
+    override fun toString() =
+        "TriggerPipelineRunRequest(definitionId=$definitionId, config=$config, checkout=$checkout, parameters=[REDACTED])"
+
     data class Ref(val branch: String? = null, val tag: String? = null) {
         init {
             require((branch != null) xor (tag != null)) { "Specify exactly one of branch or tag" }

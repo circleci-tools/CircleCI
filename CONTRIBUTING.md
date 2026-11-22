@@ -15,6 +15,8 @@ From the repository root, run the same Gradle tasks as CI:
 ./gradlew jacocoTestReport
 ```
 
+The build treats Kotlin compiler warnings as errors in both production and test code.
+
 On Windows, use `gradlew.bat` in place of `./gradlew`.
 
 The Spek tests live in `src/test/kotlin`. When changing an API method, look for

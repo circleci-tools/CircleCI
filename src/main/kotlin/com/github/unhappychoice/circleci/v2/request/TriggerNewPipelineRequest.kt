@@ -6,4 +6,6 @@ data class TriggerNewPipelineRequest(
     val branch: String? = null,
     val tag: String? = null,
     @SerializedName("parameters") val parameters: Map<String, Any>? = null
-)
+) {
+    override fun toString() = "TriggerNewPipelineRequest(branch=$branch, tag=$tag, parameters=[REDACTED])"
+}

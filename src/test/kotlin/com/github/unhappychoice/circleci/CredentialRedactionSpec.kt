@@ -9,8 +9,11 @@ import com.github.unhappychoice.circleci.v1.response.EnvironmentVariable
 import com.github.unhappychoice.circleci.v2.request.ContinuePipelineRequest
 import com.github.unhappychoice.circleci.v2.request.CreateEnvVarRequest
 import com.github.unhappychoice.circleci.v2.request.CreateWebhookRequest
+import com.github.unhappychoice.circleci.v2.request.TriggerNewPipelineRequest
+import com.github.unhappychoice.circleci.v2.request.TriggerPipelineRunRequest
 import com.github.unhappychoice.circleci.v2.request.UpdateWebhookRequest
 import com.github.unhappychoice.circleci.v2.request.WebhookScopeRequest
+import com.github.unhappychoice.circleci.v2.response.Pipeline
 import com.github.unhappychoice.circleci.v2.response.Webhook
 import com.github.unhappychoice.circleci.v2.response.WebhookScope
 import com.google.gson.FieldNamingPolicy
@@ -26,6 +29,50 @@ import com.github.unhappychoice.circleci.v2.request.AddEnvironmentVariableReques
 object CredentialRedactionSpec : Spek({
     val v1Gson = GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create()
     val v2Gson = Gson()
+
+    test("redacts V2 pipeline trigger request parameters and preserves them in JSON") {
+        val secret = "dummy-deploy-token"
+        val parameters = mapOf("deploy_token" to secret, "deploy" to true)
+        val newPipeline = TriggerNewPipelineRequest(parameters = parameters)
+        val pipelineRun = TriggerPipelineRunRequest(parameters = parameters)
+
+        assertEquals(parameters, newPipeline.parameters)
+        assertEquals(parameters, pipelineRun.parameters)
+        listOf(newPipeline, pipelineRun).forEach { request ->
+            assertRedacted(request, "parameters", secret)
+            assertFalse(request.toString().contains("deploy_token"))
+            assertEquals(v2Gson.toJsonTree(parameters), v2Gson.toJsonTree(request).asJsonObject["parameters"])
+        }
+    }
+
+    test("redacts decoded V2 pipeline trigger parameters and preserves the property value") {
+        val secret = "dummy-deploy-token"
+        val parameters = mapOf("deploy_token" to secret, "deploy" to true)
+        val pipeline = v2Gson.fromJson(
+            """
+            {
+                "id": "pipeline-id",
+                "errors": [],
+                "project_slug": "gh/example/project",
+                "number": 1,
+                "trigger_parameters": {"deploy_token": "$secret", "deploy": true},
+                "state": "created",
+                "created_at": "2026-01-01T00:00:00Z",
+                "trigger": {
+                    "type": "api",
+                    "received_at": "2026-01-01T00:00:00Z",
+                    "actor": {"login": "example"}
+                }
+            }
+            """.trimIndent(),
+            Pipeline::class.java
+        )
+
+        assertEquals(parameters, pipeline.triggerParameters)
+        assertRedacted(pipeline, "triggerParameters", secret)
+        assertFalse(pipeline.toString().contains("deploy_token"))
+        assertTrue(pipeline.toString().contains("id=pipeline-id"))
+    }
 
     test("redacts a signed output URL from the build action and containing build") {
         val signature = "dummy-output-signature"
