@@ -2,8 +2,8 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.response.JobMetricsResponse
 import com.github.unhappychoice.circleci.v2.response.WorkflowMetricsResponse
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 
@@ -15,6 +15,7 @@ object InsightsMetricsHttpSpec : Spek({
 
         test("decodes workflow list statistics with value $value") {
             MockWebServer().use { server ->
+                server.start()
                 server.enqueue(metricsResponse(value, workflow = true))
                 val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
 
@@ -32,6 +33,7 @@ object InsightsMetricsHttpSpec : Spek({
 
         test("decodes workflow job list duration statistics with value $value") {
             MockWebServer().use { server ->
+                server.start()
                 server.enqueue(metricsResponse(value, workflow = false))
                 val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
 
@@ -49,7 +51,7 @@ object InsightsMetricsHttpSpec : Spek({
 private fun metricsResponse(value: Long?, workflow: Boolean): MockResponse {
     val recoveryMetrics = if (workflow) """"mttr": $value, "total_recoveries": $value,""" else ""
     val credits = if (workflow) value else 0L
-    return MockResponse().setHeader("Content-Type", "application/json").setBody(
+    return MockResponse.Builder().setHeader("Content-Type", "application/json").body(
         """
         {
           "items": [{
@@ -75,5 +77,5 @@ private fun metricsResponse(value: Long?, workflow: Boolean): MockResponse {
           "next_page_token": null
         }
         """.trimIndent()
-    )
+    ).build()
 }
