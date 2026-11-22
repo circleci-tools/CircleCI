@@ -1,10 +1,10 @@
 package com.github.unhappychoice.circleci
 
+import com.github.unhappychoice.circleci.v2.response.PipelineParametersDeserializer
 import com.github.unhappychoice.circleci.v2.response.PipelineValues
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializer
-import com.google.gson.reflect.TypeToken
 import okhttp3.OkHttpClient
 import org.apache.commons.codec.binary.Base64
 import retrofit2.Retrofit
@@ -172,7 +172,6 @@ class CircleCIAPIClient private constructor(
   )
 }
 
-private val pipelineValuesMapType = object : TypeToken<Map<String, Any>>() {}.type
-private val pipelineValuesDeserializer = JsonDeserializer<PipelineValues> { json, _, context ->
-  PipelineValues(context.deserialize(json.asJsonObject, pipelineValuesMapType))
+private val pipelineValuesDeserializer = JsonDeserializer<PipelineValues> { json, _, _ ->
+  PipelineValues(PipelineParametersDeserializer.decode(json.asJsonObject))
 }
