@@ -348,10 +348,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     override fun removeUrlOrbAllowListEntry(orgSlugOrId: String, allowListEntryId: String): Observable<URLOrbAllowListEntryAcknowledgment> = Observable.just(URLOrbAllowListEntryAcknowledgment(id = allowListEntryId, message = "Removed."))
 
     // Groups endpoints
-    override fun getOrganizationGroups(orgId: String, pageToken: String?): Observable<GroupListResponse> =
-        getOrganizationGroups(orgId, pageToken, limit = null)
-
-    override fun getOrganizationGroups(orgId: String, pageToken: String?, limit: Int?): Observable<GroupListResponse> = Observable.just(
+    override fun getOrganizationGroups(orgId: String, pageToken: String?): Observable<GroupListResponse> = Observable.just(
         GroupListResponse(items = listOf(Group(id = "id", name = "name", organizationId = orgId)), nextPageToken = "next_page_token")
     )
 

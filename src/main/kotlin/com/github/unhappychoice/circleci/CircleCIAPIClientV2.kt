@@ -310,15 +310,20 @@ interface CircleCIAPIClientV2 {
     ): Observable<URLOrbAllowListEntryAcknowledgment>
 
     // Groups endpoints
-    fun getOrganizationGroups(orgId: String, pageToken: String? = null): Observable<GroupListResponse> =
-        getOrganizationGroups(orgId, pageToken, limit = null)
-
     @GET("organizations/{org-id}/groups")
     fun getOrganizationGroups(
         @Path("org-id") orgId: String,
-        @Query("page-token") pageToken: String? = null,
-        @Query("limit") limit: Int?
+        @Query("page-token") pageToken: String? = null
     ): Observable<GroupListResponse>
+
+    /** Lists groups with an optional page size. Custom clients must override this overload to support a limit. */
+    fun getOrganizationGroups(
+        orgId: String,
+        pageToken: String? = null,
+        limit: Int?
+    ): Observable<GroupListResponse> =
+        if (limit == null) getOrganizationGroups(orgId, pageToken)
+        else Observable.error(UnsupportedOperationException("This client does not support a group page size"))
 
     @POST("organizations/{org-id}/groups")
     fun createOrganizationGroup(
@@ -720,4 +725,13 @@ interface CircleCIAPIClientV2 {
         @Path("id") workflowId: String,
         @Path("approval-request-id") approvalRequestId: String
     ): Observable<MessageResponse>
+}
+
+internal interface CircleCIAPIClientV2Service : CircleCIAPIClientV2 {
+    @GET("organizations/{org-id}/groups")
+    override fun getOrganizationGroups(
+        @Path("org-id") orgId: String,
+        @Query("page-token") pageToken: String?,
+        @Query("limit") limit: Int?
+    ): Observable<GroupListResponse>
 }

@@ -64,6 +64,26 @@ object GroupHttpSpec : Spek({
         }
     }
 
+    test("the pagination overload works with a client that only implements the original endpoint") {
+        MockWebServer().use { server ->
+            server.start()
+            val body = """{"items":[],"next_page_token":null}"""
+            server.enqueue(MockResponse(headers = headersOf("Content-Type", "application/json"), body = body))
+            val baseUrl = server.url("/api/v2/").toString()
+            val client = CircleCIAPIClient("test-token").retrofitV2(baseUrl).create(CircleCIAPIClientV2::class.java)
+
+            client.getOrganizationGroups(orgId, pageToken = "current", limit = null).test()
+                .assertResult(GroupListResponse(emptyList(), null))
+            val url = server.takeRequest().url
+            assertEquals(setOf("page-token"), url.queryParameterNames)
+            assertEquals("current", url.queryParameter("page-token"))
+
+            client.getOrganizationGroups(orgId, limit = 2).test()
+                .assertFailure(UnsupportedOperationException::class.java)
+            assertEquals(1, server.requestCount)
+        }
+    }
+
     test("createOrganizationGroup decodes the description without an organization ID") {
         withGroupResponse(groupJson, status = 201) { client, _ ->
             client.createOrganizationGroup(orgId, CreateGroupRequest(group.name)).test()
