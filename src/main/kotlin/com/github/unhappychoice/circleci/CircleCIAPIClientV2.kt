@@ -472,7 +472,7 @@ interface CircleCIAPIClientV2 {
         @Path("provider") provider: String,
         @Path("organization") organization: String,
         @Path("project") project: String,
-        @Body request: TriggerPipelineRunRequest?
+        @Body request: TriggerPipelineRunRequest
     ): Observable<PipelineRunResult>
 
     // Pipeline Definition endpoints
@@ -525,7 +525,7 @@ interface CircleCIAPIClientV2 {
         @Path("provider") provider: String,
         @Path("organization") organization: String,
         @Path("project") project: String,
-        @Body request: CreateProjectRequest?
+        @Body request: CreateProjectRequest
     ): Observable<Project>
 
     @GET("project/{project-slug}/checkout-key")
@@ -657,7 +657,7 @@ interface CircleCIAPIClientV2 {
     @PATCH("schedule/{schedule-id}")
     fun updateSchedule(
         @Path("schedule-id") scheduleId: String,
-        @Body params: UpdateScheduleParameters?
+        @Body params: UpdateScheduleParameters
     ): Observable<Schedule>
 
     @DELETE("schedule/{schedule-id}")
@@ -683,7 +683,7 @@ interface CircleCIAPIClientV2 {
     @PUT("webhook/{webhook-id}")
     fun updateWebhook(
         @Path("webhook-id") webhookId: String,
-        @Body request: UpdateWebhookRequest?
+        @Body request: UpdateWebhookRequest
     ): Observable<Webhook>
 
     @DELETE("webhook/{webhook-id}")

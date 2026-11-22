@@ -33,8 +33,6 @@ With the public `CircleCIAPIClient(token)` constructor, `clientV2()` sends reque
 CircleCI Cloud (`https://circleci.com/api/v2/`). The `CircleCIAPIClient.async(token)` factory
 on master uses the same URL.
 For example, `getMe()` sends the supplied token to `https://circleci.com/api/v2/me`.
-Connecting to a CircleCI Server instance requires configuring its API base URL,
-which this library's public API does not support.
 
 ## Asynchronous calls on master
 
@@ -149,6 +147,32 @@ use `.map<Any> { it }` at that boundary.
 `List<ContextRestriction>`. Replace map casts and key lookups with the `id`, `contextId`,
 `restrictionType`, `restrictionValue`, and nullable `name` properties. For project restrictions,
 read the project ID from `restrictionValue`. Use `nextPageToken` to retrieve the next page.
+
+## CircleCI Server on master
+
+Set `CIRCLECI_SERVER_URL` to the instance's HTTPS origin (for example,
+`https://ci.example.com:8443`) and `CIRCLECI_TOKEN` to a personal API token issued by
+that instance.
+
+```kotlin
+import com.github.unhappychoice.circleci.CircleCIAPIClient
+
+val instanceUrl = requireNotNull(System.getenv("CIRCLECI_SERVER_URL"))
+val token = requireNotNull(System.getenv("CIRCLECI_TOKEN"))
+val client = CircleCIAPIClient.server(token, instanceUrl)
+val jobs = client.getWorkflowJobs("your-workflow-id").blockingSingle()
+println(jobs.items)
+```
+
+Use `CircleCIAPIClient.serverAsync(token, instanceUrl)` for asynchronous subscriptions.
+Both factories return a V2 client and send requests under `/api/v2/`. The instance
+URL accepts an optional port and trailing slash. Reverse-proxy path prefixes are
+unsupported. The client follows redirects only within the same HTTPS origin.
+
+The [CircleCI Server automation guide](https://circleci.com/docs/guides/server/orchestrate/analyze-pipelines-during-an-incident/)
+documents listing workflow jobs and getting job details. This library tests those
+two endpoints against a local HTTPS mock. Compatibility with live CircleCI Server
+versions and other V2 endpoints is unverified.
 
 ## Installation
 

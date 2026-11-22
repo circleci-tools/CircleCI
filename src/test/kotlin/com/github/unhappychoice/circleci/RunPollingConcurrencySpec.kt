@@ -8,7 +8,6 @@ import mockwebserver3.SocketEffect
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.TimeoutException
@@ -17,28 +16,37 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 object RunPollingConcurrencySpec : Spek({
-    test("concurrent waits share one deadline thread") {
-        val waitCount = 32
-        val firstPolls = CountDownLatch(waitCount)
-        val deadlineThreads = ConcurrentHashMap.newKeySet<Thread>()
+    test("a blocked timeout handler leaves another wait free to repeat and time out") {
+        val handlerEntered = CountDownLatch(1)
+        val releaseHandler = CountDownLatch(1)
+        val otherPolls = CountDownLatch(2)
         val client = object : CircleCIAPIClientV3 by CircleCIAPIClient("test-token").clientV3() {
             override fun getRun(id: String) = Observable
                 .just(RunResponse(RunResponse.Data(id, RunResponse.Attributes("queued", null))))
-                .doAfterTerminate { firstPolls.countDown() }
+                .doAfterTerminate { if (id == "other") otherPolls.countDown() }
         }
 
-        val waits = List(waitCount) { index ->
-            client.waitForRun("run-$index", 1.minutes, 2.seconds)
-                .doOnError { deadlineThreads.add(Thread.currentThread()) }
-                .test()
-        }
+        val slow = client.waitForRun("slow", 1.minutes, 10.milliseconds)
+            .doOnError {
+                handlerEntered.countDown()
+                releaseHandler.await()
+            }
+            .test()
         try {
-            assertTrue(firstPolls.await(5, SECONDS))
-            waits.forEach { it.awaitDone(5, SECONDS).assertFailure(TimeoutException::class.java) }
-            assertEquals(1, deadlineThreads.size)
+            assertTrue(handlerEntered.await(5, SECONDS))
+            val other = client.waitForRun("other", 10.milliseconds, 1.seconds).test()
+            try {
+                assertTrue(otherPolls.await(5, SECONDS))
+                other.awaitDone(5, SECONDS).assertFailure(TimeoutException::class.java)
+                slow.assertEmpty()
+            } finally {
+                other.dispose()
+            }
         } finally {
-            waits.forEach { it.dispose() }
+            releaseHandler.countDown()
+            slow.awaitDone(5, SECONDS)
         }
+        slow.assertFailure(TimeoutException::class.java)
     }
 
     test("a blocked synchronous repeat request leaves another wait's deadline free to fire") {
