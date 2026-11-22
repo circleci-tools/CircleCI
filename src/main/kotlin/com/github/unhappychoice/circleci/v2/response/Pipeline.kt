@@ -15,6 +15,10 @@ data class Pipeline(
     val vcs: Vcs?,
     val warnings: List<PipelineWarning>? = null
 ) {
+    override fun toString() =
+        "Pipeline(id=$id, errors=$errors, projectSlug=$projectSlug, updatedAt=$updatedAt, number=$number, " +
+            "triggerParameters=[REDACTED], state=$state, createdAt=$createdAt, trigger=$trigger, vcs=$vcs, warnings=$warnings)"
+
     data class PipelineError(
         val type: String,
         val message: String
