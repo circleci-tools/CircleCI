@@ -8,6 +8,7 @@ import mockwebserver3.MockWebServer
 import okhttp3.Headers.Companion.headersOf
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.spekframework.spek2.Spek
 
 object GroupHttpSpec : Spek({
@@ -22,6 +23,14 @@ object GroupHttpSpec : Spek({
         {"id":"bdbe5e8d-50a5-4f73-a917-074592949844","name":"Release Managers","description":"Can manage releases."}
     """.trimIndent()
 
+    test("getOrganizationGroups omits both query parameters when called with only an organization ID") {
+        withGroupResponse("""{"items":[$groupJson],"next_page_token":null}""") { client, server ->
+            client.getOrganizationGroups(orgId).test().assertResult(GroupListResponse(listOf(group), null))
+            val url = server.takeRequest().url
+            assertEquals(emptySet<String>(), url.queryParameterNames)
+        }
+    }
+
     test("getOrganizationGroups omits the limit and decodes a page without a total count") {
         withGroupResponse("""{"items":[$groupJson],"next_page_token":"next"}""") { client, server ->
             client.getOrganizationGroups(orgId, "current").test()
@@ -29,6 +38,16 @@ object GroupHttpSpec : Spek({
             val url = server.takeRequest().url
             assertEquals("current", url.queryParameter("page-token"))
             assertFalse("limit" in url.queryParameterNames)
+        }
+    }
+
+    test("getOrganizationGroups sends the limit without a page token for the first page") {
+        withGroupResponse("""{"items":[],"next_page_token":null,"total_count":0}""") { client, server ->
+            client.getOrganizationGroups(orgId, limit = 2).test()
+                .assertResult(GroupListResponse(emptyList(), null, totalCount = 0))
+            val url = server.takeRequest().url
+            assertNull(url.queryParameter("page-token"))
+            assertEquals("2", url.queryParameter("limit"))
         }
     }
 
