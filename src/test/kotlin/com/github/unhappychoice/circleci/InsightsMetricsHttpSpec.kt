@@ -51,34 +51,31 @@ object InsightsMetricsHttpSpec : Spek({
 private fun metricsResponse(value: Long?, workflow: Boolean): MockResponse {
     val recoveryMetrics = if (workflow) """"mttr": $value, "total_recoveries": $value,""" else ""
     val credits = if (workflow) value else 0L
-    return MockResponse.Builder()
-        .setHeader("Content-Type", "application/json")
-        .body(
-            """
-            {
-              "items": [{
-                "name": "build",
-                "metrics": {
-                  "total_runs": 1,
-                  "successful_runs": 1,
-                  "failed_runs": 0,
-                  "success_rate": 1.0,
-                  "throughput": 1.0,
-                  $recoveryMetrics
-                  "total_credits_used": $credits,
-                  "duration_metrics": {
-                    "min": $value,
-                    "mean": $value,
-                    "median": $value,
-                    "p95": $value,
-                    "max": $value,
-                    "standard_deviation": ${value?.toFloat()}
-                  }
-                }
-              }],
-              "next_page_token": null
+    return MockResponse.Builder().setHeader("Content-Type", "application/json").body(
+        """
+        {
+          "items": [{
+            "name": "build",
+            "metrics": {
+              "total_runs": 1,
+              "successful_runs": 1,
+              "failed_runs": 0,
+              "success_rate": 1.0,
+              "throughput": 1.0,
+              $recoveryMetrics
+              "total_credits_used": $credits,
+              "duration_metrics": {
+                "min": $value,
+                "mean": $value,
+                "median": $value,
+                "p95": $value,
+                "max": $value,
+                "standard_deviation": ${value?.toFloat()}
+              }
             }
-            """.trimIndent()
-        )
-        .build()
+          }],
+          "next_page_token": null
+        }
+        """.trimIndent()
+    ).build()
 }
