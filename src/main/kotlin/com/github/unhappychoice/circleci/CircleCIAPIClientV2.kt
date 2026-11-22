@@ -310,10 +310,14 @@ interface CircleCIAPIClientV2 {
     ): Observable<URLOrbAllowListEntryAcknowledgment>
 
     // Groups endpoints
+    fun getOrganizationGroups(orgId: String, pageToken: String? = null): Observable<GroupListResponse> =
+        getOrganizationGroups(orgId, pageToken, limit = null)
+
     @GET("organizations/{org-id}/groups")
     fun getOrganizationGroups(
         @Path("org-id") orgId: String,
-        @Query("page-token") pageToken: String? = null
+        @Query("page-token") pageToken: String? = null,
+        @Query("limit") limit: Int?
     ): Observable<GroupListResponse>
 
     @POST("organizations/{org-id}/groups")

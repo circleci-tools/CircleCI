@@ -9,7 +9,8 @@ data class Group(
     val description: String? = null
 )
 
-data class GroupListResponse(
+data class GroupListResponse @JvmOverloads constructor(
     val items: List<Group>,
-    @SerializedName("next_page_token") val nextPageToken: String?
+    @SerializedName("next_page_token") val nextPageToken: String?,
+    @SerializedName("total_count") val totalCount: Int? = null
 )
