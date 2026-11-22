@@ -6,6 +6,7 @@ import io.reactivex.rxjava3.core.Scheduler
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
 import java.util.concurrent.TimeUnit.NANOSECONDS
+import java.util.concurrent.TimeoutException
 import kotlin.time.Duration
 
 /**
@@ -33,5 +34,11 @@ internal fun CircleCIAPIClientV3.waitForRun(
         .repeatWhen { completed -> completed.delay(pollInterval.inWholeNanoseconds, NANOSECONDS, timerScheduler) }
         .filter { it.data.attributes.phase == "ended" }
         .firstOrError()
-        .timeout(timeout.inWholeNanoseconds, NANOSECONDS, timerScheduler)
+        .timeout(
+            timeout.inWholeNanoseconds,
+            NANOSECONDS,
+            timerScheduler,
+            Single.error<RunResponse> { TimeoutException("Run $id did not end within $timeout") }
+                .subscribeOn(requestScheduler)
+        )
 }
