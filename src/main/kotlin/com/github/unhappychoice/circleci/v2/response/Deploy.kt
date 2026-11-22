@@ -7,7 +7,14 @@ data class Component(
     val name: String,
     @SerializedName("project_id") val projectId: String,
     @SerializedName("created_at") val createdAt: String,
-    @SerializedName("updated_at") val updatedAt: String
+    @SerializedName("updated_at") val updatedAt: String,
+    val labels: List<ComponentLabel>? = null,
+    @SerializedName("release_count") val releaseCount: Int? = null
+)
+
+data class ComponentLabel(
+    val key: String?,
+    val value: String?
 )
 
 data class ComponentListResponse(
