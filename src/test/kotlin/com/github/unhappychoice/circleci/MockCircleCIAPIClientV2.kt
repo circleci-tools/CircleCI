@@ -454,7 +454,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         TriggerNewPipelineResponse(number = 1, state = "state", id = "id", createdAt = "created_at")
     )
 
-    override fun triggerPipelineRun(provider: String, organization: String, project: String, request: TriggerPipelineRunRequest?): Observable<PipelineRunResult> =
+    override fun triggerPipelineRun(provider: String, organization: String, project: String, request: TriggerPipelineRunRequest): Observable<PipelineRunResult> =
         Observable.just(PipelineRunResult.Created("pipeline-id"))
 
     // Pipeline Definition endpoints
@@ -488,7 +488,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     override fun createProjectInOrg(orgSlugOrId: String, request: CreateProjectRequest): Observable<Project> = Observable.just(createMockProject())
 
-    override fun createProject(provider: String, organization: String, project: String, request: CreateProjectRequest?): Observable<Project> = Observable.just(createMockProject())
+    override fun createProject(provider: String, organization: String, project: String, request: CreateProjectRequest): Observable<Project> = Observable.just(createMockProject())
 
     override fun getProjectCheckoutKeys(projectSlug: String): Observable<CheckoutKeyListResponse> = Observable.just(
         CheckoutKeyListResponse(
@@ -568,7 +568,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     override fun createSchedule(projectSlug: String, params: CreateScheduleParameters): Observable<Schedule> = Observable.just(createMockSchedule())
 
-    override fun updateSchedule(scheduleId: String, params: UpdateScheduleParameters?): Observable<Schedule> = Observable.just(createMockSchedule())
+    override fun updateSchedule(scheduleId: String, params: UpdateScheduleParameters): Observable<Schedule> = Observable.just(createMockSchedule())
 
     override fun deleteSchedule(scheduleId: String): Observable<MessageResponse> = Observable.just(MessageResponse("message"))
 
@@ -584,7 +584,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     override fun createWebhook(request: CreateWebhookRequest): Observable<Webhook> = Observable.just(createMockWebhook())
 
-    override fun updateWebhook(webhookId: String, request: UpdateWebhookRequest?): Observable<Webhook> = Observable.just(createMockWebhook())
+    override fun updateWebhook(webhookId: String, request: UpdateWebhookRequest): Observable<Webhook> = Observable.just(createMockWebhook())
 
     override fun deleteWebhook(webhookId: String): Observable<MessageResponse> = Observable.just(MessageResponse("message"))
 
