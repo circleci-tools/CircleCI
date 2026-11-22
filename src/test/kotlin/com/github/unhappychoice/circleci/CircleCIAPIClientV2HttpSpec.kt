@@ -17,6 +17,7 @@ import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
 import com.github.unhappychoice.circleci.v2.request.ScheduleAttributionActor
 import com.github.unhappychoice.circleci.v2.request.UpdatePipelineDefinitionRequest
 import com.github.unhappychoice.circleci.v2.request.UpdateTriggerRequest
+import com.github.unhappychoice.circleci.v2.request.UpdateWebhookRequest
 import com.github.unhappychoice.circleci.v2.request.WebhookScopeRequest
 import com.github.unhappychoice.circleci.v2.response.Collaboration
 import com.github.unhappychoice.circleci.v2.response.ComponentVersion
@@ -130,7 +131,7 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
     }
 
-    test("creates a webhook with its scope, events, and TLS verification setting") {
+    test("creates a webhook with its scope, events, and TLS verification setting while omitting enablement by default") {
         val request = CreateWebhookRequest(
             name = "Build notifications",
             url = "https://example.com/webhook",
@@ -153,6 +154,47 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             }
         """
         assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+    }
+
+    test("creates a disabled webhook and decodes its settings") {
+        val request = CreateWebhookRequest(
+            name = "Build notifications",
+            url = "https://example.com/webhook",
+            signingSecret = "test-secret",
+            scope = WebhookScopeRequest("project", "project-id"),
+            events = listOf("workflow-completed"),
+            isEnabled = false
+        )
+        val response = """{"id":"webhook-id","is_enabled":false,"verify_tls":true,"auto_disabled_at":null}"""
+        val body = withResponse(response, "POST", "/webhook", 201) { client ->
+            val webhook = client.createWebhook(request).blockingSingle()
+            assertEquals(false, webhook.isEnabled)
+            assertEquals(true, webhook.verifyTls)
+            assertNull(webhook.autoDisabledAt)
+        }
+        assertEquals(JsonParser.parseString("false"), JsonParser.parseString(body).asJsonObject["is-enabled"])
+    }
+
+    test("updates a webhook to disabled and decodes its auto-disable timestamp") {
+        val timestamp = "2025-01-02T03:04:05Z"
+        val response = """{"id":"webhook-id","is_enabled":false,"verify_tls":false,"auto_disabled_at":"$timestamp"}"""
+        val body = withResponse(response, "PUT", "/webhook/webhook-id") { client ->
+            val webhook = client.updateWebhook("webhook-id", UpdateWebhookRequest(isEnabled = false)).blockingSingle()
+            assertEquals(false, webhook.isEnabled)
+            assertEquals(false, webhook.verifyTls)
+            assertEquals(timestamp, webhook.autoDisabledAt)
+        }
+        assertEquals(JsonParser.parseString("""{"is-enabled":false}"""), JsonParser.parseString(body))
+    }
+
+    test("updates a webhook without sending an omitted enablement setting") {
+        val response = """{"id":"webhook-id","is_enabled":true,"verify_tls":true}"""
+        val body = withResponse(response, "PUT", "/webhook/webhook-id") { client ->
+            val webhook = client.updateWebhook("webhook-id", UpdateWebhookRequest(name = "Renamed")).blockingSingle()
+            assertEquals(true, webhook.isEnabled)
+            assertNull(webhook.autoDisabledAt)
+        }
+        assertEquals(JsonParser.parseString("""{"name":"Renamed"}"""), JsonParser.parseString(body))
     }
 
     test("decodes Insights flaky-test counts and nullable metadata") {
