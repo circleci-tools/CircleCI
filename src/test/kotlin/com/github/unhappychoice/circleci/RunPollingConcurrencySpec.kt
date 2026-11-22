@@ -2,13 +2,17 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v3.response.RunResponse
 import io.reactivex.rxjava3.core.Observable
+import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
+import mockwebserver3.RecordedRequest
 import mockwebserver3.SocketEffect
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.TimeoutException
 import kotlin.time.Duration.Companion.milliseconds
@@ -16,6 +20,54 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 object RunPollingConcurrencySpec : Spek({
+    test("synchronous polls queue at the limit and skip expired and disposed waits") {
+        val releaseFirst = CountDownLatch(1)
+        val releaseOthers = CountDownLatch(1)
+        val heldTargets = (0 until SYNCHRONOUS_POLL_LIMIT).map { "/api/v3/runs/held-$it" }
+        MockWebServer().use { server ->
+            server.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    when (request.target) {
+                        heldTargets.first() -> releaseFirst.await(15, SECONDS)
+                        in heldTargets -> releaseOthers.await(15, SECONDS)
+                    }
+                    return endedRun()
+                }
+            }
+            server.start()
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV3()
+            val held = (0 until SYNCHRONOUS_POLL_LIMIT).map {
+                client.waitForRun("held-$it", 1.minutes, 1.minutes).test()
+            }
+            try {
+                val targets = held.map { server.takeRequest(5, SECONDS)?.target }.toSet()
+                assertEquals(heldTargets.toSet(), targets)
+
+                val expired = client.waitForRun("expired", 1.minutes, 1.seconds).test()
+                val disposed = client.waitForRun("disposed", 1.minutes, 1.minutes).test()
+                val active = client.waitForRun("active", 1.minutes, 1.minutes).test()
+                try {
+                    disposed.dispose()
+                    expired.awaitDone(5, SECONDS).assertFailure(TimeoutException::class.java)
+                    assertNull(server.takeRequest(200, MILLISECONDS))
+
+                    releaseFirst.countDown()
+                    assertEquals("/api/v3/runs/active", server.takeRequest(5, SECONDS)?.target)
+                    active.awaitDone(5, SECONDS).assertComplete().assertNoErrors().assertValueCount(1)
+                    assertNull(server.takeRequest(200, MILLISECONDS))
+                } finally {
+                    expired.dispose()
+                    disposed.dispose()
+                    active.dispose()
+                }
+            } finally {
+                releaseFirst.countDown()
+                releaseOthers.countDown()
+                held.forEach { it.dispose() }
+            }
+        }
+    }
+
     test("a blocked timeout handler leaves another wait free to repeat and time out") {
         val handlerEntered = CountDownLatch(1)
         val releaseHandler = CountDownLatch(1)
@@ -75,3 +127,5 @@ object RunPollingConcurrencySpec : Spek({
 })
 
 private fun queuedRun() = MockResponse(body = """{"data":{"id":"run-id","attributes":{"phase":"queued"}}}""")
+
+private fun endedRun() = MockResponse(body = """{"data":{"id":"run-id","attributes":{"phase":"ended"}}}""")
