@@ -1,5 +1,6 @@
 package com.github.unhappychoice.circleci.v2.response
 
+import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 
 data class Schedule(
@@ -9,7 +10,7 @@ data class Schedule(
     @SerializedName("created-at") val createdAt: String,
     @SerializedName("updated-at") val updatedAt: String,
     @SerializedName("project-slug") val projectSlug: String,
-    @SerializedName("parameters") val parameters: Map<String, Any>,
+    @JsonAdapter(PipelineParametersDeserializer::class) val parameters: Map<String, Any>,
     @SerializedName("actor") val actor: Actor,
     val timetable: ScheduleTimetable
 )
