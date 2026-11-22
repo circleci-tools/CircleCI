@@ -10,6 +10,8 @@ import org.apache.commons.codec.binary.Base64
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
+import java.net.URI
+import java.net.URISyntaxException
 import java.time.OffsetDateTime
 
 class CircleCIAPIClient private constructor(
@@ -31,8 +33,42 @@ class CircleCIAPIClient private constructor(
 
     fun async(token: String): CircleCIAPIClient = async(token, BASE_URL)
 
+    /** Creates a synchronous V2 client for an HTTPS CircleCI Server origin. */
+    fun server(token: String, instanceUrl: String): CircleCIAPIClientV2 =
+      server(token, instanceUrl, asynchronous = false)
+
+    /** Creates an asynchronous V2 client for an HTTPS CircleCI Server origin. */
+    fun serverAsync(token: String, instanceUrl: String): CircleCIAPIClientV2 =
+      server(token, instanceUrl, asynchronous = true)
+
     internal fun async(token: String, baseUrl: String): CircleCIAPIClient =
       CircleCIAPIClient(token, baseUrl, RxJava3CallAdapterFactory.create())
+
+    internal fun server(
+      token: String,
+      instanceUrl: String,
+      asynchronous: Boolean,
+      transport: OkHttpClient? = null
+    ): CircleCIAPIClientV2 {
+      val baseUrl = serverApiBaseUrl(instanceUrl)
+      val adapter = if (asynchronous) RxJava3CallAdapterFactory.create()
+        else RxJava3CallAdapterFactory.createSynchronous()
+      return CircleCIAPIClient(token, baseUrl, adapter, transport).clientV2()
+    }
+
+    private fun serverApiBaseUrl(instanceUrl: String): String {
+      val uri = try {
+        URI(instanceUrl)
+      } catch (_: URISyntaxException) {
+        throw IllegalArgumentException("CircleCI Server URL must be an HTTPS origin")
+      }
+      require(uri.scheme.equals("https", ignoreCase = true) && uri.host != null &&
+        (uri.port == -1 || uri.port in 1..65535) && uri.rawUserInfo == null &&
+        uri.rawQuery == null && uri.rawFragment == null && uri.rawPath in listOf("", "/")) {
+        "CircleCI Server URL must be an HTTPS origin"
+      }
+      return "https://${uri.rawAuthority}/api/"
+    }
   }
 
   @Deprecated("V1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))

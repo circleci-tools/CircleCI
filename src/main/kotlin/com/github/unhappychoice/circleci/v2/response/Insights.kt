@@ -14,22 +14,22 @@ data class WorkflowMetricsResponse(
     data class WorkflowMetrics(
         @SerializedName("total_runs") val totalRuns: Long,
         @SerializedName("successful_runs") val successfulRuns: Long,
-        @SerializedName("mttr") val mttr: Long,
-        @SerializedName("total_credits_used") val totalCreditsUsed: Long,
+        @SerializedName("mttr") val mttr: Long?,
+        @SerializedName("total_credits_used") val totalCreditsUsed: Long?,
         @SerializedName("failed_runs") val failedRuns: Long,
         @SerializedName("success_rate") val successRate: Float,
         @SerializedName("duration_metrics") val durationMetrics: DurationMetrics,
-        @SerializedName("total_recoveries") val totalRecoveries: Long,
+        @SerializedName("total_recoveries") val totalRecoveries: Long?,
         val throughput: Float
     )
 
     data class DurationMetrics(
-        val min: Long,
-        val mean: Long,
-        val median: Long,
-        val p95: Long,
-        val max: Long,
-        @SerializedName("standard_deviation") val standardDeviation: Float
+        val min: Long?,
+        val mean: Long?,
+        val median: Long?,
+        val p95: Long?,
+        val max: Long?,
+        @SerializedName("standard_deviation") val standardDeviation: Float?
     )
 }
 
@@ -40,11 +40,11 @@ data class WorkflowRunsResponse(
     data class WorkflowRunItem(
         val id: String,
         @SerializedName("branch") val branch: String?,
-        @SerializedName("duration") val duration: Long,
+        @SerializedName("duration") val duration: Long?,
         @SerializedName("created_at") val createdAt: String,
         @SerializedName("stopped_at") val stoppedAt: String?,
         @SerializedName("credits_used") val creditsUsed: Long,
-        val status: String
+        val status: String?
     )
 }
 
@@ -68,12 +68,12 @@ data class JobMetricsResponse(
     )
 
     data class DurationMetrics(
-        val min: Long,
-        val mean: Long,
-        val median: Long,
-        val p95: Long,
-        val max: Long,
-        @SerializedName("standard_deviation") val standardDeviation: Float
+        val min: Long?,
+        val mean: Long?,
+        val median: Long?,
+        val p95: Long?,
+        val max: Long?,
+        @SerializedName("standard_deviation") val standardDeviation: Float?
     )
 }
 

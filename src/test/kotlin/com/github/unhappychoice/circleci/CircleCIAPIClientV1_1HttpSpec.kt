@@ -1,5 +1,6 @@
 package com.github.unhappychoice.circleci
 
+import com.github.unhappychoice.circleci.v1.request.CreateCheckoutKeyRequest
 import com.sun.net.httpserver.HttpServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -42,9 +43,46 @@ object CircleCIAPIClientV1_1HttpSpec: Spek({
       }
     }
   }
+
+  group("checkout key issuance time") {
+    val checkoutKeysPath = "/api/v1.1/project/github/octocat/example/checkout-key"
+    val checkoutKeyBody = checkoutKeyFixture("checkout_key.json")
+
+    test("#getCheckoutKeys() should decode each issuance time") {
+      withResponse(200, checkoutKeyFixture("checkout_keys.json"), path = checkoutKeysPath) { client ->
+        val keys = client.getCheckoutKeys("github", "octocat", "example").blockingSingle()
+        assertEquals(listOf("2024-07-11T12:00:00Z", "2024-07-10T12:00:00Z"), keys.map { it.created_at })
+      }
+    }
+
+    test("#getCheckoutKey() should decode the issuance time") {
+      val fingerprint = "xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"
+      withResponse(200, checkoutKeyBody, path = "$checkoutKeysPath/$fingerprint") { client ->
+        val key = client.getCheckoutKey("github", "octocat", "example", fingerprint).blockingSingle()
+        assertEquals("2024-07-11T12:00:00Z", key.created_at)
+      }
+    }
+
+    test("#createCheckoutKey() should decode the issuance time") {
+      withResponse(201, checkoutKeyBody, method = "POST", path = checkoutKeysPath) { client ->
+        val request = CreateCheckoutKeyRequest(type = "deploy-key", preferred = true)
+        val key = client.createCheckoutKey("github", "octocat", "example", request).blockingSingle()
+        assertEquals("2024-07-11T12:00:00Z", key.created_at)
+      }
+    }
+  }
 })
 
-private fun withResponse(status: Int, body: String, test: (CircleCIAPIClientV1_1) -> Unit) {
+private fun checkoutKeyFixture(fileName: String): String =
+  checkNotNull(CircleCIAPIClientV1_1HttpSpec::class.java.getResource("json/$fileName")).readText()
+
+private fun withResponse(
+  status: Int,
+  body: String,
+  method: String = "GET",
+  path: String = "/api/v1.1/me",
+  test: (CircleCIAPIClientV1_1) -> Unit
+) {
   val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
   try {
     server.createContext("/") { exchange ->
@@ -53,7 +91,7 @@ private fun withResponse(status: Int, body: String, test: (CircleCIAPIClientV1_1
         exchange.requestURI.toString(),
         exchange.requestHeaders.getFirst("Authorization")
       )
-      val expected = Triple("GET", "/api/v1.1/me", "Basic dGVzdC10b2tlbjo=")
+      val expected = Triple(method, path, "Basic dGVzdC10b2tlbjo=")
       val bytes = body.toByteArray()
       exchange.responseHeaders.set("Content-Type", "application/json")
       exchange.sendResponseHeaders(if (request == expected) status else 400, bytes.size.toLong())
