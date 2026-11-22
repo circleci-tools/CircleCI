@@ -12,6 +12,15 @@ The master branch returns RxJava 3 observables (`io.reactivex.rxjava3.core.Obser
 Version `2.1.2`, used below, returns RxJava 2 observables. When upgrading to a version
 that uses RxJava 3, update your imports and reactive integrations to RxJava 3.
 
+## Features
+
+- Trigger pipelines, inspect workflows and jobs, and retrieve job artifacts and
+  test results with the CircleCI API v2 client.
+- Manage context environment variables and restrictions, and query workflow
+  and job metrics through Insights.
+- On master, trigger and list CircleCI Cloud API v3 runs and poll for completion.
+- On master, connect to an HTTPS CircleCI Server instance with the API v2 client.
+
 ## Quick start
 
 Use version `2.1.2` in the dependency declaration below.

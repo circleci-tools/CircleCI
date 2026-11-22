@@ -1,10 +1,10 @@
 package com.github.unhappychoice.circleci
 
+import com.github.unhappychoice.circleci.v2.response.PipelineParametersDeserializer
 import com.github.unhappychoice.circleci.v2.response.PipelineValues
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializer
-import com.google.gson.reflect.TypeToken
 import okhttp3.OkHttpClient
 import org.apache.commons.codec.binary.Base64
 import retrofit2.Retrofit
@@ -72,7 +72,7 @@ class CircleCIAPIClient private constructor(
   @Deprecated("V1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
   fun client(): CircleCIAPIClientV1 = serviceV1
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
-  fun clinet1_1(): CircleCIAPIClientV1_1 = client1_1()
+  fun clinet1_1(): CircleCIAPIClientV1_1 = serviceV1_1
   @Deprecated("V1.1 API is deprecated. Use clientV2() instead", ReplaceWith("clientV2()"))
   fun client1_1(): CircleCIAPIClientV1_1 = serviceV1_1
   fun clientV2(): CircleCIAPIClientV2 = serviceV2
@@ -173,7 +173,6 @@ class CircleCIAPIClient private constructor(
   )
 }
 
-private val pipelineValuesMapType = object : TypeToken<Map<String, Any>>() {}.type
-private val pipelineValuesDeserializer = JsonDeserializer<PipelineValues> { json, _, context ->
-  PipelineValues(context.deserialize(json.asJsonObject, pipelineValuesMapType))
+private val pipelineValuesDeserializer = JsonDeserializer<PipelineValues> { json, _, _ ->
+  PipelineValues(PipelineParametersDeserializer.decode(json.asJsonObject))
 }
