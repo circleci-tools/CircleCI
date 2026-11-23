@@ -198,10 +198,11 @@ object CircleCIAPIClientV2HttpSpec : Spek({
     }
 
     test("decodes Insights flaky-test counts and nullable metadata") {
+        val workflowId = "123e4567-e89b-12d3-a456-426614174000"
         val firstTest = """
             {
                 "workflow-created-at": "2024-01-01T00:00:00Z",
-                "workflow-id": "123e4567-e89b-12d3-a456-426614174000",
+                "workflow-id": "$workflowId",
                 "classname": "ExampleTest",
                 "pipeline-number": 7,
                 "workflow-name": "build-and-test",
@@ -214,6 +215,7 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             }
         """.trimIndent()
         val secondTest = firstTest.replace("\"testWithSource\"", "\"testWithoutSource\"")
+            .replace("\"$workflowId\"", "null")
             .replace("\"junit\"", "null").replace("\"src/test/ExampleTest.kt\"", "null")
             .replace("2147483648", "3")
         val response = """{"total-flaky-tests":2.0,"flaky-tests":[$firstTest,$secondTest]}"""
@@ -222,6 +224,7 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertEquals(2.0, result.`total-flaky-tests`, 0.0)
             assertEquals(2, result.`flaky-tests`.size)
             val (withSource, withoutSource) = result.`flaky-tests`
+            assertEquals(workflowId, withSource.`workflow-id`)
             assertEquals(2147483648L, withSource.`times-flaked`)
             assertEquals("junit", withSource.source)
             assertEquals("src/test/ExampleTest.kt", withSource.file)
@@ -229,6 +232,10 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertNull(withSource.`test-result`)
             assertTrue(FlakyTest::`pipeline-id`.returnType.isMarkedNullable)
             assertTrue(FlakyTest::`test-result`.returnType.isMarkedNullable)
+            assertTrue(FlakyTest::`workflow-id`.returnType.isMarkedNullable)
+            assertNull(withoutSource.`workflow-id`)
+            assertEquals("testWithoutSource", withoutSource.`test-name`)
+            assertEquals("build-and-test", withoutSource.`workflow-name`)
             assertEquals(3L, withoutSource.`times-flaked`)
             assertNull(withoutSource.source)
             assertNull(withoutSource.file)
