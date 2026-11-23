@@ -1,15 +1,23 @@
 package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.response.Artifact
+import io.reactivex.rxjava3.observers.TestObserver
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
+import okhttp3.Call
 import okhttp3.Dispatcher
+import okhttp3.EventListener
 import okhttp3.Headers.Companion.headersOf
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.asResponseBody
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.HeldCertificate
 import okio.Buffer
+import okio.ForwardingSource
+import okio.buffer
 import org.junit.jupiter.api.Assertions.*
 import org.spekframework.spek2.Spek
 import java.io.IOException
@@ -18,6 +26,7 @@ import java.net.ProtocolException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.atomic.AtomicBoolean
 
 object ArtifactDownloadSpec : Spek({
     test("streams a listed binary artifact through relative and cross-origin redirects") {
@@ -162,6 +171,58 @@ object ArtifactDownloadSpec : Spek({
                 .test(true).assertNoValues().assertNoErrors().assertNotComplete()
             assertNull(origin.takeRequest(100, MILLISECONDS))
         }
+    }
+
+    test("cancels a call when disposed during call creation") {
+        val observer = TestObserver<Int>()
+        val cancelled = CountDownLatch(1)
+        val transport = OkHttpClient.Builder().eventListenerFactory {
+            observer.dispose()
+            object : EventListener() {
+                override fun canceled(call: Call) {
+                    cancelled.countDown()
+                }
+            }
+        }.build()
+        val api = CircleCIAPIClient("test-token", "https://circleci.com/api/", transport)
+
+        api.downloadArtifact(Artifact("https://circleci.com/artifact", "report", 0)) { it.read() }
+            .subscribe(observer)
+
+        assertTrue(cancelled.await(5, SECONDS))
+        observer.assertNoValues().assertNoErrors().assertNotComplete()
+    }
+
+    test("closes a response delivered during disposal without invoking the consumer") {
+        val observer = TestObserver<Int>()
+        val closed = CountDownLatch(1)
+        val consumed = AtomicBoolean()
+        val source = object : ForwardingSource(Buffer().writeUtf8("data")) {
+            override fun close() {
+                super.close()
+                closed.countDown()
+            }
+        }.buffer()
+        val transport = OkHttpClient.Builder()
+            .eventListener(object : EventListener() {
+                override fun callEnd(call: Call) {
+                    observer.dispose()
+                }
+            })
+            .addInterceptor { chain ->
+                Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1)
+                    .code(200).message("OK").body(source.asResponseBody()).build()
+            }.build()
+        val api = CircleCIAPIClient("test-token", "https://circleci.com/api/", transport)
+
+        api.downloadArtifact(Artifact("https://circleci.com/artifact", "report", 0)) {
+            consumed.set(true)
+            it.read()
+        }.subscribe(observer)
+
+        assertTrue(closed.await(5, SECONDS))
+        assertFalse(consumed.get())
+        observer.assertNoValues().assertNoErrors().assertNotComplete()
     }
 
     test("rejects redirects with a missing or unresolvable location") {
