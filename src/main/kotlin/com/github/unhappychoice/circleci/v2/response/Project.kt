@@ -24,9 +24,10 @@ data class Project(
     )
 }
 
-data class ProjectEnvironmentVariable(
+data class ProjectEnvironmentVariable @JvmOverloads constructor(
     val name: String,
-    val value: String
+    val value: String,
+    @SerializedName("created-at") val createdAt: String? = null
 )
 
 data class ProjectEnvironmentVariableListResponse(

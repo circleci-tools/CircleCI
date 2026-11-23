@@ -14,7 +14,9 @@ data class Workflow(
     @SerializedName("started_by") val startedBy: String,
     @SerializedName("canceled_by") val canceledBy: String?,
     @SerializedName("errored_by") val erroredBy: String?,
-    val tag: String?
+    val tag: String?,
+    @SerializedName("auto_rerun_number") val autoRerunNumber: Long? = null,
+    @SerializedName("max_auto_reruns") val maxAutoReruns: Long? = null
 )
 
 data class WorkflowId(

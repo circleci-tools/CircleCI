@@ -1,5 +1,6 @@
 package com.github.unhappychoice.circleci.v2.response
 
+import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 
 data class Pipeline(
@@ -8,6 +9,7 @@ data class Pipeline(
     @SerializedName("project_slug") val projectSlug: String,
     @SerializedName("updated_at") val updatedAt: String?,
     val number: Int,
+    @JsonAdapter(PipelineParametersDeserializer::class)
     @SerializedName("trigger_parameters") val triggerParameters: Map<String, Any>?,
     val state: String,
     @SerializedName("created_at") val createdAt: String,
