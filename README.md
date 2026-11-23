@@ -81,13 +81,15 @@ check(run.attributes.currentOutcome == "succeeded") {
 }
 ```
 
-`waitForRun` returns a `Single` that polls immediately on subscription, then
+`waitForRun` returns a `Single` that schedules its first poll on subscription, then
 waits for the configured interval after each response. It returns the first
 response whose phase is `ended`, even if an earlier response had a
 `currentOutcome`. A later rerun can change the observed outcome.
 
-The timeout covers the full wait, including time spent queued, awaiting
-approval, or fetching status. It emits a `TimeoutException` when the deadline
+Synchronous clients share a limit of eight concurrent `waitForRun` requests.
+Polls queue when all eight slots are busy. The timeout covers the full wait,
+including time spent queued, awaiting approval, or fetching status. It emits a
+`TimeoutException` when the deadline
 expires. Request errors, including HTTP 429, terminate the wait immediately.
 Dispose the subscription to stop polling. The CircleCI run itself continues
 independently.

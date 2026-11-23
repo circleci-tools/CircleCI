@@ -90,6 +90,24 @@ object RunPollingSpec : Spek({
         assertEquals(listOf("run-id"), client.requestedIds)
     }
 
+    test("an expired queued poll does not start while the timeout timer is delayed") {
+        val requests = TestScheduler()
+        val timers = TestScheduler()
+        val client = RunPollingClient()
+        var now = 0L
+        val observer = client.waitForRun(
+            "run-id", 2.seconds, 5.seconds, requests, timers,
+            nanoTime = { now }
+        ).test()
+        now = 5.seconds.inWholeNanoseconds
+        requests.triggerActions()
+        observer.assertEmpty()
+        timers.advanceTimeBy(5, SECONDS)
+        requests.triggerActions()
+        observer.assertFailure(TimeoutException::class.java)
+        assertTrue(client.requestedIds.isEmpty())
+    }
+
     test("surfaces an HTTP 429 immediately") {
         val scheduler = TestScheduler()
         val error = HttpException(Response.error<RunResponse>(429, "".toResponseBody()))
