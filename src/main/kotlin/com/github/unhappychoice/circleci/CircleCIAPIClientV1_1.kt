@@ -362,5 +362,3 @@ interface CircleCIAPIClientV1_1 {
         @Path("name") name: String
     ): Observable<Unit>
 }
-
-
