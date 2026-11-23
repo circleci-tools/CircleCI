@@ -141,13 +141,9 @@ object CircleCIAPIClientV1Spec: Spek({
       expect(subscriber.isFinished()).to.be.`true`
     }
 
-    test("#addSshKey() should return response") {
+    test("#addSshKey() should complete") {
       val request = AddSshKeyRequest("hostname", "private_key")
-      val subscriber = client.addSshKey(userName, project, request).test()
-      expect(subscriber.isFinished()).to.be.`true`
-
-      val sshKey = subscriber.values().first()
-      expectNotNull(sshKey)
+      client.addSshKey(userName, project, request).test().assertResult()
     }
 
     test("#getCheckoutKeys() should return response") {
@@ -397,10 +393,9 @@ object CircleCIAPIClientV1Spec: Spek({
       expect(subscriber.isFinished()).to.be.`true`
     }
 
-    test("#addSshKey() should return response") {
+    test("#addSshKey() should complete") {
       val request = AddSshKeyRequest("hostname", "private_key")
-      val subscriber = client1_1.addSshKey(vcsType, userName, project, request).test()
-      expect(subscriber.isFinished()).to.be.`true`
+      client1_1.addSshKey(vcsType, userName, project, request).test().assertResult()
     }
 
     test("#getCheckoutKeys() should return response") {
@@ -616,11 +611,6 @@ private fun expectNotNull(checkoutKey: CheckoutKey) {
   expect(checkoutKey.created_at).not.to.be.`null`
   expect(checkoutKey.fingerprint).not.to.be.`null`
   expect(checkoutKey.public_key).not.to.be.`null`
-}
-
-private fun expectNotNull(sshKey: SSHKey) {
-  expect(sshKey.fingerprint).not.to.be.`null`
-  expect(sshKey.public_key).not.to.be.`null`
 }
 
 private fun expectNotNull(testMetadata: TestMetadata) {

@@ -2,6 +2,7 @@ package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v1.request.*
 import com.github.unhappychoice.circleci.v1.response.*
+import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Observable
 import retrofit2.http.*
 
@@ -188,7 +189,7 @@ interface CircleCIAPIClientV1_1 {
         @Path("username") userName: String,
         @Path("project") project: String,
         @Body request: AddSshKeyRequest
-    ): Observable<SSHKey>
+    ): Completable
 
     /**
      * GET: /project/:vcs-type/:username/:project/checkout-key
@@ -362,5 +363,3 @@ interface CircleCIAPIClientV1_1 {
         @Path("name") name: String
     ): Observable<Unit>
 }
-
-

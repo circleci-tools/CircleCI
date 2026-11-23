@@ -44,7 +44,8 @@ data class WorkflowRunsResponse(
         @SerializedName("created_at") val createdAt: String,
         @SerializedName("stopped_at") val stoppedAt: String?,
         @SerializedName("credits_used") val creditsUsed: Long,
-        val status: String?
+        val status: String?,
+        @SerializedName("is_approval") val isApproval: Boolean? = null
     )
 }
 
@@ -129,17 +130,19 @@ data class TestMetricsResponse(
 ) {
     data class FailedTest(
         @SerializedName("test_name") val testName: String,
-        @SerializedName("classname") val className: String,
+        @SerializedName("classname") val className: String?,
         val file: String?,
         @SerializedName("failed_runs") val failedRuns: Long,
-        @SerializedName("total_runs") val totalRuns: Long
+        @SerializedName("total_runs") val totalRuns: Long,
+        @SerializedName("job_name") val jobName: String? = null
     )
 
     data class SlowTest(
         @SerializedName("test_name") val testName: String,
-        @SerializedName("classname") val className: String,
+        @SerializedName("classname") val className: String?,
         val file: String?,
-        @SerializedName("p95_duration") val p95Duration: Float
+        @SerializedName("p95_duration") val p95Duration: Float?,
+        @SerializedName("job_name") val jobName: String? = null
     )
 
     data class TestRun(

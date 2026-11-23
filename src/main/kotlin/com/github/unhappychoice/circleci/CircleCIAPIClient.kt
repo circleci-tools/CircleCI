@@ -21,16 +21,16 @@ import java.time.OffsetDateTime
 class CircleCIAPIClient private constructor(
   val token: String,
   private val baseUrl: String,
-  private val callAdapterFactory: RxJava3CallAdapterFactory,
+  private val asynchronous: Boolean,
   baseTransport: OkHttpClient? = null
 ) {
   constructor(token: String) : this(token, BASE_URL)
 
   internal constructor(token: String, baseUrl: String) :
-    this(token, baseUrl, RxJava3CallAdapterFactory.createSynchronous())
+    this(token, baseUrl, asynchronous = false)
 
   internal constructor(token: String, baseUrl: String, transport: OkHttpClient) :
-    this(token, baseUrl, RxJava3CallAdapterFactory.createSynchronous(), transport)
+    this(token, baseUrl, asynchronous = false, baseTransport = transport)
 
   companion object {
     private const val BASE_URL = "https://circleci.com/api/"
@@ -46,7 +46,7 @@ class CircleCIAPIClient private constructor(
       server(token, instanceUrl, asynchronous = true)
 
     internal fun async(token: String, baseUrl: String): CircleCIAPIClient =
-      CircleCIAPIClient(token, baseUrl, RxJava3CallAdapterFactory.create())
+      CircleCIAPIClient(token, baseUrl, asynchronous = true)
 
     internal fun server(
       token: String,
@@ -55,9 +55,7 @@ class CircleCIAPIClient private constructor(
       transport: OkHttpClient? = null
     ): CircleCIAPIClientV2 {
       val baseUrl = serverApiBaseUrl(instanceUrl)
-      val adapter = if (asynchronous) RxJava3CallAdapterFactory.create()
-        else RxJava3CallAdapterFactory.createSynchronous()
-      return CircleCIAPIClient(token, baseUrl, adapter, transport).clientV2()
+      return CircleCIAPIClient(token, baseUrl, asynchronous, transport).clientV2()
     }
 
     private fun serverApiBaseUrl(instanceUrl: String): String {
@@ -85,7 +83,7 @@ class CircleCIAPIClient private constructor(
   fun clientV3(): CircleCIAPIClientV3 = serviceV3
 
   /**
-   * Consumes a V2 artifact on an OkHttp dispatcher thread. The stream is valid only during
+   * Consumes a V2 artifact on the RxJava I/O scheduler. The stream is valid only during
    * [consume] and is closed before success or failure is delivered. Disposing cancels the call.
    */
   fun <T : Any> downloadArtifact(artifact: Artifact, consume: (InputStream) -> T): Single<T> =
@@ -94,6 +92,8 @@ class CircleCIAPIClient private constructor(
   private val artifactDownloader by lazy { ArtifactDownloader(transport, baseUrl.toHttpUrl(), headerToken()) }
 
   private val transport by lazy { baseTransport ?: OkHttpClient() }
+  private val callAdapterFactory = if (asynchronous) RxJava3CallAdapterFactory.create()
+    else RxJava3CallAdapterFactory.createSynchronous()
 
   private val serviceV1 by lazy {
     retrofitV1("${baseUrl}v1/").create(CircleCIAPIClientV1::class.java)
@@ -108,14 +108,15 @@ class CircleCIAPIClient private constructor(
   }
 
   private val serviceV3 by lazy {
-    retrofitV3("${baseUrl}v3/").create(CircleCIAPIClientV3::class.java)
+    val service = retrofitV3("${baseUrl}v3/").create(CircleCIAPIClientV3::class.java)
+    if (asynchronous) service else SynchronousRunPollingClient(service)
   }
 
   internal fun client1_1(baseUrl: String): CircleCIAPIClientV1_1 =
     retrofitV1(baseUrl).create(CircleCIAPIClientV1_1::class.java)
 
   internal fun clientV2(baseUrl: String): CircleCIAPIClientV2 =
-    retrofitV2(baseUrl).create(CircleCIAPIClientV2::class.java)
+    retrofitV2(baseUrl).create(CircleCIAPIClientV2Service::class.java)
 
   internal val okHttpV1 by lazy {
     authenticatedClient("Authorization", "Basic ${encodedToken()}")

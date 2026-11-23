@@ -3,6 +3,7 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v2.response.Artifact
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
+import okhttp3.Dispatcher
 import okhttp3.Headers.Companion.headersOf
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -57,6 +58,21 @@ object ArtifactDownloadSpec : Spek({
                 assertNull(storage.takeRequest(5, SECONDS)!!.headers["Circle-Token"])
                 assertNull(origin.takeRequest(5, SECONDS)!!.headers["Circle-Token"])
             }
+        }
+    }
+
+    test("allows a consumer to wait for a same-host download with one dispatcher slot") {
+        artifactServer().use { origin ->
+            origin.enqueue(MockResponse(body = "outer"))
+            origin.enqueue(MockResponse(body = "inner"))
+            val api = artifactClient(origin, Dispatcher().apply { maxRequestsPerHost = 1 })
+            val artifact = artifactAt(origin)
+
+            api.downloadArtifact(artifact) { outer ->
+                val inner = api.downloadArtifact(artifact) { it.reader().readText() }
+                    .timeout(5, SECONDS).blockingGet()
+                outer.reader().readText() to inner
+            }.test().awaitDone(10, SECONDS).assertResult("outer" to "inner")
         }
     }
 
@@ -134,7 +150,7 @@ object ArtifactDownloadSpec : Spek({
                 url.newBuilder().username("user").build().toString(),
                 url.newBuilder().password("secret").build().toString()).forEach { invalid ->
                 api.downloadArtifact(Artifact(invalid, "report", 0)) { it.read() }
-                    .test().assertNoValues().assertError(IllegalArgumentException::class.java)
+                    .test().awaitDone(5, SECONDS).assertNoValues().assertError(IllegalArgumentException::class.java)
             }
             assertEquals(0, origin.requestCount)
         }
@@ -200,8 +216,9 @@ private fun artifactServer() = MockWebServer().apply {
     start()
 }
 
-private fun artifactClient(origin: MockWebServer): CircleCIAPIClient {
+private fun artifactClient(origin: MockWebServer, dispatcher: Dispatcher = Dispatcher()): CircleCIAPIClient {
     val transport = OkHttpClient.Builder()
+        .dispatcher(dispatcher)
         .sslSocketFactory(artifactClientTls.sslSocketFactory(), artifactClientTls.trustManager)
         .build()
     return CircleCIAPIClient("test-token", origin.url("/api/").toString(), transport)

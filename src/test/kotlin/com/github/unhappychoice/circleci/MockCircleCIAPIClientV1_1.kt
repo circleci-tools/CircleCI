@@ -3,6 +3,7 @@ package com.github.unhappychoice.circleci
 import com.github.unhappychoice.circleci.v1.request.*
 import com.github.unhappychoice.circleci.v1.response.*
 import com.google.gson.reflect.TypeToken
+import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Observable
 
 class MockCircleCIAPIClientV1_1: CircleCIAPIClientV1_1 {
@@ -62,8 +63,8 @@ class MockCircleCIAPIClientV1_1: CircleCIAPIClientV1_1 {
         return Observable.just(Unit)
     }
 
-    override fun addSshKey(vcsType: String, userName: String, project: String, request: AddSshKeyRequest): Observable<SSHKey> {
-        return legacyFixtureResponse("json/ssh_key.json", SSHKey::class.java)
+    override fun addSshKey(vcsType: String, userName: String, project: String, request: AddSshKeyRequest): Completable {
+        return Completable.complete()
     }
 
     override fun getCheckoutKeys(vcsType: String, userName: String, project: String): Observable<List<CheckoutKey>> {

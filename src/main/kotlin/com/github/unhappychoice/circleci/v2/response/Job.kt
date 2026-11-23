@@ -13,7 +13,9 @@ data class Job(
     @SerializedName("stopped_at") val stoppedAt: String?,
     @SerializedName("approval_request_id") val approvalRequestId: String?,
     @SerializedName("dependencies") val dependencies: List<String>,
-    @SerializedName("requires") val requires: Map<String, List<String>>? = null
+    @SerializedName("requires") val requires: Map<String, List<String>>? = null,
+    @SerializedName("approved_by") val approvedBy: String? = null,
+    @SerializedName("canceled_by") val canceledBy: String? = null
 )
 
 data class JobListResponse(

@@ -7,7 +7,7 @@ data class FlakyTests(
     data class FlakyTest(
         val `time-wasted`: Long,
         val `workflow-created-at`: String,
-        val `workflow-id`: String,
+        val `workflow-id`: String?,
         val classname: String?,
         val `pipeline-number`: Long,
         val `workflow-name`: String,

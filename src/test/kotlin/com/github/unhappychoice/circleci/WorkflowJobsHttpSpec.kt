@@ -21,7 +21,7 @@ object WorkflowJobsHttpSpec : Spek({
         assertEquals("workflow/{id}/job", paginated.getAnnotation(GET::class.java)?.value)
     }
 
-    test("getWorkflowJobs preserves dependency conditions and accepts jobs without requires") {
+    test("getWorkflowJobs preserves dependency conditions and optional actor IDs") {
         MockWebServer().use { server ->
             server.start()
             server.enqueue(
@@ -31,14 +31,17 @@ object WorkflowJobsHttpSpec : Spek({
                     {
                       "items": [
                         {
-                          "id": "deploy", "name": "deploy", "type": "build", "status": "blocked",
+                          "id": "approve", "name": "approve", "type": "approval", "status": "success",
                           "started_at": "2026-01-01T00:00:00Z",
+                          "approval_request_id": "d212e286-9962-4ed7-92e2-8699622ed720",
+                          "approved_by": "74be7583-44de-42a6-be75-8344de52a6f2",
                           "dependencies": ["build"],
                           "requires": {"build": ["success"]}
                         },
                         {
-                          "id": "cleanup", "name": "cleanup", "type": "build", "status": "blocked",
+                          "id": "cleanup", "name": "cleanup", "type": "build", "status": "canceled",
                           "started_at": "2026-01-01T00:00:00Z",
+                          "canceled_by": "a3349b77-90f7-4a39-b49b-7790f7da3943",
                           "dependencies": ["build"],
                           "requires": {"build": ["failed", "canceled"]}
                         },
@@ -61,6 +64,11 @@ object WorkflowJobsHttpSpec : Spek({
             assertEquals(mapOf("build" to listOf("success")), jobs[0].requires)
             assertEquals(mapOf("build" to listOf("failed", "canceled")), jobs[1].requires)
             assertNull(jobs[2].requires)
+            assertEquals("d212e286-9962-4ed7-92e2-8699622ed720", jobs[0].approvalRequestId)
+            assertEquals("74be7583-44de-42a6-be75-8344de52a6f2", jobs[0].approvedBy)
+            assertEquals("a3349b77-90f7-4a39-b49b-7790f7da3943", jobs[1].canceledBy)
+            assertNull(jobs[2].approvedBy)
+            assertNull(jobs[2].canceledBy)
             assertEquals("/api/v2/workflow/workflow-id/job", server.takeRequest().target)
         }
     }
