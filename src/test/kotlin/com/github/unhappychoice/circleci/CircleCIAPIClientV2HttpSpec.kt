@@ -839,12 +839,12 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertTriggerRequest(
                 CreateTriggerRequest(
                     source, eventName = "weekday-build", checkoutRef = "main", configRef = "main",
-                    disabled = false, parameters = mapOf("deploy_env" to "staging")
+                    disabled = false, parameters = mapOf("deploy_token" to "dummy-secret")
                 ),
                 """{
                     "event_source":{"provider":"schedule","schedule":{"cron_expression":"0 9 * * 1-5","attribution_actor":"system"}},
                     "event_name":"weekday-build","checkout_ref":"main","config_ref":"main",
-                    "disabled":false,"parameters":{"deploy_env":"staging"}
+                    "disabled":false,"parameters":{"deploy_token":"dummy-secret"}
                 }"""
             )
         }
@@ -860,12 +860,12 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertTriggerUpdate(
                 UpdateTriggerRequest(
                     eventSource = source, eventName = "weekday-build", checkoutRef = "main", configRef = "main",
-                    parameters = mapOf("deploy_env" to "staging")
+                    parameters = mapOf("deploy_token" to "dummy-secret")
                 ),
                 """{
                     "event_source":{"schedule":{"cron_expression":"0 9 * * 1-5","attribution_actor":"system"}},
                     "event_name":"weekday-build","checkout_ref":"main","config_ref":"main",
-                    "parameters":{"deploy_env":"staging"}
+                    "parameters":{"deploy_token":"dummy-secret"}
                 }"""
             )
         }
@@ -1141,14 +1141,17 @@ object CircleCIAPIClientV2HttpSpec : Spek({
                 "checkout_ref": "main",
                 "config_ref": "main",
                 "disabled": true,
-                "parameters": {"deploy_env": "staging"}
+                "parameters": {"deploy_token": "dummy-secret"}
               }]
             }
         """.trimIndent()
 
         val path = "/projects/project-id/pipeline-definitions/definition-id/triggers"
         withResponse(response, "GET", path) { client ->
-            val trigger = client.listPipelineDefinitionTriggers("project-id", "definition-id").blockingSingle().items.single()
+            val triggers = client.listPipelineDefinitionTriggers("project-id", "definition-id").blockingSingle()
+            val trigger = triggers.items.single()
+            assertFalse(trigger.toString().contains("dummy-secret"))
+            assertFalse(triggers.toString().contains("dummy-secret"))
             assertEquals("schedule-id", trigger.id)
             assertEquals("weekday-build", trigger.eventName)
             assertEquals("schedule", trigger.eventSource.provider)
@@ -1156,7 +1159,7 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertEquals(schedule.cronExpression, trigger.eventSource.schedule?.cronExpression)
             assertEquals(schedule.attributionActor, trigger.eventSource.schedule?.attributionActor)
             assertEquals(true, trigger.disabled)
-            assertEquals(mapOf("deploy_env" to "staging"), trigger.parameters)
+            assertEquals(mapOf("deploy_token" to "dummy-secret"), trigger.parameters)
         }
     }
 
@@ -1186,6 +1189,7 @@ object CircleCIAPIClientV2HttpSpec : Spek({
 })
 
 private fun assertTriggerRequest(request: CreateTriggerRequest, expected: String) {
+    assertFalse(request.toString().contains("dummy-secret"))
     val path = "/projects/project-id/pipeline-definitions/definition-id/triggers"
     val body = withResponse("""{"id":"trigger-id"}""", "POST", path) { client ->
         assertEquals("trigger-id", client.createTrigger("project-id", "definition-id", request).blockingSingle().id)
@@ -1194,6 +1198,7 @@ private fun assertTriggerRequest(request: CreateTriggerRequest, expected: String
 }
 
 private fun assertTriggerUpdate(request: UpdateTriggerRequest, expected: String) {
+    assertFalse(request.toString().contains("dummy-secret"))
     val path = "/projects/project-id/triggers/trigger-id"
     val body = withResponse("""{"id":"trigger-id"}""", "PATCH", path) { client ->
         assertEquals("trigger-id", client.updateTrigger("project-id", "trigger-id", request).blockingSingle().id)

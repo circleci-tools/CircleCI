@@ -16,6 +16,10 @@ data class UpdateTriggerRequest(
     val eventSource: EventSource? = null,
     val parameters: Map<String, Any>? = null
 ) {
+    override fun toString() =
+        "UpdateTriggerRequest(eventPreset=$eventPreset, checkoutRef=$checkoutRef, configRef=$configRef, " +
+            "eventName=$eventName, disabled=$disabled, eventSource=$eventSource, parameters=[REDACTED])"
+
     data class EventSource(
         val webhook: CreateTriggerRequest.EventSource.Webhook? = null,
         val schedule: CreateTriggerRequest.EventSource.Schedule? = null

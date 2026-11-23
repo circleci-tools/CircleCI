@@ -13,10 +13,11 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.spekframework.spek2.Spek
 
 object ScheduleRequestSpec : Spek({
-    val parametersJson = """{"replicas":2,"marker":9007199254740993,"threshold":0.1234567890123456789}"""
+    val parametersJson = """{"deploy_token":"dummy-secret","replicas":2,"marker":9007199254740993,"threshold":0.1234567890123456789}"""
     lateinit var request: Request
     val httpClient = OkHttpClient.Builder().addInterceptor { chain ->
         request = chain.request()
@@ -32,7 +33,9 @@ object ScheduleRequestSpec : Spek({
 
     test("updateSchedule preserves numeric parameters returned by getScheduleById") {
         val schedule = client.getScheduleById("schedule-id").blockingFirst()
-        client.updateSchedule(schedule.id, UpdateScheduleParameters(parameters = schedule.parameters)).blockingFirst()
+        val parameters = UpdateScheduleParameters(parameters = schedule.parameters)
+        assertFalse(parameters.toString().contains("dummy-secret"))
+        client.updateSchedule(schedule.id, parameters).blockingFirst()
 
         assertEquals("PATCH", request.method)
         val buffer = Buffer()
@@ -45,8 +48,9 @@ object ScheduleRequestSpec : Spek({
             name = "Nightly",
             timetable = CreateScheduleTimetable(1, listOf(2), daysOfWeek = listOf("MON", "FRI")),
             attributionActor = ScheduleAttributionActor.SYSTEM,
-            parameters = mapOf("branch" to "main", "deploy_prod" to true)
+            parameters = mapOf("deploy_token" to "dummy-secret", "deploy_prod" to true)
         )
+        assertFalse(parameters.toString().contains("dummy-secret"))
         client.createSchedule("gh/example/project", parameters).blockingFirst()
 
         assertEquals("POST", request.method)
@@ -57,7 +61,7 @@ object ScheduleRequestSpec : Spek({
                 "name": "Nightly",
                 "timetable": {"per-hour": 1, "hours-of-day": [2], "days-of-week": ["MON", "FRI"]},
                 "attribution-actor": "system",
-                "parameters": {"branch": "main", "deploy_prod": true}
+                "parameters": {"deploy_token": "dummy-secret", "deploy_prod": true}
             }
             """
         )

@@ -13,7 +13,11 @@ data class Schedule(
     @JsonAdapter(PipelineParametersDeserializer::class) val parameters: Map<String, Any>,
     @SerializedName("actor") val actor: Actor,
     val timetable: ScheduleTimetable
-)
+) {
+    override fun toString() =
+        "Schedule(id=$id, description=$description, name=$name, createdAt=$createdAt, updatedAt=$updatedAt, " +
+            "projectSlug=$projectSlug, parameters=[REDACTED], actor=$actor, timetable=$timetable)"
+}
 
 data class Actor(
     val id: String,
