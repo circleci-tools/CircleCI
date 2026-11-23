@@ -103,7 +103,7 @@ class CircleCIAPIClient private constructor(
     retrofitV1(baseUrl).create(CircleCIAPIClientV1_1::class.java)
 
   internal fun clientV2(baseUrl: String): CircleCIAPIClientV2 =
-    retrofitV2(baseUrl).create(CircleCIAPIClientV2::class.java)
+    retrofitV2(baseUrl).create(CircleCIAPIClientV2Service::class.java)
 
   internal val okHttpV1 by lazy {
     authenticatedClient("Authorization", "Basic ${encodedToken()}")
