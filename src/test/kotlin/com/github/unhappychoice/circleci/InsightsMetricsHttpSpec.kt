@@ -7,20 +7,26 @@ import mockwebserver3.MockWebServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.spekframework.spek2.Spek
 
+private const val WINDOW_START = "2025-01-01T00:00:00Z"
+private const val WINDOW_END = "2025-01-08T00:00:00Z"
+
 object InsightsMetricsHttpSpec : Spek({
     val projectSlug = "gh/example/project"
 
     listOf(null, 0L).forEach { value ->
         val deviation = value?.toFloat()
 
-        test("decodes workflow list statistics with value $value") {
+        test("decodes the workflow aggregation window and list statistics with value $value") {
             MockWebServer().use { server ->
                 server.start()
                 server.enqueue(metricsResponse(value, workflow = true))
                 val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
 
-                val metrics = client.getProjectWorkflowMetrics(projectSlug).blockingSingle().items.single().metrics
+                val item = client.getProjectWorkflowMetrics(projectSlug).blockingSingle().items.single()
+                val metrics = item.metrics
 
+                assertEquals(WINDOW_START, item.windowStart)
+                assertEquals(WINDOW_END, item.windowEnd)
                 assertEquals(
                     WorkflowMetricsResponse.DurationMetrics(value, value, value, value, value, deviation),
                     metrics.durationMetrics
@@ -31,17 +37,19 @@ object InsightsMetricsHttpSpec : Spek({
             }
         }
 
-        test("decodes workflow job list duration statistics with value $value") {
+        test("decodes the job aggregation window and list duration statistics with value $value") {
             MockWebServer().use { server ->
                 server.start()
                 server.enqueue(metricsResponse(value, workflow = false))
                 val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
 
-                val response = client.getProjectWorkflowJobMetrics(projectSlug, "build").blockingSingle()
+                val item = client.getProjectWorkflowJobMetrics(projectSlug, "build").blockingSingle().items.single()
 
+                assertEquals(WINDOW_START, item.windowStart)
+                assertEquals(WINDOW_END, item.windowEnd)
                 assertEquals(
                     JobMetricsResponse.DurationMetrics(value, value, value, value, value, deviation),
-                    response.items.single().metrics.durationMetrics
+                    item.metrics.durationMetrics
                 )
             }
         }
@@ -56,6 +64,8 @@ private fun metricsResponse(value: Long?, workflow: Boolean): MockResponse {
         {
           "items": [{
             "name": "build",
+            "window_start": "$WINDOW_START",
+            "window_end": "$WINDOW_END",
             "metrics": {
               "total_runs": 1,
               "successful_runs": 1,
