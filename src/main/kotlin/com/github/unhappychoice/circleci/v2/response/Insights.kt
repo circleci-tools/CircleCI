@@ -8,7 +8,9 @@ data class WorkflowMetricsResponse(
 ) {
     data class WorkflowMetric(
         val name: String,
-        val metrics: WorkflowMetrics
+        val metrics: WorkflowMetrics,
+        @SerializedName("window_start") val windowStart: String? = null,
+        @SerializedName("window_end") val windowEnd: String? = null
     )
 
     data class WorkflowMetrics(
@@ -54,7 +56,9 @@ data class JobMetricsResponse(
 ) {
     data class JobMetric(
         val name: String,
-        val metrics: JobMetrics
+        val metrics: JobMetrics,
+        @SerializedName("window_start") val windowStart: String? = null,
+        @SerializedName("window_end") val windowEnd: String? = null
     )
 
     data class JobMetrics(
