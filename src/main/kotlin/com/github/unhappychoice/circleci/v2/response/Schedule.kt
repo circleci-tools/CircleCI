@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName
 
 data class Schedule(
     val id: String,
-    val description: String,
+    val description: String?,
     val name: String,
     @SerializedName("created-at") val createdAt: String,
     @SerializedName("updated-at") val updatedAt: String,
