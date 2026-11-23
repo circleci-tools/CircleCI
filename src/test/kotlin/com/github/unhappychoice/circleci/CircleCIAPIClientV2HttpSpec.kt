@@ -88,6 +88,32 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
     }
 
+    test("lists the next page of project checkout keys with the same SHA-256 digest") {
+        MockWebServer().use { server ->
+            server.start()
+            val projectSlug = "gh/my-org/my-repo"
+            val cursor = "page +/=%& token"
+            server.enqueue(MockResponse(body = """{"items":[],"next_page_token":"$cursor"}"""))
+            server.enqueue(MockResponse(body = """{"items":[],"next_page_token":null}"""))
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
+
+            val firstPage = client.getProjectCheckoutKeys(projectSlug, digest = "sha256").blockingSingle()
+            val firstRequest = requireNotNull(server.takeRequest(1, SECONDS)).url
+            assertEquals(setOf("digest"), firstRequest.queryParameterNames)
+            assertEquals("sha256", firstRequest.queryParameter("digest"))
+            assertEquals(cursor, firstPage.nextPageToken)
+
+            val nextPage = client.getProjectCheckoutKeys(projectSlug, digest = "sha256", pageToken = firstPage.nextPageToken)
+                .blockingSingle()
+            val nextRequest = requireNotNull(server.takeRequest(1, SECONDS)).url
+            assertEquals("/api/v2/project/gh%2Fmy-org%2Fmy-repo/checkout-key", nextRequest.encodedPath)
+            assertEquals(setOf("digest", "page-token"), nextRequest.queryParameterNames)
+            assertEquals("sha256", nextRequest.queryParameter("digest"))
+            assertEquals(cursor, nextRequest.queryParameter("page-token"))
+            assertNull(nextPage.nextPageToken)
+        }
+    }
+
     test("lists project checkout keys without a digest query by default") {
         val path = "/project/gh%2Fmy-org%2Fmy-repo/checkout-key"
         withResponse("""{"items":[]}""", "GET", path) { client ->
