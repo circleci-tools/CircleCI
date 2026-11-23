@@ -169,6 +169,11 @@ dependencies {
 }
 ```
 
+## Troubleshooting
+
+See [Troubleshooting](docs/troubleshooting.md) for token errors, CircleCI
+Server URLs, and RxJava version differences.
+
 ## License
 
 [MIT License](./LICENSE)
