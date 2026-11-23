@@ -81,13 +81,15 @@ check(run.attributes.currentOutcome == "succeeded") {
 }
 ```
 
-`waitForRun` returns a `Single` that polls immediately on subscription, then
+`waitForRun` returns a `Single` that schedules its first poll on subscription, then
 waits for the configured interval after each response. It returns the first
 response whose phase is `ended`, even if an earlier response had a
 `currentOutcome`. A later rerun can change the observed outcome.
 
-The timeout covers the full wait, including time spent queued, awaiting
-approval, or fetching status. It emits a `TimeoutException` when the deadline
+Synchronous clients share a limit of eight concurrent `waitForRun` requests.
+Polls queue when all eight slots are busy. The timeout covers the full wait,
+including time spent queued, awaiting approval, or fetching status. It emits a
+`TimeoutException` when the deadline
 expires. Request errors, including HTTP 429, terminate the wait immediately.
 Dispose the subscription to stop polling. The CircleCI run itself continues
 independently.
@@ -113,6 +115,14 @@ val nextPage = firstPage.page.next?.let { cursor ->
     v3.listProjectRuns(projectId, pageSize = 10, cursor = cursor).blockingSingle()
 }
 ```
+
+### Legacy SSH key creation
+
+The V1 and V1.1 `addSshKey` methods return an RxJava 3 `Completable`.
+Use `blockingAwait()` or a completion callback to handle success. The methods
+complete when CircleCI returns a successful HTTP response, including an empty
+response, and HTTP failures still reach the error handler. Update explicit return
+types and custom client overrides from `Observable<SSHKey>` to `Completable`.
 
 ### V2 context environment variables
 
@@ -168,6 +178,11 @@ dependencies {
     implementation 'com.github.circleci-tools:circleci:2.1.2'
 }
 ```
+
+## Troubleshooting
+
+See [Troubleshooting](docs/troubleshooting.md) for token errors, CircleCI
+Server URLs, and RxJava version differences.
 
 ## License
 

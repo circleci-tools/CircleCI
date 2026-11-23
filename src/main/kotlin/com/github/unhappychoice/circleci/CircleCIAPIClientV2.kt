@@ -316,6 +316,15 @@ interface CircleCIAPIClientV2 {
         @Query("page-token") pageToken: String? = null
     ): Observable<GroupListResponse>
 
+    /** Lists groups with an optional page size. Custom clients must override this overload to support a limit. */
+    fun getOrganizationGroups(
+        orgId: String,
+        pageToken: String? = null,
+        limit: Int?
+    ): Observable<GroupListResponse> =
+        if (limit == null) getOrganizationGroups(orgId, pageToken)
+        else Observable.error(UnsupportedOperationException("This client does not support a group page size"))
+
     @POST("organizations/{org-id}/groups")
     fun createOrganizationGroup(
         @Path("org-id") orgId: String,
@@ -537,6 +546,13 @@ interface CircleCIAPIClientV2 {
         @Query("digest") digest: String?
     ): Observable<CheckoutKeyListResponse>
 
+    @GET("project/{project-slug}/checkout-key")
+    fun getProjectCheckoutKeys(
+        @Path("project-slug") projectSlug: String,
+        @Query("digest") digest: String?,
+        @Query("page-token") pageToken: String?
+    ): Observable<CheckoutKeyListResponse>
+
     @POST("project/{project-slug}/checkout-key")
     fun createProjectCheckoutKey(
         @Path("project-slug") projectSlug: String,
@@ -670,11 +686,15 @@ interface CircleCIAPIClientV2 {
     fun getWebhooks(scopeId: String, scopeType: String): Observable<WebhookListResponse> =
         getWebhooks(scopeId, scopeType, null)
 
+    fun getWebhooks(scopeId: String, scopeType: String, isEnabled: Boolean?): Observable<WebhookListResponse> =
+        getWebhooks(scopeId, scopeType, isEnabled, pageToken = null)
+
     @GET("webhook")
     fun getWebhooks(
         @Query("scope-id") scopeId: String,
         @Query("scope-type") scopeType: String,
-        @Query("is-enabled") isEnabled: Boolean?
+        @Query("is-enabled") isEnabled: Boolean?,
+        @Query("page-token") pageToken: String?
     ): Observable<WebhookListResponse>
 
     @POST("webhook")
@@ -716,4 +736,13 @@ interface CircleCIAPIClientV2 {
         @Path("id") workflowId: String,
         @Path("approval-request-id") approvalRequestId: String
     ): Observable<MessageResponse>
+}
+
+internal interface CircleCIAPIClientV2Service : CircleCIAPIClientV2 {
+    @GET("organizations/{org-id}/groups")
+    override fun getOrganizationGroups(
+        @Path("org-id") orgId: String,
+        @Query("page-token") pageToken: String?,
+        @Query("limit") limit: Int?
+    ): Observable<GroupListResponse>
 }

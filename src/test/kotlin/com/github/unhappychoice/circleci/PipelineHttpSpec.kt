@@ -79,34 +79,46 @@ object PipelineHttpSpec : Spek({
         assertEquals("abc123", vcs.revision)
     }
 
-    test("getPipelineById preserves numeric trigger parameters when triggering another pipeline") {
+    test("getPipelineById preserves numeric trigger parameters when triggering a new pipeline") {
         MockWebServer().use { server ->
             server.start()
-            server.enqueue(pipelineResponse(extraFields = """"trigger_parameters":{"replicas":2,"marker":9007199254740993},"""))
-            server.enqueue(MockResponse(code = 201, body = """{"number":43,"state":"pending","id":"new-pipeline-id","created_at":"2020-01-01T00:00:00Z"}"""))
+            val parametersJson = """{"replicas":2,"marker":9007199254740993}"""
+            server.enqueue(pipelineResponse(additionalFields = """"trigger_parameters":$parametersJson,"""))
+            server.enqueue(
+                MockResponse(
+                    code = 201,
+                    body = """{"number":43,"state":"pending","id":"new-id","created_at":"2020-01-01T00:00:00Z"}"""
+                )
+            )
             val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
 
             val pipeline = client.getPipelineById("pipeline-id").blockingSingle()
             val parameters = requireNotNull(pipeline.triggerParameters)
-            assertEquals("2", (parameters["replicas"] as Number).toString())
-            assertEquals("9007199254740993", (parameters["marker"] as Number).toString())
+            assertEquals("2", (parameters.getValue("replicas") as Number).toString())
+            assertEquals("9007199254740993", (parameters.getValue("marker") as Number).toString())
             assertEquals("/api/v2/pipeline/pipeline-id", server.takeRequest(1, SECONDS)?.target)
 
-            client.triggerNewPipeline(pipeline.projectSlug, TriggerNewPipelineRequest(parameters = parameters)).blockingSingle()
-
+            client.triggerNewPipeline(pipeline.projectSlug, TriggerNewPipelineRequest(parameters = parameters))
+                .blockingSingle()
             val request = requireNotNull(server.takeRequest(1, SECONDS))
             assertEquals("POST", request.method)
-            val sent = JsonParser.parseString(requireNotNull(request.body).utf8()).asJsonObject.getAsJsonObject("parameters")
-            assertEquals("2", sent["replicas"].toString())
-            assertEquals("9007199254740993", sent["marker"].toString())
+            val body = JsonParser.parseString(requireNotNull(request.body).utf8()).asJsonObject
+            val sentParameters = body.getAsJsonObject("parameters")
+            assertEquals("2", sentParameters.get("replicas").toString())
+            assertEquals("9007199254740993", sentParameters.get("marker").toString())
         }
     }
 
-    mapOf("omitted" to "", "explicitly null" to """"trigger_parameters":null,""").forEach { (description, field) ->
-        test("getPipelineById decodes $description trigger parameters as null") {
-            val pipeline = getPipeline(extraFields = field) { it.getPipelineById("pipeline-id").blockingSingle() }
-            assertNull(pipeline.triggerParameters)
+    test("getPipelineById decodes omitted trigger parameters as null") {
+        assertNull(getPipeline { it.getPipelineById("pipeline-id").blockingSingle() }.triggerParameters)
+    }
+
+    test("getPipelineById decodes explicit null trigger parameters as null") {
+        val pipeline = getPipeline(additionalFields = """"trigger_parameters":null,""") {
+            it.getPipelineById("pipeline-id").blockingSingle()
         }
+
+        assertNull(pipeline.triggerParameters)
     }
 
     val lookups: Map<String, (CircleCIAPIClientV2) -> Pipeline> = mapOf(
@@ -115,7 +127,7 @@ object PipelineHttpSpec : Spek({
     )
     lookups.forEach { (name, lookup) ->
         test("$name preserves warnings with and without a URL") {
-            val pipeline = getPipeline(extraFields = warningsField, lookup = lookup)
+            val pipeline = getPipeline(additionalFields = warningsField, lookup = lookup)
 
             assertEquals(emptyList<Pipeline.PipelineError>(), pipeline.errors)
             assertEquals(
@@ -141,24 +153,24 @@ private fun getPipelineVcs(revisionJson: String): Pipeline.Vcs =
 
 private fun getPipeline(
     revisionJson: String = "null",
-    extraFields: String = "",
+    additionalFields: String = "",
     lookup: (CircleCIAPIClientV2) -> Pipeline
 ): Pipeline =
     MockWebServer().use { server ->
         server.start()
-        server.enqueue(pipelineResponse(revisionJson, extraFields))
+        server.enqueue(pipelineResponse(revisionJson, additionalFields))
         val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
         lookup(client)
     }
 
-private fun pipelineResponse(revisionJson: String = "null", extraFields: String = ""): MockResponse =
+private fun pipelineResponse(revisionJson: String = "null", additionalFields: String = ""): MockResponse =
     MockResponse(
         headers = headersOf("Content-Type", "application/json"),
         body = """
         {
           "id": "pipeline-id",
           "errors": [],
-          $extraFields
+          $additionalFields
           "project_slug": "gh/unhappychoice/circleci",
           "number": 42,
           "state": "created",

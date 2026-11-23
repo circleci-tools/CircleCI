@@ -37,6 +37,8 @@ import com.google.gson.JsonParser
 import com.google.gson.JsonSyntaxException
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpServer
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -83,6 +85,32 @@ object CircleCIAPIClientV2HttpSpec : Spek({
                 .blockingSingle().items!!.single()
             assertEquals("SHA256:example", key.fingerprint)
             assertEquals(OffsetDateTime.parse("2025-01-02T03:04:05Z"), key.createdAt)
+        }
+    }
+
+    test("lists the next page of project checkout keys with the same SHA-256 digest") {
+        MockWebServer().use { server ->
+            server.start()
+            val projectSlug = "gh/my-org/my-repo"
+            val cursor = "page +/=%& token"
+            server.enqueue(MockResponse(body = """{"items":[],"next_page_token":"$cursor"}"""))
+            server.enqueue(MockResponse(body = """{"items":[],"next_page_token":null}"""))
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
+
+            val firstPage = client.getProjectCheckoutKeys(projectSlug, digest = "sha256").blockingSingle()
+            val firstRequest = requireNotNull(server.takeRequest(1, SECONDS)).url
+            assertEquals(setOf("digest"), firstRequest.queryParameterNames)
+            assertEquals("sha256", firstRequest.queryParameter("digest"))
+            assertEquals(cursor, firstPage.nextPageToken)
+
+            val nextPage = client.getProjectCheckoutKeys(projectSlug, digest = "sha256", pageToken = firstPage.nextPageToken)
+                .blockingSingle()
+            val nextRequest = requireNotNull(server.takeRequest(1, SECONDS)).url
+            assertEquals("/api/v2/project/gh%2Fmy-org%2Fmy-repo/checkout-key", nextRequest.encodedPath)
+            assertEquals(setOf("digest", "page-token"), nextRequest.queryParameterNames)
+            assertEquals("sha256", nextRequest.queryParameter("digest"))
+            assertEquals(cursor, nextRequest.queryParameter("page-token"))
+            assertNull(nextPage.nextPageToken)
         }
     }
 
@@ -198,10 +226,11 @@ object CircleCIAPIClientV2HttpSpec : Spek({
     }
 
     test("decodes Insights flaky-test counts and nullable metadata") {
+        val workflowId = "123e4567-e89b-12d3-a456-426614174000"
         val firstTest = """
             {
                 "workflow-created-at": "2024-01-01T00:00:00Z",
-                "workflow-id": "123e4567-e89b-12d3-a456-426614174000",
+                "workflow-id": "$workflowId",
                 "classname": "ExampleTest",
                 "pipeline-number": 7,
                 "workflow-name": "build-and-test",
@@ -214,6 +243,7 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             }
         """.trimIndent()
         val secondTest = firstTest.replace("\"testWithSource\"", "\"testWithoutSource\"")
+            .replace("\"$workflowId\"", "null")
             .replace("\"junit\"", "null").replace("\"src/test/ExampleTest.kt\"", "null")
             .replace("2147483648", "3")
         val response = """{"total-flaky-tests":2.0,"flaky-tests":[$firstTest,$secondTest]}"""
@@ -222,6 +252,7 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertEquals(2.0, result.`total-flaky-tests`, 0.0)
             assertEquals(2, result.`flaky-tests`.size)
             val (withSource, withoutSource) = result.`flaky-tests`
+            assertEquals(workflowId, withSource.`workflow-id`)
             assertEquals(2147483648L, withSource.`times-flaked`)
             assertEquals("junit", withSource.source)
             assertEquals("src/test/ExampleTest.kt", withSource.file)
@@ -229,6 +260,10 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             assertNull(withSource.`test-result`)
             assertTrue(FlakyTest::`pipeline-id`.returnType.isMarkedNullable)
             assertTrue(FlakyTest::`test-result`.returnType.isMarkedNullable)
+            assertTrue(FlakyTest::`workflow-id`.returnType.isMarkedNullable)
+            assertNull(withoutSource.`workflow-id`)
+            assertEquals("testWithoutSource", withoutSource.`test-name`)
+            assertEquals("build-and-test", withoutSource.`workflow-name`)
             assertEquals(3L, withoutSource.`times-flaked`)
             assertNull(withoutSource.source)
             assertNull(withoutSource.file)
@@ -871,6 +906,29 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             withResponse("""{"items":[]}""", "GET", path) { client ->
                 client.getWebhooks("project-id", "project", isEnabled).blockingSingle()
             }
+        }
+    }
+
+    test("lists the next webhook page with the original filters and cursor") {
+        MockWebServer().use { server ->
+            server.start()
+            server.enqueue(MockResponse(body = """{"items":[],"next_page_token":"cursor+2"}"""))
+            server.enqueue(MockResponse(body = """{"items":[],"next_page_token":null}"""))
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
+
+            val firstPage = client.getWebhooks("project-id", "project", false).blockingSingle()
+            val secondPage = client.getWebhooks("project-id", "project", false, firstPage.nextPageToken).blockingSingle()
+            assertNull(secondPage.nextPageToken)
+
+            val firstRequest = requireNotNull(server.takeRequest(1, SECONDS)).url
+            val secondRequest = requireNotNull(server.takeRequest(1, SECONDS)).url
+            assertEquals("/api/v2/webhook", secondRequest.encodedPath)
+            assertNull(firstRequest.queryParameter("page-token"))
+            assertEquals(setOf("scope-id", "scope-type", "is-enabled", "page-token"), secondRequest.queryParameterNames)
+            assertEquals(listOf("project-id"), secondRequest.queryParameterValues("scope-id"))
+            assertEquals(listOf("project"), secondRequest.queryParameterValues("scope-type"))
+            assertEquals(listOf("false"), secondRequest.queryParameterValues("is-enabled"))
+            assertEquals(listOf("cursor+2"), secondRequest.queryParameterValues("page-token"))
         }
     }
 

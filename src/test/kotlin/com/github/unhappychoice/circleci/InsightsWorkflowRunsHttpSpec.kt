@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.spekframework.spek2.Spek
 
 object InsightsWorkflowRunsHttpSpec : Spek({
-    test("preserves null duration and status and explicit zero duration") {
+    test("preserves nullable workflow run fields, zero duration, and approval flags") {
         MockWebServer().use { server ->
             server.start()
             server.enqueue(MockResponse(body = """
@@ -21,7 +21,8 @@ object InsightsWorkflowRunsHttpSpec : Spek({
                       "created_at": "2024-01-01T00:00:00Z",
                       "stopped_at": null,
                       "credits_used": 0,
-                      "status": null
+                      "status": null,
+                      "is_approval": true
                     },
                     {
                       "id": "2",
@@ -29,6 +30,16 @@ object InsightsWorkflowRunsHttpSpec : Spek({
                       "duration": 0,
                       "created_at": "2024-01-01T00:00:00Z",
                       "stopped_at": "2024-01-01T00:00:00Z",
+                      "credits_used": 0,
+                      "status": "success",
+                      "is_approval": false
+                    },
+                    {
+                      "id": "3",
+                      "branch": "main",
+                      "duration": 10,
+                      "created_at": "2024-01-01T00:00:00Z",
+                      "stopped_at": "2024-01-01T00:00:10Z",
                       "credits_used": 0,
                       "status": "success"
                     }
@@ -39,13 +50,16 @@ object InsightsWorkflowRunsHttpSpec : Spek({
             val response = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
                 .getProjectWorkflowRuns("gh/example/project", "ci")
                 .blockingSingle()
-            val (runWithNullFields, runWithZeroDuration) = response.items
+            val (runWithNullFields, runWithZeroDuration, runWithoutApprovalFlag) = response.items
 
             assertAll(
                 { assertNull(runWithNullFields.duration) },
                 { assertNull(runWithNullFields.status) },
                 { assertEquals(0L, runWithZeroDuration.duration) },
-                { assertEquals("success", runWithZeroDuration.status) }
+                { assertEquals("success", runWithZeroDuration.status) },
+                { assertEquals(true, runWithNullFields.isApproval) },
+                { assertEquals(false, runWithZeroDuration.isApproval) },
+                { assertNull(runWithoutApprovalFlag.isApproval) }
             )
         }
     }
