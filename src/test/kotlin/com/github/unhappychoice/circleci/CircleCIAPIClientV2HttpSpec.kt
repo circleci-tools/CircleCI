@@ -37,6 +37,8 @@ import com.google.gson.JsonParser
 import com.google.gson.JsonSyntaxException
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpServer
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -83,6 +85,32 @@ object CircleCIAPIClientV2HttpSpec : Spek({
                 .blockingSingle().items!!.single()
             assertEquals("SHA256:example", key.fingerprint)
             assertEquals(OffsetDateTime.parse("2025-01-02T03:04:05Z"), key.createdAt)
+        }
+    }
+
+    test("lists the next page of project checkout keys with the same SHA-256 digest") {
+        MockWebServer().use { server ->
+            server.start()
+            val projectSlug = "gh/my-org/my-repo"
+            val cursor = "page +/=%& token"
+            server.enqueue(MockResponse(body = """{"items":[],"next_page_token":"$cursor"}"""))
+            server.enqueue(MockResponse(body = """{"items":[],"next_page_token":null}"""))
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
+
+            val firstPage = client.getProjectCheckoutKeys(projectSlug, digest = "sha256").blockingSingle()
+            val firstRequest = requireNotNull(server.takeRequest(1, SECONDS)).url
+            assertEquals(setOf("digest"), firstRequest.queryParameterNames)
+            assertEquals("sha256", firstRequest.queryParameter("digest"))
+            assertEquals(cursor, firstPage.nextPageToken)
+
+            val nextPage = client.getProjectCheckoutKeys(projectSlug, digest = "sha256", pageToken = firstPage.nextPageToken)
+                .blockingSingle()
+            val nextRequest = requireNotNull(server.takeRequest(1, SECONDS)).url
+            assertEquals("/api/v2/project/gh%2Fmy-org%2Fmy-repo/checkout-key", nextRequest.encodedPath)
+            assertEquals(setOf("digest", "page-token"), nextRequest.queryParameterNames)
+            assertEquals("sha256", nextRequest.queryParameter("digest"))
+            assertEquals(cursor, nextRequest.queryParameter("page-token"))
+            assertNull(nextPage.nextPageToken)
         }
     }
 
