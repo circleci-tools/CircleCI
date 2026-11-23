@@ -44,7 +44,8 @@ data class WorkflowRunsResponse(
         @SerializedName("created_at") val createdAt: String,
         @SerializedName("stopped_at") val stoppedAt: String?,
         @SerializedName("credits_used") val creditsUsed: Long,
-        val status: String?
+        val status: String?,
+        @SerializedName("is_approval") val isApproval: Boolean? = null
     )
 }
 
