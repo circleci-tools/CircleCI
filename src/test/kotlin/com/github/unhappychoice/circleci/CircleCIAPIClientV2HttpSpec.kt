@@ -37,6 +37,8 @@ import com.google.gson.JsonParser
 import com.google.gson.JsonSyntaxException
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpServer
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -878,6 +880,29 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             withResponse("""{"items":[]}""", "GET", path) { client ->
                 client.getWebhooks("project-id", "project", isEnabled).blockingSingle()
             }
+        }
+    }
+
+    test("lists the next webhook page with the original filters and cursor") {
+        MockWebServer().use { server ->
+            server.start()
+            server.enqueue(MockResponse(body = """{"items":[],"next_page_token":"cursor+2"}"""))
+            server.enqueue(MockResponse(body = """{"items":[],"next_page_token":null}"""))
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
+
+            val firstPage = client.getWebhooks("project-id", "project", false).blockingSingle()
+            val secondPage = client.getWebhooks("project-id", "project", false, firstPage.nextPageToken).blockingSingle()
+            assertNull(secondPage.nextPageToken)
+
+            val firstRequest = requireNotNull(server.takeRequest(1, SECONDS)).url
+            val secondRequest = requireNotNull(server.takeRequest(1, SECONDS)).url
+            assertEquals("/api/v2/webhook", secondRequest.encodedPath)
+            assertNull(firstRequest.queryParameter("page-token"))
+            assertEquals(setOf("scope-id", "scope-type", "is-enabled", "page-token"), secondRequest.queryParameterNames)
+            assertEquals(listOf("project-id"), secondRequest.queryParameterValues("scope-id"))
+            assertEquals(listOf("project"), secondRequest.queryParameterValues("scope-type"))
+            assertEquals(listOf("false"), secondRequest.queryParameterValues("is-enabled"))
+            assertEquals(listOf("cursor+2"), secondRequest.queryParameterValues("page-token"))
         }
     }
 

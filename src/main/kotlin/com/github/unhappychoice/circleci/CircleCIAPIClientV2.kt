@@ -679,11 +679,15 @@ interface CircleCIAPIClientV2 {
     fun getWebhooks(scopeId: String, scopeType: String): Observable<WebhookListResponse> =
         getWebhooks(scopeId, scopeType, null)
 
+    fun getWebhooks(scopeId: String, scopeType: String, isEnabled: Boolean?): Observable<WebhookListResponse> =
+        getWebhooks(scopeId, scopeType, isEnabled, pageToken = null)
+
     @GET("webhook")
     fun getWebhooks(
         @Query("scope-id") scopeId: String,
         @Query("scope-type") scopeType: String,
-        @Query("is-enabled") isEnabled: Boolean?
+        @Query("is-enabled") isEnabled: Boolean?,
+        @Query("page-token") pageToken: String?
     ): Observable<WebhookListResponse>
 
     @POST("webhook")
