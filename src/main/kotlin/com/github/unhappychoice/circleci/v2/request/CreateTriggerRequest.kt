@@ -16,6 +16,10 @@ data class CreateTriggerRequest(
     val disabled: Boolean? = null,
     val parameters: Map<String, Any>? = null
 ) {
+    override fun toString() =
+        "CreateTriggerRequest(eventSource=$eventSource, eventPreset=$eventPreset, checkoutRef=$checkoutRef, " +
+            "configRef=$configRef, eventName=$eventName, disabled=$disabled, parameters=[REDACTED])"
+
     data class EventSource(
         val provider: String,
         val repo: Repo? = null,

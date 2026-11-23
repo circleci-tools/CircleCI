@@ -8,7 +8,11 @@ data class UpdateScheduleParameters(
     val parameters: Map<String, Any>? = null,
     val timetable: UpdateScheduleTimetable? = null,
     @SerializedName("attribution-actor") val attributionActor: ScheduleAttributionActor? = null
-)
+) {
+    override fun toString() =
+        "UpdateScheduleParameters(name=$name, description=$description, parameters=[REDACTED], " +
+            "timetable=$timetable, attributionActor=$attributionActor)"
+}
 
 data class UpdateScheduleTimetable(
     @SerializedName("per-hour") val perHour: Int? = null,

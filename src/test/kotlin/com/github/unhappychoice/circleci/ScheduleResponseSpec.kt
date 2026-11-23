@@ -4,6 +4,7 @@ import com.github.unhappychoice.circleci.v2.response.Schedule
 import com.github.unhappychoice.circleci.v2.response.ScheduleTimetable
 import com.sun.net.httpserver.HttpServer
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.spekframework.spek2.Spek
 import java.net.InetSocketAddress
 
@@ -18,7 +19,7 @@ object ScheduleResponseSpec : Spek({
           "project-slug": "$projectSlug",
           "name": "Scheduled build",
           "description": "Build the main branch",
-          "parameters": {"branch": "main"},
+          "parameters": {"deploy_token": "dummy-secret"},
           "actor": {"id": "$scheduleId", "login": "example", "name": "Example", "avatar_url": null},
           "timetable": {
             "per-hour": 2,
@@ -42,6 +43,7 @@ object ScheduleResponseSpec : Spek({
         val json = """{"items": [$item], "next_page_token": "next-page"}"""
         withScheduleResponse("/api/v2/project/$projectSlug/schedule", json) { client ->
             val response = client.getProjectSchedules(projectSlug).blockingFirst()
+            assertFalse(response.toString().contains("dummy-secret"))
             val schedule = response.items.single()
             assertScheduleFields(projectSlug, schedule)
             assertEquals(ScheduleTimetable(2, listOf(8, 16), null, listOf(12), listOf("MAR")), schedule.timetable)
@@ -54,6 +56,8 @@ private fun assertScheduleFields(projectSlug: String, schedule: Schedule) {
     assertEquals("2019-08-24T14:15:22Z", schedule.createdAt)
     assertEquals("2019-08-25T14:15:22Z", schedule.updatedAt)
     assertEquals(projectSlug, schedule.projectSlug)
+    assertEquals(mapOf("deploy_token" to "dummy-secret"), schedule.parameters)
+    assertFalse(schedule.toString().contains("dummy-secret"))
 }
 
 private fun withScheduleResponse(path: String, json: String, test: (CircleCIAPIClientV2) -> Unit) {
