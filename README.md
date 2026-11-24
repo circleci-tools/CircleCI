@@ -119,20 +119,30 @@ val nextPage = firstPage.page.next?.let { cursor ->
 ### Download a V2 job artifact
 
 List the job's artifacts, select the path you want, and copy its stream to a local file.
+The artifact can be on any page, so follow `page.nextPageToken` as `pageToken` until it
+is found or no pages remain.
 
 ```kotlin
 import com.github.unhappychoice.circleci.CircleCIAPIClient
 import java.io.File
 
 val api = CircleCIAPIClient(token)
-val page = api.clientV2().getJobArtifacts("gh/my-org/my-project", "123").blockingSingle()
-val artifact = page.items.first { it.path == "reports/junit.xml" }
+var page = api.clientV2().getJobArtifacts("gh/my-org/my-project", "123", pageToken = null).blockingSingle()
+var artifact = page.items.find { it.path == "reports/junit.xml" }
+while (artifact == null && page.nextPageToken != null) {
+    page = api.clientV2().getJobArtifacts("gh/my-org/my-project", "123", page.nextPageToken).blockingSingle()
+    artifact = page.items.find { it.path == "reports/junit.xml" }
+}
+
+if (artifact == null) {
+    error("reports/junit.xml not found in any artifact page")
+}
+
 api.downloadArtifact(artifact) { input ->
     File("junit.xml").outputStream().use { output -> input.copyTo(output) }
 }.blockingGet()
 ```
 
-If the selected path is on a later page, pass `nextPageToken` to `getJobArtifacts`.
 The download starts on subscription and runs the callback on the RxJava I/O scheduler.
 Read or copy the stream within the callback. The client closes the response when
 the callback exits, including on failure. Dispose the subscription to cancel
