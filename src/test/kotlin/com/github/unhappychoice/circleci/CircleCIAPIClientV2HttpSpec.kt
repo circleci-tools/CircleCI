@@ -1103,6 +1103,58 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
     }
 
+    test("getTrigger preserves numeric parameters when passed unchanged to updateTrigger") {
+        MockWebServer().use { server ->
+            server.start()
+            val parametersJson = """{"replicas":2,"marker":9007199254740993}"""
+            server.enqueue(
+                MockResponse(
+                    body = """
+                        {
+                          "id": "trigger-id",
+                          "event_source": {
+                            "provider": "webhook",
+                            "webhook": {"url": "https://example.com/webhook", "sender": "datadog"}
+                          },
+                          "parameters": $parametersJson
+                        }
+                    """.trimIndent()
+                )
+            )
+            server.enqueue(MockResponse(body = """{"id":"trigger-id"}"""))
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
+
+            val trigger = client.getTrigger("project-id", "trigger-id").blockingSingle()
+            val parameters = requireNotNull(trigger.parameters)
+            assertEquals("2", (parameters.getValue("replicas") as Number).toString())
+            assertEquals("9007199254740993", (parameters.getValue("marker") as Number).toString())
+            server.takeRequest(1, SECONDS)
+
+            client.updateTrigger("project-id", "trigger-id", UpdateTriggerRequest(parameters = parameters)).blockingSingle()
+            val request = requireNotNull(server.takeRequest(1, SECONDS))
+            assertEquals("PATCH", request.method)
+            val body = JsonParser.parseString(requireNotNull(request.body).utf8()).asJsonObject
+            val sentParameters = body.getAsJsonObject("parameters")
+            assertEquals("2", sentParameters.get("replicas").toString())
+            assertEquals("9007199254740993", sentParameters.get("marker").toString())
+        }
+    }
+
+    test("getTrigger decodes explicit null parameters as null") {
+        val response = """
+            {
+              "id": "trigger-id",
+              "event_source": {"provider": "webhook", "webhook": {"url": "https://example.com/webhook", "sender": "datadog"}},
+              "parameters": null
+            }
+        """.trimIndent()
+
+        withResponse(response, "GET", "/projects/project-id/triggers/trigger-id") { client ->
+            val trigger = client.getTrigger("project-id", "trigger-id").blockingSingle()
+            assertNull(trigger.parameters)
+        }
+    }
+
     test("decodes the repository and event preset in a VCS trigger response") {
         val response = """
             {
