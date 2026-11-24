@@ -9,6 +9,7 @@ data class WorkflowMetricsResponse(
     data class WorkflowMetric(
         val name: String,
         val metrics: WorkflowMetrics,
+        @SerializedName("project_id") val projectId: String? = null,
         @SerializedName("window_start") val windowStart: String? = null,
         @SerializedName("window_end") val windowEnd: String? = null
     )
