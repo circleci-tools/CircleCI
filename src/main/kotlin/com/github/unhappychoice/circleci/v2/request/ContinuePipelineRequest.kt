@@ -8,5 +8,5 @@ data class ContinuePipelineRequest(
     val parameters: Map<String, Any>?
 ) {
     override fun toString() =
-        "ContinuePipelineRequest(continuationKey=[REDACTED], configuration=$configuration, parameters=$parameters)"
+        "ContinuePipelineRequest(continuationKey=[REDACTED], configuration=[REDACTED], parameters=[REDACTED])"
 }

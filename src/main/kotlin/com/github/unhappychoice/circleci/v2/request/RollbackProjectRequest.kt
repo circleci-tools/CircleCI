@@ -10,4 +10,9 @@ data class RollbackProjectRequest(
     val reason: String? = null,
     val namespace: String? = null,
     val parameters: Map<String, Any>? = null
-)
+) {
+    override fun toString() =
+        "RollbackProjectRequest(environmentName=$environmentName, componentName=$componentName, " +
+            "currentVersion=$currentVersion, targetVersion=$targetVersion, reason=$reason, namespace=$namespace, " +
+            "parameters=[REDACTED])"
+}
