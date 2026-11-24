@@ -13,6 +13,7 @@ import okhttp3.Response
 import java.io.IOException
 import java.io.InputStream
 import java.net.ProtocolException
+import java.util.concurrent.ScheduledThreadPoolExecutor
 
 internal class ArtifactDownloader(transport: OkHttpClient, private val apiUrl: HttpUrl, private val token: String) {
   fun <T : Any> download(artifact: Artifact, consume: (InputStream) -> T): Single<T> = Single.create<T> { emitter ->
@@ -35,12 +36,21 @@ internal class ArtifactDownloader(transport: OkHttpClient, private val apiUrl: H
       return@create
     }
     emitter.onSuccess(result)
-  }.subscribeOn(Schedulers.io())
+  }.subscribeOn(artifactDownloadScheduler)
 
   private val client = transport.newBuilder()
     .followRedirects(false)
     .addInterceptor(ArtifactRedirectInterceptor)
     .build()
+}
+
+internal const val ARTIFACT_DOWNLOAD_LIMIT = 8
+
+private val artifactDownloadScheduler by lazy {
+  val executor = ScheduledThreadPoolExecutor(ARTIFACT_DOWNLOAD_LIMIT) { task ->
+    Thread(task, "CircleCI-artifact-download").apply { isDaemon = true }
+  }.apply { removeOnCancelPolicy = true }
+  Schedulers.from(executor)
 }
 
 internal fun canAuthenticateArtifact(url: HttpUrl, apiUrl: HttpUrl): Boolean =
