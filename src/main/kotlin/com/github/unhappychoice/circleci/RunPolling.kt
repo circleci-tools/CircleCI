@@ -16,12 +16,15 @@ import kotlin.time.Duration
  * Both durations must be positive and finite. [timeout] includes queueing and requests.
  * A timeout emits a [java.util.concurrent.TimeoutException]. Request errors, including HTTP 429,
  * are forwarded immediately. Disposing stops polling. Later reruns may change the observed outcome.
+ * The terminal notification (success, error, or timeout) is delivered off the request scheduler,
+ * so a blocking subscriber callback cannot hold a poll worker after its request has completed.
  */
 fun CircleCIAPIClientV3.waitForRun(id: String, pollInterval: Duration, timeout: Duration): Single<RunResponse> =
     waitForRun(
         id, pollInterval, timeout,
         if (this is SynchronousRunPollingClient) synchronousPollScheduler else Schedulers.io(),
-        Schedulers.single(), timeoutScheduler = Schedulers.io(), nanoTime = System::nanoTime
+        Schedulers.single(), timeoutScheduler = Schedulers.io(), notifyScheduler = Schedulers.io(),
+        nanoTime = System::nanoTime
     )
 
 internal fun CircleCIAPIClientV3.waitForRun(
@@ -31,6 +34,7 @@ internal fun CircleCIAPIClientV3.waitForRun(
     requestScheduler: Scheduler,
     timerScheduler: Scheduler,
     timeoutScheduler: Scheduler = requestScheduler,
+    notifyScheduler: Scheduler = requestScheduler,
     nanoTime: () -> Long = { timerScheduler.now(NANOSECONDS) }
 ): Single<RunResponse> {
     require(pollInterval.isPositive() && pollInterval.isFinite()) { "Poll interval must be positive and finite" }
@@ -53,6 +57,7 @@ internal fun CircleCIAPIClientV3.waitForRun(
                 Single.error<RunResponse> { TimeoutException("Run $id did not end within $timeout") }
                     .subscribeOn(timeoutScheduler)
             )
+            .observeOn(notifyScheduler)
     }
 }
 
