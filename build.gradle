@@ -108,6 +108,26 @@ jacocoTestReport {
     }
 }
 
+jacocoTestCoverageVerification {
+    // Keep the same exclusions as jacocoTestReport so the verified coverage matches the reported coverage.
+    classDirectories.setFrom(sourceSets.main.output.classesDirs.asFileTree.matching {
+        exclude 'com/github/unhappychoice/circleci/CircleCIAPIClientV2$DefaultImpls.class'
+        exclude 'com/github/unhappychoice/circleci/CircleCIAPIClientV3$DefaultImpls.class'
+    })
+    violationRules {
+        rule {
+            limit {
+                // Current line coverage is around 96%; this guards against a regression below that.
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.90
+            }
+        }
+    }
+}
+
+check.dependsOn jacocoTestCoverageVerification
+
 repositories {
     mavenCentral()
 }
