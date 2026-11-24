@@ -36,4 +36,24 @@ object PipelineValuesSpec : Spek({
             server.stop(0)
         }
     }
+
+    test("getPipelineValuesById does not expose sensitive values through toString") {
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        try {
+            server.createContext("/api/v2/pipeline/pipeline-id/values") { exchange ->
+                val body = """{"deploy_token":"dummy-secret"}""".toByteArray()
+                exchange.responseHeaders.set("Content-Type", "application/json")
+                exchange.sendResponseHeaders(200, body.size.toLong())
+                exchange.responseBody.use { it.write(body) }
+            }
+            server.start()
+
+            val client = CircleCIAPIClient("test-token").clientV2("http://127.0.0.1:${server.address.port}/api/v2/")
+            val pipelineValues = client.getPipelineValuesById("pipeline-id").blockingFirst()
+            assertEquals("dummy-secret", pipelineValues.values["deploy_token"])
+            assertEquals(false, pipelineValues.toString().contains("dummy-secret"))
+        } finally {
+            server.stop(0)
+        }
+    }
 })
