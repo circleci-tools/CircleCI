@@ -9,6 +9,7 @@ import com.github.unhappychoice.circleci.v1.response.EnvironmentVariable
 import com.github.unhappychoice.circleci.v2.request.ContinuePipelineRequest
 import com.github.unhappychoice.circleci.v2.request.CreateEnvVarRequest
 import com.github.unhappychoice.circleci.v2.request.CreateWebhookRequest
+import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
 import com.github.unhappychoice.circleci.v2.request.TriggerNewPipelineRequest
 import com.github.unhappychoice.circleci.v2.request.TriggerPipelineRunRequest
 import com.github.unhappychoice.circleci.v2.request.UpdateWebhookRequest
@@ -128,6 +129,38 @@ object CredentialRedactionSpec : Spek({
 
         assertRedacted(request, "continuationKey", key)
         assertEquals(key, v2Gson.toJsonTree(request).asJsonObject["continuation-key"].asString)
+    }
+
+    test("redacts the continuation configuration and parameters, preserving them in request JSON") {
+        val secret = "dummy-deploy-token"
+        val configuration = "version: 2.1\njobs:\n  deploy:\n    environment:\n      DEPLOY_TOKEN: $secret"
+        val parameters = mapOf("deploy_token" to secret)
+        val request = ContinuePipelineRequest("dummy-continuation-key", configuration, parameters)
+
+        assertRedacted(request, "configuration", secret)
+        assertRedacted(request, "parameters", secret)
+        assertFalse(request.toString().contains("deploy_token"))
+        val json = v2Gson.toJsonTree(request).asJsonObject
+        assertEquals(configuration, json["configuration"].asString)
+        assertEquals(v2Gson.toJsonTree(parameters), json["parameters"])
+    }
+
+    test("redacts the rollback request parameters and preserves them in request JSON") {
+        val secret = "dummy-rollback-token"
+        val parameters = mapOf("deploy_token" to secret)
+        val request = RollbackProjectRequest(
+            environmentName = "production",
+            componentName = "api",
+            currentVersion = "1.0.0",
+            targetVersion = "0.9.0",
+            parameters = parameters
+        )
+
+        assertRedacted(request, "parameters", secret)
+        assertFalse(request.toString().contains("deploy_token"))
+        assertTrue(request.toString().contains("environmentName=production"))
+        val json = v2Gson.toJsonTree(request).asJsonObject
+        assertEquals(v2Gson.toJsonTree(parameters), json["parameters"])
     }
 
     test("redacts the webhook create credentials and preserves them in request JSON") {
