@@ -2,6 +2,7 @@ package com.github.unhappychoice.circleci
 
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
+import kotlin.reflect.jvm.isAccessible
 
 /**
  * Marks a primary constructor property as sensitive so [redactedToString] replaces its value
@@ -22,6 +23,7 @@ fun redactedToString(instance: Any): String {
 
     val fields = parameterNames.joinToString(", ") { name ->
         val property = properties.getValue(name)
+        property.isAccessible = true
         val value = if (property.annotations.any { it is Redacted }) "[REDACTED]" else property.call(instance)
         "$name=$value"
     }
