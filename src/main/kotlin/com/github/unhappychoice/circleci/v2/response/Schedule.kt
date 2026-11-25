@@ -1,5 +1,7 @@
 package com.github.unhappychoice.circleci.v2.response
 
+import com.github.unhappychoice.circleci.Redacted
+import com.github.unhappychoice.circleci.redactedToString
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 
@@ -10,13 +12,11 @@ data class Schedule(
     @SerializedName("created-at") val createdAt: String,
     @SerializedName("updated-at") val updatedAt: String,
     @SerializedName("project-slug") val projectSlug: String,
-    @JsonAdapter(PipelineParametersDeserializer::class) val parameters: Map<String, Any>,
+    @JsonAdapter(PipelineParametersDeserializer::class) @Redacted val parameters: Map<String, Any>,
     @SerializedName("actor") val actor: Actor,
     val timetable: ScheduleTimetable
 ) {
-    override fun toString() =
-        "Schedule(id=$id, description=$description, name=$name, createdAt=$createdAt, updatedAt=$updatedAt, " +
-            "projectSlug=$projectSlug, parameters=[REDACTED], actor=$actor, timetable=$timetable)"
+    override fun toString() = redactedToString(this)
 }
 
 data class Actor(
