@@ -1,6 +1,8 @@
 package com.github.unhappychoice.circleci
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
 
 object RedactionSpec : Spek({
@@ -15,6 +17,16 @@ object RedactionSpec : Spek({
 
         assertEquals("RedactionSpecModel(name=example, secret=[REDACTED], count=0)", model.toString())
     }
+
+    test("falls back to declared properties when the class has no primary constructor") {
+        val model = NoPrimaryConstructorModel("example", "dummy-secret")
+
+        val description = model.toString()
+        assertTrue(description.startsWith("NoPrimaryConstructorModel("))
+        assertTrue(description.contains("name=example"))
+        assertTrue(description.contains("secret=[REDACTED]"))
+        assertFalse(description.contains("dummy-secret"))
+    }
 })
 
 private data class RedactionSpecModel(
@@ -22,5 +34,17 @@ private data class RedactionSpecModel(
     @Redacted val secret: String?,
     val count: Int
 ) {
+    override fun toString() = redactedToString(this)
+}
+
+private class NoPrimaryConstructorModel {
+    val name: String
+    @Redacted val secret: String?
+
+    constructor(name: String, secret: String?) {
+        this.name = name
+        this.secret = secret
+    }
+
     override fun toString() = redactedToString(this)
 }
