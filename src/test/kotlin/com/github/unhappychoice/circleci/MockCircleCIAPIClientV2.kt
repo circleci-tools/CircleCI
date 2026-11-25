@@ -654,7 +654,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     private fun createMockSchedule() = Schedule(
         id = "id", name = "name", description = "description", createdAt = "created_at", updatedAt = "updated_at",
         projectSlug = "project_slug", parameters = emptyMap(),
-        actor = Actor(id = "id", login = "login", name = "name"),
+        actor = Actor(id = "id", login = "login", name = "name", avatarUrl = "avatar_url"),
         timetable = ScheduleTimetable(1, listOf(1), listOf("TUE"), null, null)
     )
 

@@ -22,7 +22,8 @@ data class Schedule(
 data class Actor(
     val id: String,
     val login: String,
-    val name: String
+    val name: String,
+    @SerializedName("avatar_url") val avatarUrl: String?
 )
 
 data class ScheduleTimetable(
