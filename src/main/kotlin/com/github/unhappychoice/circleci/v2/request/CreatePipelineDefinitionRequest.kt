@@ -5,7 +5,8 @@ import com.google.gson.annotations.SerializedName
 data class CreatePipelineDefinitionRequest(
     val name: String,
     @SerializedName("config_source") val configSource: ConfigSource,
-    @SerializedName("checkout_source") val checkoutSource: CheckoutSource
+    @SerializedName("checkout_source") val checkoutSource: CheckoutSource,
+    val description: String? = null
 ) {
     data class ConfigSource(
         val provider: String,

@@ -1,5 +1,7 @@
 package com.github.unhappychoice.circleci.v2.response
 
+import com.github.unhappychoice.circleci.Redacted
+import com.github.unhappychoice.circleci.redactedToString
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 
@@ -10,16 +12,14 @@ data class Pipeline(
     @SerializedName("updated_at") val updatedAt: String?,
     val number: Int,
     @JsonAdapter(PipelineParametersDeserializer::class)
-    @SerializedName("trigger_parameters") val triggerParameters: Map<String, Any>?,
+    @SerializedName("trigger_parameters") @Redacted val triggerParameters: Map<String, Any>?,
     val state: String,
     @SerializedName("created_at") val createdAt: String,
     val trigger: Trigger,
     val vcs: Vcs?,
     val warnings: List<PipelineWarning>? = null
 ) {
-    override fun toString() =
-        "Pipeline(id=$id, errors=$errors, projectSlug=$projectSlug, updatedAt=$updatedAt, number=$number, " +
-            "triggerParameters=[REDACTED], state=$state, createdAt=$createdAt, trigger=$trigger, vcs=$vcs, warnings=$warnings)"
+    override fun toString() = redactedToString(this)
 
     data class PipelineError(
         val type: String,

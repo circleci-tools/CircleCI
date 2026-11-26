@@ -4,11 +4,13 @@ import com.github.unhappychoice.circleci.v1.request.AddHerokuKeyRequest
 import com.github.unhappychoice.circleci.v1.request.AddSshKeyRequest
 import com.github.unhappychoice.circleci.v1.request.TriggerNewBuildRequest
 import com.github.unhappychoice.circleci.v1.request.TriggerNewBuildWithBranchRequest
+import com.github.unhappychoice.circleci.v1.response.Artifact
 import com.github.unhappychoice.circleci.v1.response.Build
 import com.github.unhappychoice.circleci.v1.response.EnvironmentVariable
 import com.github.unhappychoice.circleci.v2.request.ContinuePipelineRequest
 import com.github.unhappychoice.circleci.v2.request.CreateEnvVarRequest
 import com.github.unhappychoice.circleci.v2.request.CreateWebhookRequest
+import com.github.unhappychoice.circleci.v2.request.RollbackProjectRequest
 import com.github.unhappychoice.circleci.v2.request.TriggerNewPipelineRequest
 import com.github.unhappychoice.circleci.v2.request.TriggerPipelineRunRequest
 import com.github.unhappychoice.circleci.v2.request.UpdateWebhookRequest
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
 import com.github.unhappychoice.circleci.v1.request.AddEnvironmentVariableRequest as V1AddEnvironmentVariableRequest
 import com.github.unhappychoice.circleci.v2.request.AddEnvironmentVariableRequest as V2AddEnvironmentVariableRequest
+import com.github.unhappychoice.circleci.v2.response.Artifact as V2Artifact
 
 object CredentialRedactionSpec : Spek({
     val v1Gson = GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create()
@@ -130,6 +133,38 @@ object CredentialRedactionSpec : Spek({
         assertEquals(key, v2Gson.toJsonTree(request).asJsonObject["continuation-key"].asString)
     }
 
+    test("redacts the continuation configuration and parameters, preserving them in request JSON") {
+        val secret = "dummy-deploy-token"
+        val configuration = "version: 2.1\njobs:\n  deploy:\n    environment:\n      DEPLOY_TOKEN: $secret"
+        val parameters = mapOf("deploy_token" to secret)
+        val request = ContinuePipelineRequest("dummy-continuation-key", configuration, parameters)
+
+        assertRedacted(request, "configuration", secret)
+        assertRedacted(request, "parameters", secret)
+        assertFalse(request.toString().contains("deploy_token"))
+        val json = v2Gson.toJsonTree(request).asJsonObject
+        assertEquals(configuration, json["configuration"].asString)
+        assertEquals(v2Gson.toJsonTree(parameters), json["parameters"])
+    }
+
+    test("redacts the rollback request parameters and preserves them in request JSON") {
+        val secret = "dummy-rollback-token"
+        val parameters = mapOf("deploy_token" to secret)
+        val request = RollbackProjectRequest(
+            environmentName = "production",
+            componentName = "api",
+            currentVersion = "1.0.0",
+            targetVersion = "0.9.0",
+            parameters = parameters
+        )
+
+        assertRedacted(request, "parameters", secret)
+        assertFalse(request.toString().contains("deploy_token"))
+        assertTrue(request.toString().contains("environmentName=production"))
+        val json = v2Gson.toJsonTree(request).asJsonObject
+        assertEquals(v2Gson.toJsonTree(parameters), json["parameters"])
+    }
+
     test("redacts the webhook create credentials and preserves them in request JSON") {
         val secret = "dummy-request-signing-secret"
         val token = "dummy-create-token"
@@ -217,6 +252,30 @@ object CredentialRedactionSpec : Spek({
         assertEquals(secret, json["signing_secret"].asString)
         assertEquals(url, json["url"].asString)
         assertEquals(url, v2Gson.fromJson(json, Webhook::class.java).url)
+    }
+
+    test("redacts a signed artifact download URL from the V1 artifact and preserves it in JSON") {
+        val signature = "dummy-v1-artifact-signature"
+        val url = "https://circle-production-customer-artifacts.s3.amazonaws.com/artifact" +
+            "?AWSAccessKeyId=dummy-key&Expires=2000000000&Signature=$signature"
+        val json = """{"node_index":0,"path":"tmp/output.log","pretty_path":"output.log","url":"$url"}"""
+        val artifact = v1Gson.fromJson(json, Artifact::class.java)
+
+        assertEquals(url, artifact.url)
+        assertRedacted(artifact, "url", signature)
+        assertEquals(url, v1Gson.toJsonTree(artifact).asJsonObject["url"].asString)
+    }
+
+    test("redacts a signed artifact download URL from the V2 artifact and preserves it in JSON") {
+        val signature = "dummy-v2-artifact-signature"
+        val url = "https://circle-production-customer-artifacts.s3.amazonaws.com/artifact" +
+            "?AWSAccessKeyId=dummy-key&Expires=2000000000&Signature=$signature"
+        val json = """{"url":"$url","path":"tmp/output.log","node_index":0}"""
+        val artifact = v2Gson.fromJson(json, V2Artifact::class.java)
+
+        assertEquals(url, artifact.url)
+        assertRedacted(artifact, "url", signature)
+        assertEquals(url, v2Gson.toJsonTree(artifact).asJsonObject["url"].asString)
     }
 })
 

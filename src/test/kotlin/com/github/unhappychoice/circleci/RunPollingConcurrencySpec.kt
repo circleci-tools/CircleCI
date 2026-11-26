@@ -68,6 +68,77 @@ object RunPollingConcurrencySpec : Spek({
         }
     }
 
+    test("a blocked success callback leaves a poll worker free for another wait") {
+        val calledBack = CountDownLatch(SYNCHRONOUS_POLL_LIMIT)
+        val releaseCallback = CountDownLatch(1)
+        MockWebServer().use { server ->
+            server.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest) = endedRun()
+            }
+            server.start()
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV3()
+            val held = (0 until SYNCHRONOUS_POLL_LIMIT).map {
+                client.waitForRun("ended-$it", 1.minutes, 1.minutes)
+                    .doOnSuccess {
+                        calledBack.countDown()
+                        releaseCallback.await(15, SECONDS)
+                    }
+                    .test()
+            }
+            try {
+                repeat(SYNCHRONOUS_POLL_LIMIT) { server.takeRequest(5, SECONDS) }
+                assertTrue(calledBack.await(5, SECONDS))
+
+                val other = client.waitForRun("other", 1.minutes, 1.minutes).test()
+                try {
+                    assertEquals("/api/v3/runs/other", server.takeRequest(5, SECONDS)?.target)
+                    other.awaitDone(5, SECONDS).assertComplete().assertNoErrors().assertValueCount(1)
+                } finally {
+                    other.dispose()
+                }
+            } finally {
+                releaseCallback.countDown()
+                held.forEach { it.awaitDone(5, SECONDS) }
+            }
+        }
+    }
+
+    test("a blocked HTTP error callback leaves a poll worker free for another wait") {
+        val calledBack = CountDownLatch(SYNCHRONOUS_POLL_LIMIT)
+        val releaseCallback = CountDownLatch(1)
+        MockWebServer().use { server ->
+            server.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest) =
+                    if (request.target == "/api/v3/runs/other") endedRun() else MockResponse(code = 500)
+            }
+            server.start()
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV3()
+            val held = (0 until SYNCHRONOUS_POLL_LIMIT).map {
+                client.waitForRun("failing-$it", 1.minutes, 1.minutes)
+                    .doOnError {
+                        calledBack.countDown()
+                        releaseCallback.await(15, SECONDS)
+                    }
+                    .test()
+            }
+            try {
+                repeat(SYNCHRONOUS_POLL_LIMIT) { server.takeRequest(5, SECONDS) }
+                assertTrue(calledBack.await(5, SECONDS))
+
+                val other = client.waitForRun("other", 1.minutes, 1.minutes).test()
+                try {
+                    assertEquals("/api/v3/runs/other", server.takeRequest(5, SECONDS)?.target)
+                    other.awaitDone(5, SECONDS).assertComplete().assertNoErrors().assertValueCount(1)
+                } finally {
+                    other.dispose()
+                }
+            } finally {
+                releaseCallback.countDown()
+                held.forEach { it.awaitDone(5, SECONDS) }
+            }
+        }
+    }
+
     test("a blocked timeout handler leaves another wait free to repeat and time out") {
         val handlerEntered = CountDownLatch(1)
         val releaseHandler = CountDownLatch(1)

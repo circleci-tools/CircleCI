@@ -1,11 +1,13 @@
 package com.github.unhappychoice.circleci.v2.request
 
+import com.github.unhappychoice.circleci.Redacted
+import com.github.unhappychoice.circleci.redactedToString
 import com.google.gson.annotations.SerializedName
 
 data class UpdateWebhookRequest(
     val name: String? = null,
-    val url: String? = null,
-    @SerializedName("signing-secret") val signingSecret: String? = null,
+    @Redacted val url: String? = null,
+    @SerializedName("signing-secret") @Redacted val signingSecret: String? = null,
     val events: List<String>? = null,
     @SerializedName("verify-tls") val verifyTls: Boolean? = null,
     @SerializedName("is-enabled") val isEnabled: Boolean? = null
@@ -31,7 +33,5 @@ data class UpdateWebhookRequest(
         isEnabled = this.isEnabled
     )
 
-    override fun toString() =
-        "UpdateWebhookRequest(name=$name, url=[REDACTED], signingSecret=[REDACTED], " +
-            "events=$events, verifyTls=$verifyTls, isEnabled=$isEnabled)"
+    override fun toString() = redactedToString(this)
 }

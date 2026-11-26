@@ -25,6 +25,7 @@ import com.github.unhappychoice.circleci.v2.response.ComponentVersionListRespons
 import com.github.unhappychoice.circleci.v2.response.ContextRestriction
 import com.github.unhappychoice.circleci.v2.response.FlakyTests.FlakyTest
 import com.github.unhappychoice.circleci.v2.response.JobDetails
+import com.github.unhappychoice.circleci.v2.response.Organization
 import com.github.unhappychoice.circleci.v2.response.PipelineDefinition
 import com.github.unhappychoice.circleci.v2.response.PipelineListResponse
 import com.github.unhappychoice.circleci.v2.response.RestrictionCreated
@@ -548,6 +549,44 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         }
     }
 
+    test("decodes the authenticated user with an avatar URL") {
+        val response = """
+            {"id":"user-id","login":"test-login","name":"Test User","avatar_url":"https://example.com/avatar.png"}
+        """.trimIndent()
+        withResponse(response, "GET", "/me") { client ->
+            client.getMe().test().assertResult(
+                User("user-id", "test-login", "Test User", "https://example.com/avatar.png")
+            )
+        }
+    }
+
+    test("decodes the authenticated user with a null avatar URL") {
+        val response = """{"id":"user-id","login":"test-login","name":"Test User","avatar_url":null}"""
+        withResponse(response, "GET", "/me") { client ->
+            client.getMe().test().assertResult(User("user-id", "test-login", "Test User", null))
+        }
+    }
+
+    test("decodes an organization with an avatar URL") {
+        val response = """
+            {"id":"org-id","name":"CircleCI","slug":"gh/circleci","vcs_type":"github","avatar_url":"https://example.com/org.png"}
+        """.trimIndent()
+        withResponse(response, "GET", "/organization/org-id") { client ->
+            client.getOrganization("org-id").test().assertResult(
+                Organization("org-id", "CircleCI", "gh/circleci", "github", "https://example.com/org.png")
+            )
+        }
+    }
+
+    test("decodes an organization with an omitted avatar URL") {
+        val response = """{"id":"org-id","name":"CircleCI","slug":"gh/circleci","vcs_type":"github"}"""
+        withResponse(response, "GET", "/organization/org-id") { client ->
+            client.getOrganization("org-id").test().assertResult(
+                Organization("org-id", "CircleCI", "gh/circleci", "github", null)
+            )
+        }
+    }
+
     test("returns the HTTP status and error body when authentication fails") {
         val response = """{"message":"Unauthorized"}"""
         withResponse(response, "GET", "/me", status = 401) { client ->
@@ -772,6 +811,29 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
     }
 
+    test("creates a pipeline definition with a description") {
+        val request = CreatePipelineDefinitionRequest(
+            "pipeline",
+            CreatePipelineDefinitionRequest.ConfigSource(
+                "github_app", ".circleci/pipeline.yml", PipelineDefinitionRepository("config-repo-id")
+            ),
+            CreatePipelineDefinitionRequest.CheckoutSource("github_app", PipelineDefinitionRepository("checkout-repo-id")),
+            description = "a pipeline definition"
+        )
+        val body = withResponse("""{"id":"definition-id"}""", "POST", "/projects/project-id/pipeline-definitions") { client ->
+            client.createPipelineDefinition("project-id", request).blockingSingle()
+        }
+        val expected = """
+            {
+                "name":"pipeline",
+                "config_source":{"provider":"github_app","file_path":".circleci/pipeline.yml","repo":{"external_id":"config-repo-id"}},
+                "checkout_source":{"provider":"github_app","repo":{"external_id":"checkout-repo-id"}},
+                "description":"a pipeline definition"
+            }
+        """
+        assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+    }
+
     test("updates a pipeline definition checkout source independently") {
         val request = UpdatePipelineDefinitionRequest(
             checkoutSource = UpdatePipelineDefinitionRequest.CheckoutSource(repo = PipelineDefinitionRepository("new-repo-id"))
@@ -781,6 +843,16 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             client.updatePipelineDefinition("project-id", "definition-id", request).blockingSingle()
         }
         val expected = """{"checkout_source":{"repo":{"external_id":"new-repo-id"}}}"""
+        assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+    }
+
+    test("updates a pipeline definition description only") {
+        val request = UpdatePipelineDefinitionRequest(description = "updated description")
+        val path = "/projects/project-id/pipeline-definitions/definition-id"
+        val body = withResponse("""{"id":"definition-id"}""", "PATCH", path) { client ->
+            client.updatePipelineDefinition("project-id", "definition-id", request).blockingSingle()
+        }
+        val expected = """{"description":"updated description"}"""
         assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
     }
 
