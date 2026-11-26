@@ -54,6 +54,16 @@ object PolicyDecisionDecodingSpec : Spek({
         assertEquals(failed, result.decision)
     }
 
+    test("preserves numeric metadata values when decoding a decision log") {
+        val metadataLog = """
+            {"id":"$logId","decision":$passingDecision,"metadata":{"build_num":42,"marker":9007199254740993}}
+        """.trimIndent()
+        val result = decisionClient(metadataLog).getDecisionLog("owner-id", "config", logId).blockingFirst()
+        val metadata = requireNotNull(result.metadata)
+        assertEquals("42", (metadata.getValue("build_num") as Number).toString())
+        assertEquals("9007199254740993", (metadata.getValue("marker") as Number).toString())
+    }
+
     test("decodes a direct decision with rule failures") {
         val decision = decisionClient(failingDecision).makeDecision("owner-id", "config", request).blockingFirst()
         assertEquals(failed, decision)
