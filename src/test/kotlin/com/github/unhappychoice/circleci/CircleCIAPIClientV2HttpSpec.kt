@@ -772,6 +772,29 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
     }
 
+    test("creates a pipeline definition with a description") {
+        val request = CreatePipelineDefinitionRequest(
+            "pipeline",
+            CreatePipelineDefinitionRequest.ConfigSource(
+                "github_app", ".circleci/pipeline.yml", PipelineDefinitionRepository("config-repo-id")
+            ),
+            CreatePipelineDefinitionRequest.CheckoutSource("github_app", PipelineDefinitionRepository("checkout-repo-id")),
+            description = "a pipeline definition"
+        )
+        val body = withResponse("""{"id":"definition-id"}""", "POST", "/projects/project-id/pipeline-definitions") { client ->
+            client.createPipelineDefinition("project-id", request).blockingSingle()
+        }
+        val expected = """
+            {
+                "name":"pipeline",
+                "config_source":{"provider":"github_app","file_path":".circleci/pipeline.yml","repo":{"external_id":"config-repo-id"}},
+                "checkout_source":{"provider":"github_app","repo":{"external_id":"checkout-repo-id"}},
+                "description":"a pipeline definition"
+            }
+        """
+        assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+    }
+
     test("updates a pipeline definition checkout source independently") {
         val request = UpdatePipelineDefinitionRequest(
             checkoutSource = UpdatePipelineDefinitionRequest.CheckoutSource(repo = PipelineDefinitionRepository("new-repo-id"))
@@ -781,6 +804,16 @@ object CircleCIAPIClientV2HttpSpec : Spek({
             client.updatePipelineDefinition("project-id", "definition-id", request).blockingSingle()
         }
         val expected = """{"checkout_source":{"repo":{"external_id":"new-repo-id"}}}"""
+        assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
+    }
+
+    test("updates a pipeline definition description only") {
+        val request = UpdatePipelineDefinitionRequest(description = "updated description")
+        val path = "/projects/project-id/pipeline-definitions/definition-id"
+        val body = withResponse("""{"id":"definition-id"}""", "PATCH", path) { client ->
+            client.updatePipelineDefinition("project-id", "definition-id", request).blockingSingle()
+        }
+        val expected = """{"description":"updated description"}"""
         assertEquals(JsonParser.parseString(expected), JsonParser.parseString(body))
     }
 

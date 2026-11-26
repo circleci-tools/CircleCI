@@ -1,7 +1,10 @@
 package com.github.unhappychoice.circleci.v1.request
 
+import com.github.unhappychoice.circleci.Redacted
+import com.github.unhappychoice.circleci.redactedToString
+
 data class AddHerokuKeyRequest(
-  val apikey: String
+  @Redacted val apikey: String
 ) {
-  override fun toString() = "AddHerokuKeyRequest(apikey=[REDACTED])"
+  override fun toString() = redactedToString(this)
 }
