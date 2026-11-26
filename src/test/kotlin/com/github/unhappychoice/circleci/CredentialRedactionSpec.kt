@@ -4,6 +4,7 @@ import com.github.unhappychoice.circleci.v1.request.AddHerokuKeyRequest
 import com.github.unhappychoice.circleci.v1.request.AddSshKeyRequest
 import com.github.unhappychoice.circleci.v1.request.TriggerNewBuildRequest
 import com.github.unhappychoice.circleci.v1.request.TriggerNewBuildWithBranchRequest
+import com.github.unhappychoice.circleci.v1.response.Artifact
 import com.github.unhappychoice.circleci.v1.response.Build
 import com.github.unhappychoice.circleci.v1.response.EnvironmentVariable
 import com.github.unhappychoice.circleci.v2.request.ContinuePipelineRequest
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
 import com.github.unhappychoice.circleci.v1.request.AddEnvironmentVariableRequest as V1AddEnvironmentVariableRequest
 import com.github.unhappychoice.circleci.v2.request.AddEnvironmentVariableRequest as V2AddEnvironmentVariableRequest
+import com.github.unhappychoice.circleci.v2.response.Artifact as V2Artifact
 
 object CredentialRedactionSpec : Spek({
     val v1Gson = GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create()
@@ -250,6 +252,30 @@ object CredentialRedactionSpec : Spek({
         assertEquals(secret, json["signing_secret"].asString)
         assertEquals(url, json["url"].asString)
         assertEquals(url, v2Gson.fromJson(json, Webhook::class.java).url)
+    }
+
+    test("redacts a signed artifact download URL from the V1 artifact and preserves it in JSON") {
+        val signature = "dummy-v1-artifact-signature"
+        val url = "https://circle-production-customer-artifacts.s3.amazonaws.com/artifact" +
+            "?AWSAccessKeyId=dummy-key&Expires=2000000000&Signature=$signature"
+        val json = """{"node_index":0,"path":"tmp/output.log","pretty_path":"output.log","url":"$url"}"""
+        val artifact = v1Gson.fromJson(json, Artifact::class.java)
+
+        assertEquals(url, artifact.url)
+        assertRedacted(artifact, "url", signature)
+        assertEquals(url, v1Gson.toJsonTree(artifact).asJsonObject["url"].asString)
+    }
+
+    test("redacts a signed artifact download URL from the V2 artifact and preserves it in JSON") {
+        val signature = "dummy-v2-artifact-signature"
+        val url = "https://circle-production-customer-artifacts.s3.amazonaws.com/artifact" +
+            "?AWSAccessKeyId=dummy-key&Expires=2000000000&Signature=$signature"
+        val json = """{"url":"$url","path":"tmp/output.log","node_index":0}"""
+        val artifact = v2Gson.fromJson(json, V2Artifact::class.java)
+
+        assertEquals(url, artifact.url)
+        assertRedacted(artifact, "url", signature)
+        assertEquals(url, v2Gson.toJsonTree(artifact).asJsonObject["url"].asString)
     }
 })
 

@@ -1,17 +1,17 @@
 package com.github.unhappychoice.circleci.v2.request
 
+import com.github.unhappychoice.circleci.Redacted
+import com.github.unhappychoice.circleci.redactedToString
 import com.google.gson.annotations.SerializedName
 
 data class UpdateScheduleParameters(
     val name: String? = null,
     val description: String? = null,
-    val parameters: Map<String, Any>? = null,
+    @Redacted val parameters: Map<String, Any>? = null,
     val timetable: UpdateScheduleTimetable? = null,
     @SerializedName("attribution-actor") val attributionActor: ScheduleAttributionActor? = null
 ) {
-    override fun toString() =
-        "UpdateScheduleParameters(name=$name, description=$description, parameters=[REDACTED], " +
-            "timetable=$timetable, attributionActor=$attributionActor)"
+    override fun toString() = redactedToString(this)
 }
 
 data class UpdateScheduleTimetable(

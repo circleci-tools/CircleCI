@@ -227,6 +227,14 @@ dependencies {
 }
 ```
 
+## Documentation
+
+See [Getting Started](docs/getting-started.md) for a deeper walkthrough from
+installation through triggering a pipeline and reading back its workflows,
+[Usage and API Reference](docs/usage.md) for an index of every client's methods
+grouped by resource, and [Architecture](docs/architecture.md) for how a request
+flows through the library.
+
 ## Troubleshooting
 
 See [Troubleshooting](docs/troubleshooting.md) for token errors, CircleCI
