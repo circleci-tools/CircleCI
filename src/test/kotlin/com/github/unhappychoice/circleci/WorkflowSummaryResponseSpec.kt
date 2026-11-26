@@ -1,6 +1,6 @@
 package com.github.unhappychoice.circleci
 
-import com.github.unhappychoice.circleci.v2.response.WorkflowSummary
+import com.github.unhappychoice.circleci.v2.response.DurationMetrics
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.Headers.Companion.headersOf
@@ -61,7 +61,7 @@ object WorkflowSummaryResponseSpec : Spek({
                 assertEquals(firstMetric, summary.metrics.mttr)
                 assertEquals(secondMetric, summary.metrics.totalCreditsUsed)
                 assertEquals(
-                    WorkflowSummary.DurationMetrics(
+                    DurationMetrics(
                         firstMetric, secondMetric, firstMetric, secondMetric, firstMetric, standardDeviation
                     ),
                     summary.metrics.durationMetrics
