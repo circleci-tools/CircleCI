@@ -1,8 +1,10 @@
 # Usage and API Reference
 
 See the [README](../README.md) for runnable examples (quick start, asynchronous calls,
-API v3 runs, artifact downloads, CircleCI Server). This page indexes what each client
-exposes so you can find the right method before reading its Retrofit declaration.
+API v3 runs, artifact downloads, CircleCI Server) and [Getting Started](getting-started.md)
+for a longer walkthrough that looks up a project, triggers a pipeline, and reads back its
+workflows. This page indexes what each client exposes so you can find the right method
+before reading its Retrofit declaration.
 
 ## Entry points
 
