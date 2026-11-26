@@ -1,15 +1,16 @@
 package com.github.unhappychoice.circleci.v2.request
 
+import com.github.unhappychoice.circleci.Redacted
+import com.github.unhappychoice.circleci.redactedToString
 import com.google.gson.annotations.SerializedName
 
 data class TriggerPipelineRunRequest(
     @SerializedName("definition_id") val definitionId: String? = null,
     val config: Ref? = null,
     val checkout: Ref? = null,
-    val parameters: Map<String, Any>? = null
+    @Redacted val parameters: Map<String, Any>? = null
 ) {
-    override fun toString() =
-        "TriggerPipelineRunRequest(definitionId=$definitionId, config=$config, checkout=$checkout, parameters=[REDACTED])"
+    override fun toString() = redactedToString(this)
 
     data class Ref(val branch: String? = null, val tag: String? = null) {
         init {

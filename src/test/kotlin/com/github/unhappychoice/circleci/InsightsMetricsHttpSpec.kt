@@ -1,7 +1,6 @@
 package com.github.unhappychoice.circleci
 
-import com.github.unhappychoice.circleci.v2.response.JobMetricsResponse
-import com.github.unhappychoice.circleci.v2.response.WorkflowMetricsResponse
+import com.github.unhappychoice.circleci.v2.response.DurationMetrics
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -9,6 +8,7 @@ import org.spekframework.spek2.Spek
 
 private const val WINDOW_START = "2025-01-01T00:00:00Z"
 private const val WINDOW_END = "2025-01-08T00:00:00Z"
+private const val PROJECT_ID = "11111111-1111-1111-1111-111111111111"
 
 object InsightsMetricsHttpSpec : Spek({
     val projectSlug = "gh/example/project"
@@ -27,8 +27,9 @@ object InsightsMetricsHttpSpec : Spek({
 
                 assertEquals(WINDOW_START, item.windowStart)
                 assertEquals(WINDOW_END, item.windowEnd)
+                assertEquals(PROJECT_ID, item.projectId)
                 assertEquals(
-                    WorkflowMetricsResponse.DurationMetrics(value, value, value, value, value, deviation),
+                    DurationMetrics(value, value, value, value, value, deviation),
                     metrics.durationMetrics
                 )
                 assertEquals(value, metrics.mttr)
@@ -48,7 +49,7 @@ object InsightsMetricsHttpSpec : Spek({
                 assertEquals(WINDOW_START, item.windowStart)
                 assertEquals(WINDOW_END, item.windowEnd)
                 assertEquals(
-                    JobMetricsResponse.DurationMetrics(value, value, value, value, value, deviation),
+                    DurationMetrics(value, value, value, value, value, deviation),
                     item.metrics.durationMetrics
                 )
             }
@@ -59,11 +60,13 @@ object InsightsMetricsHttpSpec : Spek({
 private fun metricsResponse(value: Long?, workflow: Boolean): MockResponse {
     val recoveryMetrics = if (workflow) """"mttr": $value, "total_recoveries": $value,""" else ""
     val credits = if (workflow) value else 0L
+    val projectId = if (workflow) """"project_id": "$PROJECT_ID",""" else ""
     return MockResponse.Builder().setHeader("Content-Type", "application/json").body(
         """
         {
           "items": [{
             "name": "build",
+            $projectId
             "window_start": "$WINDOW_START",
             "window_end": "$WINDOW_END",
             "metrics": {

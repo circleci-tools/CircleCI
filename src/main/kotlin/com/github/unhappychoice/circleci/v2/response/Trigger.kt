@@ -1,5 +1,7 @@
 package com.github.unhappychoice.circleci.v2.response
 
+import com.github.unhappychoice.circleci.Redacted
+import com.github.unhappychoice.circleci.redactedToString
 import com.google.gson.annotations.SerializedName
 
 data class Trigger(
@@ -15,11 +17,9 @@ data class Trigger(
     @SerializedName("config_ref")
     val configRef: String? = null,
     val disabled: Boolean? = null,
-    val parameters: Map<String, Any>? = null
+    @Redacted val parameters: Map<String, Any>? = null
 ) {
-    override fun toString() =
-        "Trigger(id=$id, eventSource=$eventSource, eventName=$eventName, eventPreset=$eventPreset, " +
-            "checkoutRef=$checkoutRef, configRef=$configRef, disabled=$disabled, parameters=[REDACTED])"
+    override fun toString() = redactedToString(this)
 
     data class EventSource(
         val provider: String,
@@ -35,8 +35,8 @@ data class Trigger(
         val externalId: String?
     )
 
-    data class Webhook(val url: String?, val sender: String?) {
-        override fun toString() = "Webhook(url=[REDACTED], sender=$sender)"
+    data class Webhook(@Redacted val url: String?, val sender: String?) {
+        override fun toString() = redactedToString(this)
     }
 
     data class Schedule(

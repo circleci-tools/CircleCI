@@ -12,7 +12,7 @@ import java.net.InetSocketAddress
 object ScheduleResponseSpec : Spek({
     val projectSlug = "gh/example/project"
     val scheduleId = "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    fun scheduleJson(calendarFields: String, descriptionJson: String) = """
+    fun scheduleJson(calendarFields: String, descriptionJson: String, avatarUrlJson: String = "null") = """
         {
           "id": "$scheduleId",
           "created-at": "2019-08-24T14:15:22Z",
@@ -21,7 +21,7 @@ object ScheduleResponseSpec : Spek({
           "name": "Scheduled build",
           "description": $descriptionJson,
           "parameters": {"deploy_token": "dummy-secret"},
-          "actor": {"id": "$scheduleId", "login": "example", "name": "Example", "avatar_url": null},
+          "actor": {"id": "$scheduleId", "login": "example", "name": "Example", "avatar_url": $avatarUrlJson},
           "timetable": {
             "per-hour": 2,
             "hours-of-day": [8, 16],
@@ -31,11 +31,12 @@ object ScheduleResponseSpec : Spek({
     """.trimIndent()
 
     test("decodes a schedule from the get-by-ID response") {
-        val json = scheduleJson(""""days-of-week": ["TUE"]""", "null")
+        val json = scheduleJson(""""days-of-week": ["TUE"]""", "null", """"https://example.com/avatar.png"""")
         withScheduleResponse("/api/v2/schedule/$scheduleId", json) { client ->
             val schedule = client.getScheduleById(scheduleId).blockingFirst()
             assertScheduleFields(projectSlug, schedule)
             assertNull(schedule.description)
+            assertEquals("https://example.com/avatar.png", schedule.actor.avatarUrl)
             assertEquals(ScheduleTimetable(2, listOf(8, 16), listOf("TUE"), null, null), schedule.timetable)
         }
     }
@@ -49,6 +50,7 @@ object ScheduleResponseSpec : Spek({
             val schedule = response.items.single()
             assertScheduleFields(projectSlug, schedule)
             assertEquals("Build the main branch", schedule.description)
+            assertNull(schedule.actor.avatarUrl)
             assertEquals(ScheduleTimetable(2, listOf(8, 16), null, listOf(12), listOf("MAR")), schedule.timetable)
             assertEquals("next-page", response.nextPageToken)
         }
