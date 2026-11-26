@@ -242,6 +242,10 @@ flows through the library.
 See [Troubleshooting](docs/troubleshooting.md) for token errors, CircleCI
 Server URLs, and RxJava version differences.
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for notable changes per release.
+
 ## License
 
 [MIT License](./LICENSE)
