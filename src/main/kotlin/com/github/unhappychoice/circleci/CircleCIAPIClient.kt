@@ -37,12 +37,12 @@ class CircleCIAPIClient private constructor(
 
     fun async(token: String): CircleCIAPIClient = async(token, BASE_URL)
 
-    /** Creates a synchronous V2 client for an HTTPS CircleCI Server origin. */
-    fun server(token: String, instanceUrl: String): CircleCIAPIClientV2 =
+    /** Creates a synchronous client for an HTTPS CircleCI Server origin that also streams artifacts. */
+    fun server(token: String, instanceUrl: String): CircleCIServerClient =
       server(token, instanceUrl, asynchronous = false)
 
-    /** Creates an asynchronous V2 client for an HTTPS CircleCI Server origin. */
-    fun serverAsync(token: String, instanceUrl: String): CircleCIAPIClientV2 =
+    /** Creates an asynchronous client for an HTTPS CircleCI Server origin that also streams artifacts. */
+    fun serverAsync(token: String, instanceUrl: String): CircleCIServerClient =
       server(token, instanceUrl, asynchronous = true)
 
     internal fun async(token: String, baseUrl: String): CircleCIAPIClient =
@@ -53,9 +53,9 @@ class CircleCIAPIClient private constructor(
       instanceUrl: String,
       asynchronous: Boolean,
       transport: OkHttpClient? = null
-    ): CircleCIAPIClientV2 {
+    ): CircleCIServerClient {
       val baseUrl = serverApiBaseUrl(instanceUrl)
-      return CircleCIAPIClient(token, baseUrl, asynchronous, transport).clientV2()
+      return CircleCIServerClientImpl(CircleCIAPIClient(token, baseUrl, asynchronous, transport))
     }
 
     private fun serverApiBaseUrl(instanceUrl: String): String {

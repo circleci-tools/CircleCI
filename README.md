@@ -196,9 +196,20 @@ println(jobs.items)
 ```
 
 Use `CircleCIAPIClient.serverAsync(token, instanceUrl)` for asynchronous subscriptions.
-Both factories return a V2 client and send requests under `/api/v2/`. The instance
-URL accepts an optional port and trailing slash. Reverse-proxy path prefixes are
-unsupported. The client follows redirects only within the same HTTPS origin.
+Both factories return a `CircleCIServerClient`, a V2 client that also exposes
+`downloadArtifact` bound to the same instance token and origin, and send requests
+under `/api/v2/`. The instance URL accepts an optional port and trailing slash.
+Reverse-proxy path prefixes are unsupported. The client follows redirects only
+within the same HTTPS origin, and `downloadArtifact` sends the instance token only
+to that origin, dropping it on redirects elsewhere.
+
+```kotlin
+val page = client.getJobArtifacts("gh/my-org/my-project", "123").blockingSingle()
+val artifact = page.items.first { it.path == "reports/junit.xml" }
+client.downloadArtifact(artifact) { input ->
+    File("junit.xml").outputStream().use { output -> input.copyTo(output) }
+}.blockingGet()
+```
 
 The [CircleCI Server automation guide](https://circleci.com/docs/guides/server/orchestrate/analyze-pipelines-during-an-incident/)
 documents listing workflow jobs and getting job details. This library tests those
