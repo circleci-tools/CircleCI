@@ -83,8 +83,11 @@ class CircleCIAPIClient private constructor(
   fun clientV3(): CircleCIAPIClientV3 = serviceV3
 
   /**
-   * Consumes a V2 artifact on the RxJava I/O scheduler. The stream is valid only during
-   * [consume] and is closed before success or failure is delivered. Disposing cancels the call.
+   * Consumes a V2 artifact with at most [ARTIFACT_DOWNLOAD_LIMIT] downloads, including [consume],
+   * running at once. Downloads beyond the limit queue without a worker until one frees up.
+   * The stream is valid only during [consume] and is closed before success or failure is
+   * delivered. Disposing a queued download never starts it; disposing an active download
+   * cancels the call.
    */
   fun <T : Any> downloadArtifact(artifact: Artifact, consume: (InputStream) -> T): Single<T> =
     Single.defer { artifactDownloader.download(artifact, consume) }
