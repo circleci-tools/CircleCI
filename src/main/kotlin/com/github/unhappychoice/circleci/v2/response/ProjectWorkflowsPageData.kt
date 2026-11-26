@@ -10,8 +10,8 @@ data class ProjectWorkflowsPageData(
     val all_workflows: List<String>
 ) {
     data class ProjectData(
-        val metrics: ProjectMetrics,
-        val trends: ProjectTrends
+        val metrics: SummaryMetrics,
+        val trends: SummaryTrends
     )
 
     data class ProjectWorkflowData(
@@ -25,22 +25,6 @@ data class ProjectWorkflowsPageData(
         val branch: String,
         val metrics: WorkflowMetrics,
         val trends: WorkflowTrends
-    )
-
-    data class ProjectMetrics(
-        val total_runs: Long,
-        val total_duration_secs: Long,
-        val total_credits_used: Long,
-        val success_rate: Float,
-        val throughput: Float
-    )
-
-    data class ProjectTrends(
-        val total_runs: Float,
-        val total_duration_secs: Float,
-        val total_credits_used: Float,
-        val success_rate: Float,
-        val throughput: Float
     )
 
     data class WorkflowMetrics(

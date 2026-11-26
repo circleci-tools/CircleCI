@@ -2,6 +2,31 @@ package com.github.unhappychoice.circleci.v2.response
 
 import com.google.gson.annotations.SerializedName
 
+data class DurationMetrics(
+    val min: Long?,
+    val mean: Long?,
+    val median: Long?,
+    val p95: Long?,
+    val max: Long?,
+    @SerializedName("standard_deviation") val standardDeviation: Float?
+)
+
+data class SummaryMetrics(
+    val total_runs: Long,
+    val total_duration_secs: Long,
+    val total_credits_used: Long,
+    val success_rate: Float,
+    val throughput: Float
+)
+
+data class SummaryTrends(
+    val total_runs: Float,
+    val total_duration_secs: Float,
+    val total_credits_used: Float,
+    val success_rate: Float,
+    val throughput: Float
+)
+
 data class WorkflowMetricsResponse(
     val items: List<WorkflowMetric>,
     @SerializedName("next_page_token") val nextPageToken: String?
@@ -24,15 +49,6 @@ data class WorkflowMetricsResponse(
         @SerializedName("duration_metrics") val durationMetrics: DurationMetrics,
         @SerializedName("total_recoveries") val totalRecoveries: Long?,
         val throughput: Float
-    )
-
-    data class DurationMetrics(
-        val min: Long?,
-        val mean: Long?,
-        val median: Long?,
-        val p95: Long?,
-        val max: Long?,
-        @SerializedName("standard_deviation") val standardDeviation: Float?
     )
 }
 
@@ -72,15 +88,6 @@ data class JobMetricsResponse(
         @SerializedName("success_rate") val successRate: Float,
         val throughput: Float
     )
-
-    data class DurationMetrics(
-        val min: Long?,
-        val mean: Long?,
-        val median: Long?,
-        val p95: Long?,
-        val max: Long?,
-        @SerializedName("standard_deviation") val standardDeviation: Float?
-    )
 }
 
 data class WorkflowSummary(
@@ -112,15 +119,6 @@ data class WorkflowSummary(
         @SerializedName("total_credits_used") val totalCreditsUsed: Float,
         @SerializedName("p95_duration_secs") val p95DurationSecs: Float? = null,
         @SerializedName("median_duration_secs") val medianDurationSecs: Float? = null
-    )
-
-    data class DurationMetrics(
-        val min: Long?,
-        val mean: Long?,
-        val median: Long?,
-        val p95: Long?,
-        val max: Long?,
-        @SerializedName("standard_deviation") val standardDeviation: Float?
     )
 }
 
