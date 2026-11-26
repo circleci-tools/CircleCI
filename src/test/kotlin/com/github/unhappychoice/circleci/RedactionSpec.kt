@@ -27,6 +27,20 @@ object RedactionSpec : Spek({
         assertTrue(description.contains("secret=[REDACTED]"))
         assertFalse(description.contains("dummy-secret"))
     }
+
+    test("reuses cached per-class metadata instead of re-deriving it on every call") {
+        val kClass = RedactionSpecModel::class
+        redactionMetadataCache.remove(kClass)
+
+        redactedToString(RedactionSpecModel(name = "example", secret = "dummy-secret", count = 1))
+        val fieldsAfterFirstCall = redactionMetadataCache[kClass]
+        assertTrue(fieldsAfterFirstCall != null)
+
+        redactedToString(RedactionSpecModel(name = "other", secret = "other-secret", count = 2))
+        val fieldsAfterSecondCall = redactionMetadataCache[kClass]
+
+        assertTrue(fieldsAfterFirstCall === fieldsAfterSecondCall)
+    }
 })
 
 private data class RedactionSpecModel(
