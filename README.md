@@ -143,10 +143,12 @@ api.downloadArtifact(artifact) { input ->
 }.blockingGet()
 ```
 
-The download starts on subscription and runs the callback on the RxJava I/O scheduler.
-Read or copy the stream within the callback. The client closes the response when
-the callback exits, including on failure. Dispose the subscription to cancel
-the HTTP call and interrupt pending network reads.
+The download starts on subscription and runs the callback on a scheduler shared by all
+`downloadArtifact` calls, limited to eight concurrent downloads. Downloads beyond the
+limit queue without a thread until one finishes. Read or copy the stream within the
+callback. The client closes the response when the callback exits, including on failure.
+Disposing a queued download removes it from the queue without starting it. Disposing an
+active download cancels the HTTP call and interrupts pending network reads.
 
 Downloads require HTTPS. For CircleCI Cloud, the client sends `Circle-Token` to
 `circleci.com`, `dl.circleci.com`, and subdomains of `circle-artifacts.com` on port 443.
