@@ -7,5 +7,7 @@ data class Organization(
     val name: String,
     val slug: String,
     @SerializedName("vcs_type")
-    val vcsType: String
+    val vcsType: String,
+    @SerializedName("avatar_url")
+    val avatarUrl: String? = null
 )
