@@ -171,8 +171,8 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
     override fun getOrgSummaryData(orgSlug: String, reportingWindow: String?, projectNames: List<String>?): Observable<OrgSummaryData> = Observable.just(
         OrgSummaryData(
             org_data = OrgSummaryData.OrgData(
-                metrics = OrgSummaryData.OrgMetrics(total_runs = 1, total_duration_secs = 1, total_credits_used = 1, success_rate = 1f, throughput = 1f),
-                trends = OrgSummaryData.OrgTrends(total_runs = 1f, total_duration_secs = 1f, total_credits_used = 1f, success_rate = 1f, throughput = 1f)
+                metrics = SummaryMetrics(total_runs = 1, total_duration_secs = 1, total_credits_used = 1, success_rate = 1f, throughput = 1f),
+                trends = SummaryTrends(total_runs = 1f, total_duration_secs = 1f, total_credits_used = 1f, success_rate = 1f, throughput = 1f)
             ),
             org_project_data = listOf(
                 OrgSummaryData.OrgProjectData(
@@ -191,8 +191,8 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         ProjectWorkflowsPageData(
             org_id = "org_id", project_id = "project_id",
             project_data = ProjectWorkflowsPageData.ProjectData(
-                metrics = ProjectWorkflowsPageData.ProjectMetrics(total_runs = 1, total_duration_secs = 1, total_credits_used = 1, success_rate = 1f, throughput = 1f),
-                trends = ProjectWorkflowsPageData.ProjectTrends(total_runs = 1f, total_duration_secs = 1f, total_credits_used = 1f, success_rate = 1f, throughput = 1f)
+                metrics = SummaryMetrics(total_runs = 1, total_duration_secs = 1, total_credits_used = 1, success_rate = 1f, throughput = 1f),
+                trends = SummaryTrends(total_runs = 1f, total_duration_secs = 1f, total_credits_used = 1f, success_rate = 1f, throughput = 1f)
             ),
             project_workflow_data = listOf(
                 ProjectWorkflowsPageData.ProjectWorkflowData(
@@ -223,7 +223,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
                     metrics = WorkflowMetricsResponse.WorkflowMetrics(
                         totalRuns = 100, successfulRuns = 90, mttr = 60, totalCreditsUsed = 1000, failedRuns = 10,
                         successRate = 0.9f, throughput = 5f, totalRecoveries = 5,
-                        durationMetrics = WorkflowMetricsResponse.DurationMetrics(min = 10, mean = 100, median = 90, p95 = 200, max = 300, standardDeviation = 50f)
+                        durationMetrics = DurationMetrics(min = 10, mean = 100, median = 90, p95 = 200, max = 300, standardDeviation = 50f)
                     )
                 )
             ),
@@ -249,7 +249,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
                     name = "build",
                     metrics = JobMetricsResponse.JobMetrics(
                         totalRuns = 100, failedRuns = 5, successfulRuns = 95, totalCreditsUsed = 500, successRate = 0.95f, throughput = 10f,
-                        durationMetrics = JobMetricsResponse.DurationMetrics(min = 5, mean = 50, median = 45, p95 = 100, max = 150, standardDeviation = 25f)
+                        durationMetrics = DurationMetrics(min = 5, mean = 50, median = 45, p95 = 100, max = 150, standardDeviation = 25f)
                     )
                 )
             ),
@@ -261,7 +261,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         WorkflowSummary(
             metrics = WorkflowSummary.Metrics(
                 totalRuns = 100, failedRuns = 10, successfulRuns = 90, successRate = 0.9f, throughput = 5f, mttr = 60, totalCreditsUsed = 1000,
-                durationMetrics = WorkflowSummary.DurationMetrics(min = 10, mean = 100, median = 90, p95 = 200, max = 300, standardDeviation = 50f)
+                durationMetrics = DurationMetrics(min = 10, mean = 100, median = 90, p95 = 200, max = 300, standardDeviation = 50f)
             ),
             trends = WorkflowSummary.Trends(totalRuns = 0.1f, failedRuns = -0.05f, successfulRuns = 0.1f, successRate = 0.02f, throughput = 0.1f, mttr = -0.1f, totalCreditsUsed = 0.05f)
         )

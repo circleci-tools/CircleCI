@@ -1313,15 +1313,6 @@ private fun expectNotNull(metrics: WorkflowMetricsResponse.WorkflowMetrics) {
     expect(metrics.throughput).not.to.be.`null`
 }
 
-private fun expectNotNull(duration: WorkflowMetricsResponse.DurationMetrics) {
-    expect(duration.min).not.to.be.`null`
-    expect(duration.mean).not.to.be.`null`
-    expect(duration.median).not.to.be.`null`
-    expect(duration.p95).not.to.be.`null`
-    expect(duration.max).not.to.be.`null`
-    expect(duration.standardDeviation).not.to.be.`null`
-}
-
 private fun expectNotNull(item: WorkflowRunsResponse.WorkflowRunItem) {
     expect(item.id).not.to.be.`null`
     expect(item.branch).not.to.be.`null`
@@ -1349,15 +1340,6 @@ private fun expectNotNull(metrics: JobMetricsResponse.JobMetrics) {
     expect(metrics.throughput).not.to.be.`null`
 }
 
-private fun expectNotNull(duration: JobMetricsResponse.DurationMetrics) {
-    expect(duration.min).not.to.be.`null`
-    expect(duration.mean).not.to.be.`null`
-    expect(duration.median).not.to.be.`null`
-    expect(duration.p95).not.to.be.`null`
-    expect(duration.max).not.to.be.`null`
-    expect(duration.standardDeviation).not.to.be.`null`
-}
-
 private fun expectNotNull(metrics: WorkflowSummary.Metrics) {
     expect(metrics.totalRuns).not.to.be.`null`
     expect(metrics.failedRuns).not.to.be.`null`
@@ -1380,7 +1362,7 @@ private fun expectNotNull(trends: WorkflowSummary.Trends) {
     expect(trends.totalCreditsUsed).not.to.be.`null`
 }
 
-private fun expectNotNull(duration: WorkflowSummary.DurationMetrics) {
+private fun expectNotNull(duration: DurationMetrics) {
     expect(duration.min).not.to.be.`null`
     expect(duration.mean).not.to.be.`null`
     expect(duration.median).not.to.be.`null`
@@ -1481,7 +1463,7 @@ private fun expectNotNull(data: OrgSummaryData.OrgData) {
     expectNotNull(data.trends)
 }
 
-private fun expectNotNull(metrics: OrgSummaryData.OrgMetrics) {
+private fun expectNotNull(metrics: SummaryMetrics) {
     expect(metrics.total_runs).not.to.be.`null`
     expect(metrics.total_duration_secs).not.to.be.`null`
     expect(metrics.total_credits_used).not.to.be.`null`
@@ -1489,7 +1471,7 @@ private fun expectNotNull(metrics: OrgSummaryData.OrgMetrics) {
     expect(metrics.throughput).not.to.be.`null`
 }
 
-private fun expectNotNull(trends: OrgSummaryData.OrgTrends) {
+private fun expectNotNull(trends: SummaryTrends) {
     expect(trends.total_runs).not.to.be.`null`
     expect(trends.total_duration_secs).not.to.be.`null`
     expect(trends.total_credits_used).not.to.be.`null`
@@ -1524,22 +1506,6 @@ private fun expectNotNull(data: ProjectWorkflowsPageData.ProjectData) {
     expectNotNull(data.metrics)
     expect(data.trends).not.to.be.`null`
     expectNotNull(data.trends)
-}
-
-private fun expectNotNull(metrics: ProjectWorkflowsPageData.ProjectMetrics) {
-    expect(metrics.total_runs).not.to.be.`null`
-    expect(metrics.total_duration_secs).not.to.be.`null`
-    expect(metrics.total_credits_used).not.to.be.`null`
-    expect(metrics.success_rate).not.to.be.`null`
-    expect(metrics.throughput).not.to.be.`null`
-}
-
-private fun expectNotNull(trends: ProjectWorkflowsPageData.ProjectTrends) {
-    expect(trends.total_runs).not.to.be.`null`
-    expect(trends.total_duration_secs).not.to.be.`null`
-    expect(trends.total_credits_used).not.to.be.`null`
-    expect(trends.success_rate).not.to.be.`null`
-    expect(trends.throughput).not.to.be.`null`
 }
 
 private fun expectNotNull(data: ProjectWorkflowsPageData.ProjectWorkflowData) {

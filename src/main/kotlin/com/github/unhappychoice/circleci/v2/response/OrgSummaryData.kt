@@ -6,30 +6,14 @@ data class OrgSummaryData(
     val all_projects: List<String>?
 ) {
     data class OrgData(
-        val metrics: OrgMetrics,
-        val trends: OrgTrends
+        val metrics: SummaryMetrics,
+        val trends: SummaryTrends
     )
 
     data class OrgProjectData(
         val project_name: String,
         val metrics: ProjectMetrics,
         val trends: ProjectTrends
-    )
-
-    data class OrgMetrics(
-        val total_runs: Long,
-        val total_duration_secs: Long,
-        val total_credits_used: Long,
-        val success_rate: Float,
-        val throughput: Float
-    )
-
-    data class OrgTrends(
-        val total_runs: Float,
-        val total_duration_secs: Float,
-        val total_credits_used: Float,
-        val success_rate: Float,
-        val throughput: Float
     )
 
     data class ProjectMetrics(
