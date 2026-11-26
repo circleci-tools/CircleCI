@@ -20,6 +20,7 @@ that uses RxJava 3, update your imports and reactive integrations to RxJava 3.
   and job metrics through Insights.
 - On master, trigger and list CircleCI Cloud API v3 runs and poll for completion.
 - On master, connect to an HTTPS CircleCI Server instance with the API v2 client.
+- On master, call any client method from Kotlin coroutines with `await()` extensions, alongside the RxJava3 API.
 
 ## Quick start
 
@@ -154,6 +155,28 @@ Downloads require HTTPS. For CircleCI Cloud, the client sends `Circle-Token` to
 `circleci.com`, `dl.circleci.com`, and subdomains of `circle-artifacts.com` on port 443.
 It keeps the token on same-origin redirects and drops it when the origin changes.
 This supports storage redirects such as the [S3 redirects described by CircleCI](https://circleci.com/docs/guides/security/security/).
+
+### Coroutines on master
+
+Every client method still returns an RxJava 3 type, but [`await()`](src/main/kotlin/com/github/unhappychoice/circleci/Coroutines.kt)
+extension functions on `Observable<T>` and `Completable` let `suspend` code call the client
+without hand-written bridging. `await()` on an `Observable<T>` matches `blockingSingle()`'s
+semantics (the client's methods emit exactly one item on success); `await()` on a `Completable`
+matches `blockingAwait()`. Cancelling the calling coroutine disposes the underlying subscription,
+cancelling the in-flight HTTP call.
+
+```kotlin
+import com.github.unhappychoice.circleci.CircleCIAPIClient
+import com.github.unhappychoice.circleci.await
+
+suspend fun printLogin(token: String) {
+    val user = CircleCIAPIClient.async(token).clientV2().getMe().await()
+    println(user.login)
+}
+```
+
+`waitForRun` already returns a `Single`, so `kotlinx-coroutines-rx3`'s own `Single<T>.await()`
+extension covers it directly; no extra wrapper is needed for that one case.
 
 ### Legacy SSH key creation
 

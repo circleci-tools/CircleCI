@@ -55,6 +55,13 @@ parameters, and request/response types.
 extension polls `getRun` until a run ends; see the README's "CircleCI Cloud API v3"
 section for its polling and concurrency behavior.
 
+## Coroutines
+
+[`Coroutines.kt`](../src/main/kotlin/com/github/unhappychoice/circleci/Coroutines.kt) adds
+`suspend fun <T : Any> Observable<T>.await(): T` and `suspend fun Completable.await()`
+extension functions, additive to the RxJava3 API returned by every client method. See the
+README's "Coroutines on master" section for an example and cancellation semantics.
+
 ## CircleCI Server
 
 `CircleCIAPIClient.server(token, instanceUrl)` and `.serverAsync(token, instanceUrl)`
