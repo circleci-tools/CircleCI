@@ -1,7 +1,6 @@
 package com.github.unhappychoice.circleci
 
-import com.github.unhappychoice.circleci.v2.response.JobMetricsResponse
-import com.github.unhappychoice.circleci.v2.response.WorkflowMetricsResponse
+import com.github.unhappychoice.circleci.v2.response.DurationMetrics
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -30,7 +29,7 @@ object InsightsMetricsHttpSpec : Spek({
                 assertEquals(WINDOW_END, item.windowEnd)
                 assertEquals(PROJECT_ID, item.projectId)
                 assertEquals(
-                    WorkflowMetricsResponse.DurationMetrics(value, value, value, value, value, deviation),
+                    DurationMetrics(value, value, value, value, value, deviation),
                     metrics.durationMetrics
                 )
                 assertEquals(value, metrics.mttr)
@@ -50,7 +49,7 @@ object InsightsMetricsHttpSpec : Spek({
                 assertEquals(WINDOW_START, item.windowStart)
                 assertEquals(WINDOW_END, item.windowEnd)
                 assertEquals(
-                    JobMetricsResponse.DurationMetrics(value, value, value, value, value, deviation),
+                    DurationMetrics(value, value, value, value, value, deviation),
                     item.metrics.durationMetrics
                 )
             }
