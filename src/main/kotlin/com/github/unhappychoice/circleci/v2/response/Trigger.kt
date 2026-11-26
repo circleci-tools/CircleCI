@@ -2,6 +2,7 @@ package com.github.unhappychoice.circleci.v2.response
 
 import com.github.unhappychoice.circleci.Redacted
 import com.github.unhappychoice.circleci.redactedToString
+import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 
 data class Trigger(
@@ -17,7 +18,7 @@ data class Trigger(
     @SerializedName("config_ref")
     val configRef: String? = null,
     val disabled: Boolean? = null,
-    @Redacted val parameters: Map<String, Any>? = null
+    @JsonAdapter(PipelineParametersDeserializer::class) @Redacted val parameters: Map<String, Any>? = null
 ) {
     override fun toString() = redactedToString(this)
 
