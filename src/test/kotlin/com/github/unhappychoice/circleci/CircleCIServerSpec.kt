@@ -1,5 +1,6 @@
 package com.github.unhappychoice.circleci
 
+import com.github.unhappychoice.circleci.v2.response.Artifact
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.Headers.Companion.headersOf
@@ -7,6 +8,7 @@ import okhttp3.OkHttpClient
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.HeldCertificate
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.spekframework.spek2.Spek
 import retrofit2.HttpException
@@ -67,6 +69,45 @@ object CircleCIServerSpec : Spek({
             }
         }
 
+        test("lists a job's artifacts and streams a same-origin artifact with the instance token in $mode mode") {
+            MockWebServer().use { origin ->
+                origin.useHttps(serverTls.sslSocketFactory())
+                origin.start()
+                val artifactUrl = origin.url("/artifact")
+                origin.enqueue(MockResponse(body = """{"items":[{"url":"$artifactUrl","path":"report","node_index":0}]}"""))
+                origin.enqueue(MockResponse(body = "artifact-body"))
+                val client = CircleCIAPIClient.server(token, origin.url("/").toString(), asynchronous, transport)
+
+                val artifact = client.getJobArtifacts("gh/org/repo", "123").blockingSingle().items.single()
+                val body = client.downloadArtifact(artifact) { it.reader().readText() }.blockingGet()
+                assertEquals("artifact-body", body)
+
+                assertEquals(token, origin.takeRequest(5, SECONDS)!!.headers["Circle-Token"])
+                assertEquals(token, origin.takeRequest(5, SECONDS)!!.headers["Circle-Token"])
+            }
+        }
+
+        test("drops the instance token when a downloaded artifact redirects to another origin in $mode mode") {
+            MockWebServer().use { origin ->
+                MockWebServer().use { target ->
+                    origin.useHttps(serverTls.sslSocketFactory())
+                    target.useHttps(serverTls.sslSocketFactory())
+                    origin.start()
+                    target.start()
+                    origin.enqueue(redirect(target.url("/blob").toString()))
+                    target.enqueue(MockResponse(body = "blob"))
+                    val client = CircleCIAPIClient.server(token, origin.url("/").toString(), asynchronous, transport)
+                    val artifact = Artifact(origin.url("/artifact").toString(), "report", 0)
+
+                    val body = client.downloadArtifact(artifact) { it.reader().readText() }.blockingGet()
+                    assertEquals("blob", body)
+
+                    assertEquals(token, origin.takeRequest(5, SECONDS)!!.headers["Circle-Token"])
+                    assertNull(target.takeRequest(5, SECONDS)!!.headers["Circle-Token"])
+                }
+            }
+        }
+
         test("blocks a cross-origin HTTPS redirect in $mode mode") {
             MockWebServer().use { origin ->
                 MockWebServer().use { target ->
@@ -87,3 +128,6 @@ object CircleCIServerSpec : Spek({
         }
     }
 })
+
+private fun redirect(location: String, status: Int = 302) =
+    MockResponse(code = status, headers = headersOf("Location", location))
