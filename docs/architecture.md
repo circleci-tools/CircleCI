@@ -53,4 +53,10 @@ with the same host and port.
 [`AuthenticatedTransportSpec.kt`](../src/test/kotlin/com/github/unhappychoice/circleci/AuthenticatedTransportSpec.kt)
 covers authentication and redirect behavior.
 
+When a model field holds a credential or other sensitive value (an API key, a signing secret,
+a `parameters`/`values` map that may carry one, etc.), annotate it with `@Redacted` from
+[`Redaction.kt`](../src/main/kotlin/com/github/unhappychoice/circleci/Redaction.kt) and implement
+`toString()` as `redactedToString(this)` instead of hand-writing a field list. `CredentialRedactionSpec.kt`
+covers this behavior across the affected models.
+
 See [Contributing](../CONTRIBUTING.md#run-the-checks) for the Gradle checks.

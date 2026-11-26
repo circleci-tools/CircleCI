@@ -1,7 +1,10 @@
 package com.github.unhappychoice.circleci.v2.request
 
+import com.github.unhappychoice.circleci.Redacted
+import com.github.unhappychoice.circleci.redactedToString
+
 data class AddEnvironmentVariableRequest(
-    val value: String
+    @Redacted val value: String
 ) {
-    override fun toString() = "AddEnvironmentVariableRequest(value=[REDACTED])"
+    override fun toString() = redactedToString(this)
 }

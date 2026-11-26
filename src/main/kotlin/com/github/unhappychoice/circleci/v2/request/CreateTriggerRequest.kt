@@ -1,5 +1,7 @@
 package com.github.unhappychoice.circleci.v2.request
 
+import com.github.unhappychoice.circleci.Redacted
+import com.github.unhappychoice.circleci.redactedToString
 import com.google.gson.annotations.SerializedName
 
 data class CreateTriggerRequest(
@@ -14,11 +16,9 @@ data class CreateTriggerRequest(
     @SerializedName("event_name")
     val eventName: String? = null,
     val disabled: Boolean? = null,
-    val parameters: Map<String, Any>? = null
+    @Redacted val parameters: Map<String, Any>? = null
 ) {
-    override fun toString() =
-        "CreateTriggerRequest(eventSource=$eventSource, eventPreset=$eventPreset, checkoutRef=$checkoutRef, " +
-            "configRef=$configRef, eventName=$eventName, disabled=$disabled, parameters=[REDACTED])"
+    override fun toString() = redactedToString(this)
 
     data class EventSource(
         val provider: String,

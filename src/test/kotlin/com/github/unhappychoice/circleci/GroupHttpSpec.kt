@@ -91,6 +91,24 @@ object GroupHttpSpec : Spek({
         }
     }
 
+    test("createOrganizationGroup sends the name and description when a description is supplied") {
+        withGroupResponse(groupJson, status = 201) { client, server ->
+            client.createOrganizationGroup(orgId, CreateGroupRequest(group.name, group.description)).test()
+                .assertResult(group)
+            val body = server.takeRequest().body?.utf8()
+            assertEquals("""{"name":"${group.name}","description":"${group.description}"}""", body)
+        }
+    }
+
+    test("createOrganizationGroup omits the description when only a name is supplied") {
+        withGroupResponse(groupJson, status = 201) { client, server ->
+            client.createOrganizationGroup(orgId, CreateGroupRequest(group.name)).test()
+                .assertResult(group)
+            val body = server.takeRequest().body?.utf8()
+            assertEquals("""{"name":"${group.name}"}""", body)
+        }
+    }
+
     test("getGroup decodes the description without an organization ID") {
         withGroupResponse(groupJson) { client, _ ->
             client.getGroup(orgId, group.id).test().assertResult(group)
