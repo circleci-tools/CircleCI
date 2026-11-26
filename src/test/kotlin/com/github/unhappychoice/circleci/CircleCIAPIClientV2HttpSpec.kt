@@ -25,6 +25,7 @@ import com.github.unhappychoice.circleci.v2.response.ComponentVersionListRespons
 import com.github.unhappychoice.circleci.v2.response.ContextRestriction
 import com.github.unhappychoice.circleci.v2.response.FlakyTests.FlakyTest
 import com.github.unhappychoice.circleci.v2.response.JobDetails
+import com.github.unhappychoice.circleci.v2.response.Organization
 import com.github.unhappychoice.circleci.v2.response.PipelineDefinition
 import com.github.unhappychoice.circleci.v2.response.PipelineListResponse
 import com.github.unhappychoice.circleci.v2.response.RestrictionCreated
@@ -545,6 +546,44 @@ object CircleCIAPIClientV2HttpSpec : Spek({
         val response = """{"id":"user-id","login":"test-login","name":"Test User"}"""
         withResponse(response, "GET", "/me") { client ->
             client.getMe().test().assertResult(User("user-id", "test-login", "Test User"))
+        }
+    }
+
+    test("decodes the authenticated user with an avatar URL") {
+        val response = """
+            {"id":"user-id","login":"test-login","name":"Test User","avatar_url":"https://example.com/avatar.png"}
+        """.trimIndent()
+        withResponse(response, "GET", "/me") { client ->
+            client.getMe().test().assertResult(
+                User("user-id", "test-login", "Test User", "https://example.com/avatar.png")
+            )
+        }
+    }
+
+    test("decodes the authenticated user with a null avatar URL") {
+        val response = """{"id":"user-id","login":"test-login","name":"Test User","avatar_url":null}"""
+        withResponse(response, "GET", "/me") { client ->
+            client.getMe().test().assertResult(User("user-id", "test-login", "Test User", null))
+        }
+    }
+
+    test("decodes an organization with an avatar URL") {
+        val response = """
+            {"id":"org-id","name":"CircleCI","slug":"gh/circleci","vcs_type":"github","avatar_url":"https://example.com/org.png"}
+        """.trimIndent()
+        withResponse(response, "GET", "/organization/org-id") { client ->
+            client.getOrganization("org-id").test().assertResult(
+                Organization("org-id", "CircleCI", "gh/circleci", "github", "https://example.com/org.png")
+            )
+        }
+    }
+
+    test("decodes an organization with an omitted avatar URL") {
+        val response = """{"id":"org-id","name":"CircleCI","slug":"gh/circleci","vcs_type":"github"}"""
+        withResponse(response, "GET", "/organization/org-id") { client ->
+            client.getOrganization("org-id").test().assertResult(
+                Organization("org-id", "CircleCI", "gh/circleci", "github", null)
+            )
         }
     }
 
