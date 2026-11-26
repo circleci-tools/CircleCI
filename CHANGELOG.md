@@ -19,6 +19,8 @@ Changes on `master` that have not shipped in a tagged release yet:
 ### Added
 - `CircleCIAPIClient.server(token, instanceUrl)` and `.serverAsync(token, instanceUrl)` to
   connect a V2 client to an HTTPS CircleCI Server instance.
+- `Observable<T>.await()` and `Completable.await()` suspend extension functions
+  (`Coroutines.kt`), built on `kotlinx-coroutines-rx3`, alongside the existing RxJava3 API.
 
 ## [2.1.2] - 2026-11-14
 
