@@ -22,6 +22,10 @@ Changes on `master` that have not shipped in a tagged release yet:
 - `Observable<T>.await()` and `Completable.await()` suspend extension functions
   (`Coroutines.kt`), built on `kotlinx-coroutines-rx3`, alongside the existing RxJava3 API.
 
+### Fixed
+- `client()` and `client1_1()` now validate the token's header characters, matching the
+  validation already done by `clientV2()` and `clientV3()`.
+
 ## [2.1.2] - 2026-11-14
 
 ### Changed
