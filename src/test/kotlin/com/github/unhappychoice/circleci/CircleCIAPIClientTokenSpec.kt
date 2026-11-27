@@ -27,6 +27,7 @@ object CircleCIAPIClientTokenSpec : Spek({
 
             test("rejects a token with $description from client1_1()") {
                 val error = assertThrows(IllegalArgumentException::class.java) {
+                    @Suppress("DEPRECATION")
                     CircleCIAPIClient("secret-test-token$character").client1_1()
                 }
 
