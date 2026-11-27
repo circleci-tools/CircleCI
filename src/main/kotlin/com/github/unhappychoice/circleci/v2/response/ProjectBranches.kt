@@ -1,7 +1,9 @@
 package com.github.unhappychoice.circleci.v2.response
 
+import com.google.gson.annotations.SerializedName
+
 data class ProjectBranches(
-    val org_id: String?,
-    val project_id: String?,
+    @SerializedName("org_id") val orgId: String?,
+    @SerializedName("project_id") val projectId: String?,
     val branches: List<String>
 )

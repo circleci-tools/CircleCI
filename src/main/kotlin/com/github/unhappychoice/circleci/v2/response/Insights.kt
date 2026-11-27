@@ -12,18 +12,18 @@ data class DurationMetrics(
 )
 
 data class SummaryMetrics(
-    val total_runs: Long,
-    val total_duration_secs: Long,
-    val total_credits_used: Long,
-    val success_rate: Float,
+    @SerializedName("total_runs") val totalRuns: Long,
+    @SerializedName("total_duration_secs") val totalDurationSecs: Long,
+    @SerializedName("total_credits_used") val totalCreditsUsed: Long,
+    @SerializedName("success_rate") val successRate: Float,
     val throughput: Float
 )
 
 data class SummaryTrends(
-    val total_runs: Float,
-    val total_duration_secs: Float,
-    val total_credits_used: Float,
-    val success_rate: Float,
+    @SerializedName("total_runs") val totalRuns: Float,
+    @SerializedName("total_duration_secs") val totalDurationSecs: Float,
+    @SerializedName("total_credits_used") val totalCreditsUsed: Float,
+    @SerializedName("success_rate") val successRate: Float,
     val throughput: Float
 )
 

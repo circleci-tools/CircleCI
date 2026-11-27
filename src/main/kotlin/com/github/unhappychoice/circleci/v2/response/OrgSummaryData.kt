@@ -1,9 +1,11 @@
 package com.github.unhappychoice.circleci.v2.response
 
+import com.google.gson.annotations.SerializedName
+
 data class OrgSummaryData(
-    val org_data: OrgData,
-    val org_project_data: List<OrgProjectData>,
-    val all_projects: List<String>?
+    @SerializedName("org_data") val orgData: OrgData,
+    @SerializedName("org_project_data") val orgProjectData: List<OrgProjectData>,
+    @SerializedName("all_projects") val allProjects: List<String>?
 ) {
     data class OrgData(
         val metrics: SummaryMetrics,
@@ -11,22 +13,22 @@ data class OrgSummaryData(
     )
 
     data class OrgProjectData(
-        val project_name: String,
+        @SerializedName("project_name") val projectName: String,
         val metrics: ProjectMetrics,
         val trends: ProjectTrends
     )
 
     data class ProjectMetrics(
-        val total_runs: Long,
-        val total_duration_secs: Long,
-        val total_credits_used: Long,
-        val success_rate: Float
+        @SerializedName("total_runs") val totalRuns: Long,
+        @SerializedName("total_duration_secs") val totalDurationSecs: Long,
+        @SerializedName("total_credits_used") val totalCreditsUsed: Long,
+        @SerializedName("success_rate") val successRate: Float
     )
 
     data class ProjectTrends(
-        val total_runs: Float,
-        val total_duration_secs: Float,
-        val total_credits_used: Float,
-        val success_rate: Float
+        @SerializedName("total_runs") val totalRuns: Float,
+        @SerializedName("total_duration_secs") val totalDurationSecs: Float,
+        @SerializedName("total_credits_used") val totalCreditsUsed: Float,
+        @SerializedName("success_rate") val successRate: Float
     )
 }
