@@ -16,10 +16,12 @@ private val v1Digest = Regex("[0-9a-fA-F]{64}")
  * [payload] bytes keyed by [signingSecret], and compares it, in constant time, against the `v1`
  * entry of the `circleci-signature` header
  * (https://circleci.com/docs/outbound-webhooks/#verifying-the-signature).
- * A null, blank, or malformed header, or one with no `v1` entry, is rejected rather than thrown.
+ * Returns false if [signingSecret] is empty or if the header is null, blank, malformed,
+ * or missing a `v1` entry.
  * [payload] must be the exact bytes CircleCI sent; re-encoding a parsed body can shift the digest.
  */
 fun isValidSignature(payload: ByteArray, signatureHeader: String?, signingSecret: String): Boolean {
+    if (signingSecret.isEmpty()) return false
     val providedSignature = parseSignatureHeader(signatureHeader) ?: return false
     val expectedSignature = computeSignature(payload, signingSecret)
     return MessageDigest.isEqual(expectedSignature, providedSignature)

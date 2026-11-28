@@ -32,6 +32,10 @@ object WebhookSignatureVerifierSpec : Spek({
         assertFalse(isValidSignature(payload, "v1=$signature", "wrong-signing-secret"))
     }
 
+    test("rejects a well-formed signature header when the signing secret is empty") {
+        assertFalse(isValidSignature(payload, "v1=$signature", ""))
+    }
+
     test("rejects a header with no v1 entry") {
         assertFalse(isValidSignature(payload, "v2=$signature", signingSecret))
     }
