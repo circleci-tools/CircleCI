@@ -114,7 +114,7 @@ class CircleCIAPIClient private constructor(
 
   private val serviceV3 by lazy {
     val service = retrofitV3("${baseUrl}v3/").create(CircleCIAPIClientV3::class.java)
-    if (asynchronous) service else SynchronousRunPollingClient(service)
+    if (asynchronous) service else SynchronousV3Client(service)
   }
 
   internal fun client1_1(baseUrl: String): CircleCIAPIClientV1_1 =
