@@ -9,9 +9,10 @@ issued by the same instance you pass to `server()` or `serverAsync()`.
 
 ## Why does client creation fail with "CircleCI API token contains invalid header characters"?
 
-On master, the v2 and v3 clients validate the token when the client is
-created. If you read the token from a file or copied it from a command's
-output, remove any surrounding line breaks before passing it to the client.
+On master, the v1, v1.1, v2, and v3 clients all validate the token when
+the client is created. If you read the token from a file or copied it
+from a command's output, remove any surrounding line breaks before
+passing it to the client.
 
 ## Why does the Server client reject my instance URL?
 
