@@ -1,5 +1,7 @@
 package com.github.unhappychoice.circleci.v2.response
 
+import com.github.unhappychoice.circleci.Redacted
+import com.github.unhappychoice.circleci.redactedToString
 import com.google.gson.annotations.SerializedName
 
 data class Project(
@@ -26,9 +28,11 @@ data class Project(
 
 data class ProjectEnvironmentVariable @JvmOverloads constructor(
     val name: String,
-    val value: String,
+    @Redacted val value: String,
     @SerializedName("created-at") val createdAt: String? = null
-)
+) {
+    override fun toString() = redactedToString(this)
+}
 
 data class ProjectEnvironmentVariableListResponse(
     val items: List<ProjectEnvironmentVariable>,

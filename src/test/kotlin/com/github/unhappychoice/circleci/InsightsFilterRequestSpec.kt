@@ -68,12 +68,12 @@ object InsightsFilterRequestSpec : Spek({
 
             val first = client.getJobTimeseries(projectSlug, "ci", branch, granularity, startDate, endDate).blockingSingle()
             assertEquals("build", first.items.single().name)
-            assertEquals(token, first.next_page_token)
+            assertEquals(token, first.nextPageToken)
             val second = client.getJobTimeseries(
-                projectSlug, "ci", branch, granularity, startDate, endDate, pageToken = first.next_page_token
+                projectSlug, "ci", branch, granularity, startDate, endDate, pageToken = first.nextPageToken
             ).blockingSingle()
             assertEquals("test", second.items.single().name)
-            assertEquals(null, second.next_page_token)
+            assertEquals(null, second.nextPageToken)
 
             val firstRequest = server.takeRequest().url
             val secondRequest = server.takeRequest().url
