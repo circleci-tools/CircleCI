@@ -176,8 +176,11 @@ Every client method still returns an RxJava 3 type, but [`await()`](src/main/kot
 extension functions on `Observable<T>` and `Completable` let `suspend` code call the client
 without hand-written bridging. `await()` on an `Observable<T>` matches `blockingSingle()`'s
 semantics (the client's methods emit exactly one item on success); `await()` on a `Completable`
-matches `blockingAwait()`. Cancelling the calling coroutine disposes the underlying subscription,
-cancelling the in-flight HTTP call.
+matches `blockingAwait()`. Both extensions start the subscription on RxJava's I/O scheduler.
+With the default synchronous client, the blocking HTTP call runs there, leaving the
+calling coroutine's dispatcher free. With an asynchronous client, the subscription
+enqueues the call and OkHttp handles it asynchronously. Cancelling the calling coroutine
+disposes the underlying subscription, cancelling the in-flight HTTP call.
 
 ```kotlin
 import com.github.unhappychoice.circleci.CircleCIAPIClient
