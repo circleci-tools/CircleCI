@@ -16,8 +16,9 @@ From the repository root, run the same Gradle tasks as CI:
 ```
 
 The build treats Kotlin compiler warnings as errors in both production and test code.
-It also checks Kotlin source formatting with Spotless. Run `./gradlew spotlessCheck`
-to check formatting on its own, or `./gradlew spotlessApply` to fix formatting.
+Spotless checks Kotlin formatting and runs ktlint to catch unused imports and
+unnecessary semicolons. Run `./gradlew spotlessCheck` to run these checks on their
+own, or `./gradlew spotlessApply` to apply fixes.
 
 On Windows, use `gradlew.bat` in place of `./gradlew`.
 
