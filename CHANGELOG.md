@@ -24,6 +24,10 @@ Changes on `master` that have not shipped in a tagged release yet:
 - `isValidSignature` (`WebhookSignatureVerifier.kt`) to verify a CircleCI outbound webhook
   delivery's `circleci-signature` header against the webhook's signing secret.
 
+### Fixed
+- `client()` and `client1_1()` now validate the token's header characters, matching the
+  validation already done by `clientV2()` and `clientV3()`.
+
 ## [2.1.2] - 2026-11-14
 
 ### Changed

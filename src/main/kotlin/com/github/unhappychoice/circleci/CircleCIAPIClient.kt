@@ -112,7 +112,7 @@ class CircleCIAPIClient private constructor(
 
   private val serviceV3 by lazy {
     val service = retrofitV3("${baseUrl}v3/").create(CircleCIAPIClientV3::class.java)
-    if (asynchronous) service else SynchronousRunPollingClient(service)
+    if (asynchronous) service else SynchronousV3Client(service)
   }
 
   internal fun client1_1(baseUrl: String): CircleCIAPIClientV1_1 =
@@ -122,7 +122,7 @@ class CircleCIAPIClient private constructor(
     retrofitV2(baseUrl).create(CircleCIAPIClientV2Service::class.java)
 
   internal val okHttpV1 by lazy {
-    authenticatedClient("Authorization", "Basic ${encodedToken()}")
+    authenticatedClient("Authorization", "Basic ${encodedToken(headerToken())}")
   }
   internal val okHttpV2 by lazy { authenticatedClient("Circle-Token", headerToken()) }
   private val okHttpV3 by lazy { authenticatedClient("Authorization", "Bearer ${headerToken()}") }
@@ -147,7 +147,7 @@ class CircleCIAPIClient private constructor(
     .addInterceptor(SameOriginRedirectInterceptor)
     .build()
 
-  private fun encodedToken(): String = String(Base64.encodeBase64("$token:".toByteArray()))
+  private fun encodedToken(token: String): String = String(Base64.encodeBase64("$token:".toByteArray()))
 
   internal fun retrofitV1(baseUrl: String): Retrofit = Retrofit.Builder()
     .client(okHttpV1)
