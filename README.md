@@ -62,9 +62,10 @@ Use `CircleCIAPIClient(token)` for synchronous subscriptions.
 
 ### CircleCI Cloud API v3
 
-Use a personal API token and the ID of an existing pipeline to trigger a run and
-wait for it to finish before starting a dependent step. Use `getRun(id)` for a
-single status snapshot.
+Use a personal API token and a pipeline definition ID to trigger a run and wait
+for it to finish before starting a dependent step. Use `getRun(id)` for a single
+status snapshot. For projects using the GitHub App integration, you can omit
+`projectId` as shown below.
 
 ```kotlin
 import com.github.unhappychoice.circleci.CircleCIAPIClient
@@ -74,12 +75,25 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 val v3 = CircleCIAPIClient("your-api-token").clientV3()
-val created = v3.triggerRun(TriggerRunRequest(pipelineId = "your-pipeline-id")).blockingSingle()
+val created = v3.triggerRun(TriggerRunRequest(pipelineId = "your-pipeline-definition-id")).blockingSingle()
 val run = v3.waitForRun(created.data.id, pollInterval = 5.seconds, timeout = 20.minutes)
     .blockingGet().data
 check(run.attributes.currentOutcome == "succeeded") {
     "Run ${run.id} ended with outcome ${run.attributes.currentOutcome}"
 }
+```
+
+For GitHub OAuth and Bitbucket OAuth projects, replace the `val created` line
+with the call below. Pass the UUID of the CircleCI project that owns the
+pipeline definition. `triggerRun` sends it as `filter[project_id]`, which CircleCI
+requires to resolve the definition. Omitting it returns HTTP 404. See the
+[CircleCI migration guide](https://circleci.com/docs/guides/toolkit/api-v1-migration-guide/#2-replace-your-trigger-calls).
+
+```kotlin
+val created = v3.triggerRun(
+    TriggerRunRequest(pipelineId = "your-pipeline-definition-id"),
+    projectId = "your-project-uuid",
+).blockingSingle()
 ```
 
 `waitForRun` returns a `Single` that schedules its first poll on subscription, then
