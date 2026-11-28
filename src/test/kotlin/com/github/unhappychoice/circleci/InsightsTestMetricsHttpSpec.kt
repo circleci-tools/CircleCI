@@ -1,12 +1,36 @@
 package com.github.unhappychoice.circleci
 
+import com.github.unhappychoice.circleci.v2.response.TestMetricsResponse
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.spekframework.spek2.Spek
 
 object InsightsTestMetricsHttpSpec : Spek({
+    test("defaults the new fields when using the legacy failed test constructor") {
+        val failedTest = TestMetricsResponse.FailedTest("addsNumbers", "CalculatorTest", "CalculatorTest.kt", 1L, 2L, "test")
+
+        assertAll(
+            { assertNull(failedTest.p95Duration) },
+            { assertFalse(failedTest.flaky) },
+            { assertNull(failedTest.source) }
+        )
+    }
+
+    test("defaults the new fields when using the legacy slow test constructor") {
+        val slowTest = TestMetricsResponse.SlowTest("generatesReport", "ReportTest", "ReportTest.kt", 2.5f, "test")
+
+        assertAll(
+            { assertEquals(0L, slowTest.failedRuns) },
+            { assertEquals(0L, slowTest.totalRuns) },
+            { assertFalse(slowTest.flaky) },
+            { assertNull(slowTest.source) }
+        )
+    }
+
     test("preserves ranked test metrics and nullable values") {
         MockWebServer().use { server ->
             server.start()
