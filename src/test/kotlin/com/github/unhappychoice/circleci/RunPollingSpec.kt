@@ -5,6 +5,7 @@ import com.github.unhappychoice.circleci.v3.response.RunListResponse
 import com.github.unhappychoice.circleci.v3.response.RunResponse
 import com.github.unhappychoice.circleci.v3.response.TriggerRunResponse
 import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.schedulers.TestScheduler
 import io.reactivex.rxjava3.subjects.PublishSubject
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -15,8 +16,10 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
 import retrofit2.HttpException
 import retrofit2.Response
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -118,6 +121,39 @@ object RunPollingSpec : Spek({
         result.assertError(error).assertNoValues()
         scheduler.advanceTimeBy(20, SECONDS)
         assertEquals(listOf("run-id"), client.requestedIds)
+    }
+
+    test("a nested wait restores the outer deadline before a synchronous poll is scheduled") {
+        val timers = TestScheduler()
+        val requests = Schedulers.trampoline()
+        val timeout = 5.seconds
+        val now = AtomicLong()
+        val deadlineChecked = CountDownLatch(1)
+        val ended = runResponse("ended")
+        val delegate = RunPollingClient(Observable.just(ended))
+        val synchronous = SynchronousV3Client(delegate)
+        val decorated = object : CircleCIAPIClientV3 by synchronous {
+            override fun getRun(id: String): Observable<RunResponse> {
+                RunPollingClient(Observable.just(ended))
+                    .waitForRun("nested", 2.seconds, timeout, requests, timers)
+                    .test().assertResult(ended)
+                return synchronous.getRun(id).also { now.set(timeout.inWholeNanoseconds) }
+            }
+        }
+        val observer = decorated.waitForRun(
+            "outer", 2.seconds, timeout, requests, timers,
+            nanoTime = { now.get().also { if (it > 0) deadlineChecked.countDown() } }
+        ).test()
+
+        try {
+            assertTrue(deadlineChecked.await(5, SECONDS))
+            observer.assertEmpty()
+            timers.advanceTimeBy(5, SECONDS)
+            observer.assertFailure(TimeoutException::class.java)
+            assertTrue(delegate.requestedIds.isEmpty())
+        } finally {
+            observer.dispose()
+        }
     }
 })
 
