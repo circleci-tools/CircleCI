@@ -85,7 +85,11 @@ object InsightsTestMetricsHttpSpec : Spek({
             val failedTests = response.mostFailedTests
             val slowTests = response.slowestTests
             val expectedJobs = listOf("test", "test-linux", "test-windows")
+            val failedCopy = failedTests.first().copy(jobName = "copy")
+            val slowCopy = slowTests.first().copy(jobName = "copy")
             assertAll(
+                { assertEquals(failedTests.first().copy(jobName = "copy", source = "junit"), failedCopy) },
+                { assertEquals(slowTests.first().copy(jobName = "copy", source = "junit"), slowCopy) },
                 { assertEquals(listOf("CalculatorTest", null, null), failedTests.map { it.className }) },
                 { assertEquals(listOf("ReportTest", null, null), slowTests.map { it.className }) },
                 { assertEquals(expectedJobs, failedTests.map { it.jobName }) },

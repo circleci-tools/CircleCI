@@ -151,7 +151,26 @@ data class TestMetricsResponse(
         @SerializedName("p95_duration") val p95Duration: Double? = null,
         val flaky: Boolean = false,
         val source: String? = null
-    )
+    ) {
+        // Retain the original JVM constructor and copy overloads, including default arguments.
+        constructor(
+            testName: String,
+            className: String?,
+            file: String?,
+            failedRuns: Long,
+            totalRuns: Long,
+            jobName: String? = null
+        ) : this(testName, className, file, failedRuns, totalRuns, jobName, p95Duration = null)
+
+        fun copy(
+            testName: String = this.testName,
+            className: String? = this.className,
+            file: String? = this.file,
+            failedRuns: Long = this.failedRuns,
+            totalRuns: Long = this.totalRuns,
+            jobName: String? = this.jobName
+        ): FailedTest = FailedTest(testName, className, file, failedRuns, totalRuns, jobName, p95Duration, flaky, source)
+    }
 
     data class SlowTest(
         @SerializedName("test_name") val testName: String,
@@ -163,7 +182,24 @@ data class TestMetricsResponse(
         @SerializedName("total_runs") val totalRuns: Long = 0,
         val flaky: Boolean = false,
         val source: String? = null
-    )
+    ) {
+        // Retain the original JVM constructor and copy overloads, including default arguments.
+        constructor(
+            testName: String,
+            className: String?,
+            file: String?,
+            p95Duration: Float?,
+            jobName: String? = null
+        ) : this(testName, className, file, p95Duration, jobName, failedRuns = 0)
+
+        fun copy(
+            testName: String = this.testName,
+            className: String? = this.className,
+            file: String? = this.file,
+            p95Duration: Float? = this.p95Duration,
+            jobName: String? = this.jobName
+        ): SlowTest = SlowTest(testName, className, file, p95Duration, jobName, failedRuns, totalRuns, flaky, source)
+    }
 
     data class TestRun(
         @SerializedName("pipeline_number") val pipelineNumber: Long,
