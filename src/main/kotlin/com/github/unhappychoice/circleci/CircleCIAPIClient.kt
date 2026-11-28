@@ -22,7 +22,8 @@ class CircleCIAPIClient private constructor(
   val token: String,
   private val baseUrl: String,
   private val asynchronous: Boolean,
-  baseTransport: OkHttpClient? = null
+  baseTransport: OkHttpClient? = null,
+  private val allowCloudArtifactHosts: Boolean = true
 ) {
   constructor(token: String) : this(token, BASE_URL)
 
@@ -55,7 +56,9 @@ class CircleCIAPIClient private constructor(
       transport: OkHttpClient? = null
     ): CircleCIServerClient {
       val baseUrl = serverApiBaseUrl(instanceUrl)
-      return CircleCIServerClientImpl(CircleCIAPIClient(token, baseUrl, asynchronous, transport))
+      return CircleCIServerClientImpl(
+        CircleCIAPIClient(token, baseUrl, asynchronous, transport, allowCloudArtifactHosts = false)
+      )
     }
 
     private fun serverApiBaseUrl(instanceUrl: String): String {
@@ -94,7 +97,9 @@ class CircleCIAPIClient private constructor(
   fun <T : Any> downloadArtifact(artifact: Artifact, consume: (InputStream) -> T): Single<T> =
     Single.defer { artifactDownloader.download(artifact, consume) }
 
-  private val artifactDownloader by lazy { ArtifactDownloader(transport, baseUrl.toHttpUrl(), headerToken()) }
+  private val artifactDownloader by lazy {
+    ArtifactDownloader(transport, baseUrl.toHttpUrl(), headerToken(), allowCloudArtifactHosts)
+  }
 
   private val transport by lazy { baseTransport ?: OkHttpClient() }
   private val callAdapterFactory = if (asynchronous) RxJava3CallAdapterFactory.create()

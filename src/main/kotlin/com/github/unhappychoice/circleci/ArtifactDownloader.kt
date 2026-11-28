@@ -17,7 +17,12 @@ import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.Semaphore
 
-internal class ArtifactDownloader(transport: OkHttpClient, private val apiUrl: HttpUrl, private val token: String) {
+internal class ArtifactDownloader(
+  transport: OkHttpClient,
+  private val apiUrl: HttpUrl,
+  private val token: String,
+  private val allowCloudArtifactHosts: Boolean
+) {
   fun <T : Any> download(artifact: Artifact, consume: (InputStream) -> T): Single<T> = Single.defer {
     val onDownloadWorker = Thread.currentThread() is ArtifactDownloadThread
     val download = Single.create<T> { emitter ->
@@ -47,7 +52,7 @@ internal class ArtifactDownloader(transport: OkHttpClient, private val apiUrl: H
     val url = artifact.url.toHttpUrlOrNull()
     require(url != null && url.isArtifactUrl()) { "Expected an HTTPS artifact URL without user credentials" }
     return Request.Builder().url(url).apply {
-      if (canAuthenticateArtifact(url, apiUrl)) header(TOKEN_HEADER, token)
+      if (canAuthenticateArtifact(url, apiUrl, allowCloudArtifactHosts)) header(TOKEN_HEADER, token)
     }.build()
   }
 
@@ -85,8 +90,8 @@ private val artifactDownloadScheduler by lazy {
 
 private class ArtifactDownloadThread(task: Runnable) : Thread(task, "CircleCI-artifact-download")
 
-internal fun canAuthenticateArtifact(url: HttpUrl, apiUrl: HttpUrl): Boolean =
-  url.isArtifactUrl() && (url.hasSameOrigin(apiUrl) || (url.port == 443 &&
+internal fun canAuthenticateArtifact(url: HttpUrl, apiUrl: HttpUrl, allowCloudArtifactHosts: Boolean = true): Boolean =
+  url.isArtifactUrl() && (url.hasSameOrigin(apiUrl) || (allowCloudArtifactHosts && url.port == 443 &&
     (url.host == "dl.circleci.com" || url.host.endsWith(".circle-artifacts.com"))))
 
 private const val TOKEN_HEADER = "Circle-Token"
