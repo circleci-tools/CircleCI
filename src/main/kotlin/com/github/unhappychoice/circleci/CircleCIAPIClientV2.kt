@@ -436,10 +436,13 @@ interface CircleCIAPIClientV2 {
     @GET("pipeline/{pipeline-id}")
     fun getPipelineById(@Path("pipeline-id") pipelineId: String): Observable<Pipeline>
 
+    fun getPipelineByNumber(projectSlug: String, pipelineNumber: Int): Observable<Pipeline> =
+        getPipelineByNumber(projectSlug, pipelineNumber.toLong())
+
     @GET("project/{project-slug}/pipeline/{pipeline-number}")
     fun getPipelineByNumber(
         @Path("project-slug") projectSlug: String,
-        @Path("pipeline-number") pipelineNumber: Int
+        @Path("pipeline-number") pipelineNumber: Long
     ): Observable<Pipeline>
 
     @GET("pipeline/{pipeline-id}/config")

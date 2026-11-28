@@ -41,6 +41,7 @@ object WorkflowJobsHttpSpec : Spek({
                         {
                           "id": "cleanup", "name": "cleanup", "type": "build", "status": "canceled",
                           "started_at": "2026-01-01T00:00:00Z",
+                          "job_number": 2147483648,
                           "canceled_by": "a3349b77-90f7-4a39-b49b-7790f7da3943",
                           "dependencies": ["build"],
                           "requires": {"build": ["failed", "canceled"]}
@@ -60,6 +61,8 @@ object WorkflowJobsHttpSpec : Spek({
             val jobs = client.getWorkflowJobs("workflow-id").blockingSingle().items
 
             assertEquals(3, jobs.size)
+            assertEquals(2147483648L, jobs[1].jobNumber)
+            assertNull(jobs[0].jobNumber)
             assertEquals(List(3) { listOf("build") }, jobs.map { it.dependencies })
             assertEquals(mapOf("build" to listOf("success")), jobs[0].requires)
             assertEquals(mapOf("build" to listOf("failed", "canceled")), jobs[1].requires)
