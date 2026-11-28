@@ -22,7 +22,7 @@ import kotlin.time.Duration
 fun CircleCIAPIClientV3.waitForRun(id: String, pollInterval: Duration, timeout: Duration): Single<RunResponse> =
     waitForRun(
         id, pollInterval, timeout,
-        if (this is SynchronousRunPollingClient) synchronousPollScheduler else Schedulers.io(),
+        Schedulers.io(),
         Schedulers.single(), timeoutScheduler = Schedulers.io(), notifyScheduler = Schedulers.io(),
         nanoTime = System::nanoTime
     )
@@ -43,8 +43,9 @@ internal fun CircleCIAPIClientV3.waitForRun(
     val timeoutNanos = timeout.inWholeNanoseconds
     return Single.defer {
         val startedAt = nanoTime()
+        val deadlineReached = { nanoTime() - startedAt >= timeoutNanos }
         Observable.defer {
-            if (nanoTime() - startedAt >= timeoutNanos) Observable.never() else getRun(id)
+            if (deadlineReached()) Observable.never() else createRunPoll(id, deadlineReached)
         }
             .subscribeOn(requestScheduler)
             .repeatWhen { completed -> completed.delay(pollInterval.inWholeNanoseconds, NANOSECONDS, timerScheduler) }
@@ -61,7 +62,27 @@ internal fun CircleCIAPIClientV3.waitForRun(
     }
 }
 
-internal class SynchronousRunPollingClient(delegate: CircleCIAPIClientV3) : CircleCIAPIClientV3 by delegate
+private val pollDeadline = ThreadLocal<() -> Boolean>()
+
+// Scope the deadline to getRun construction so forwarding can carry it into the returned Observable.
+private fun CircleCIAPIClientV3.createRunPoll(id: String, deadlineReached: () -> Boolean): Observable<RunResponse> {
+    val previous = pollDeadline.get()
+    pollDeadline.set(deadlineReached)
+    return try {
+        getRun(id)
+    } finally {
+        if (previous == null) pollDeadline.remove() else pollDeadline.set(previous)
+    }
+}
+
+internal class SynchronousV3Client(private val delegate: CircleCIAPIClientV3) : CircleCIAPIClientV3 by delegate {
+    override fun getRun(id: String): Observable<RunResponse> {
+        val deadlineReached = pollDeadline.get() ?: return delegate.getRun(id)
+        return Observable.defer {
+            if (deadlineReached()) Observable.never() else delegate.getRun(id)
+        }.subscribeOn(synchronousPollScheduler)
+    }
+}
 
 internal const val SYNCHRONOUS_POLL_LIMIT = 8
 
