@@ -28,6 +28,11 @@ spotless {
         target 'src/**/*.kt'
         trimTrailingWhitespace()
         endWithNewline()
+        ktlint('1.8.0').editorConfigOverride([
+            'ktlint_standard': 'disabled',
+            'ktlint_standard_no-unused-imports': 'enabled',
+            'ktlint_standard_no-semi': 'enabled',
+        ])
     }
 }
 

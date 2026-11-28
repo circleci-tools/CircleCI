@@ -35,9 +35,25 @@ object GroupHttpSpec : Spek({
         withGroupResponse("""{"items":[$groupJson],"next_page_token":"next"}""") { client, server ->
             client.getOrganizationGroups(orgId, "current").test()
                 .assertResult(GroupListResponse(listOf(group), "next"))
-            val url = server.takeRequest().url
+            val request = server.takeRequest()
+            val url = request.url
+            assertEquals("GET", request.method)
+            assertEquals("/api/v2/organizations/$orgId/groups", url.encodedPath)
             assertEquals("current", url.queryParameter("page-token"))
             assertFalse("limit" in url.queryParameterNames)
+        }
+    }
+
+    test("getOrganizationGroups with a null limit uses the organization groups endpoint without a limit") {
+        withGroupResponse("""{"items":[],"next_page_token":null}""") { client, server ->
+            client.getOrganizationGroups(orgId, pageToken = "current", limit = null).test()
+                .assertResult(GroupListResponse(emptyList(), null))
+            val request = server.takeRequest()
+            val url = request.url
+            assertEquals("GET", request.method)
+            assertEquals("/api/v2/organizations/$orgId/groups", url.encodedPath)
+            assertEquals(setOf("page-token"), url.queryParameterNames)
+            assertEquals("current", url.queryParameter("page-token"))
         }
     }
 
