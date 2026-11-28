@@ -1,5 +1,6 @@
 package com.github.unhappychoice.circleci.v3.request
 
+/** CircleCI enforces matching ref types when config and checkout use the same repository. */
 class TriggerRunRequest(
     pipelineId: String,
     config: Ref? = null,
@@ -9,12 +10,6 @@ class TriggerRunRequest(
     data class Ref(val branch: String? = null, val tag: String? = null) {
         init {
             require((branch != null) xor (tag != null)) { "Specify exactly one of branch or tag" }
-        }
-    }
-
-    init {
-        require(config == null || checkout == null || (config.branch != null) == (checkout.branch != null)) {
-            "Config and checkout must use the same reference type"
         }
     }
 
