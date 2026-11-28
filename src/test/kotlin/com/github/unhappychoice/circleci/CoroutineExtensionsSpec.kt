@@ -1,11 +1,21 @@
 package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v1.request.AddSshKeyRequest
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit.SECONDS
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
+import mockwebserver3.SocketEffect
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
 import retrofit2.HttpException
 
@@ -66,4 +76,41 @@ object CoroutineExtensionsSpec : Spek({
             assertEquals("POST", server.takeRequest().method)
         }
     }
+
+    test("Observable await leaves the caller dispatcher free and disposes on cancellation") {
+        assertPendingRequestCanBeCancelled("GET") { client, onDispose ->
+            client.clientV2().getMe().doOnDispose { onDispose() }.await()
+        }
+    }
+
+    test("Completable await leaves the caller dispatcher free and disposes on cancellation") {
+        assertPendingRequestCanBeCancelled("POST") { client, onDispose ->
+            val request = AddSshKeyRequest("example.com", "test-key")
+            client.client().addSshKey("example-org", "example-project", request).doOnDispose { onDispose() }.await()
+        }
+    }
 })
+
+private fun assertPendingRequestCanBeCancelled(
+    method: String,
+    awaitRequest: suspend (CircleCIAPIClient, () -> Unit) -> Unit,
+) {
+    MockWebServer().use { server ->
+        server.start()
+        server.enqueue(MockResponse.Builder().onResponseStart(SocketEffect.Stall).build())
+        val client = CircleCIAPIClient("test-token", server.url("/api/").toString())
+        val disposed = CompletableDeferred<Unit>()
+
+        Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
+            runBlocking {
+                val request = launch(dispatcher) { awaitRequest(client) { disposed.complete(Unit) } }
+                assertEquals(method, server.takeRequest(5, SECONDS)?.method)
+                withTimeout(5_000) {
+                    withContext(dispatcher) { assertTrue(request.isActive) }
+                    request.cancelAndJoin()
+                    disposed.await()
+                }
+            }
+        }
+    }
+}
