@@ -137,7 +137,10 @@ data class TestMetricsResponse(
         val file: String?,
         @SerializedName("failed_runs") val failedRuns: Long,
         @SerializedName("total_runs") val totalRuns: Long,
-        @SerializedName("job_name") val jobName: String? = null
+        @SerializedName("job_name") val jobName: String? = null,
+        @SerializedName("p95_duration") val p95Duration: Double? = null,
+        val flaky: Boolean = false,
+        val source: String? = null
     )
 
     data class SlowTest(
@@ -145,7 +148,11 @@ data class TestMetricsResponse(
         @SerializedName("classname") val className: String?,
         val file: String?,
         @SerializedName("p95_duration") val p95Duration: Float?,
-        @SerializedName("job_name") val jobName: String? = null
+        @SerializedName("job_name") val jobName: String? = null,
+        @SerializedName("failed_runs") val failedRuns: Long = 0,
+        @SerializedName("total_runs") val totalRuns: Long = 0,
+        val flaky: Boolean = false,
+        val source: String? = null
     )
 
     data class TestRun(
