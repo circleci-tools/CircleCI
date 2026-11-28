@@ -42,6 +42,7 @@ internal class ArtifactDownloader(
     }
     emitter.onSuccess(result)
   }.subscribeOn(artifactDownloadScheduler)
+    .observeOn(Schedulers.io())
 
   private val client = transport.newBuilder()
     .followRedirects(false)
