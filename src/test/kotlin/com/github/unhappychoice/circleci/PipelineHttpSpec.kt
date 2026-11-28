@@ -87,7 +87,7 @@ object PipelineHttpSpec : Spek({
             server.enqueue(
                 MockResponse(
                     code = 201,
-                    body = """{"number":43,"state":"pending","id":"new-id","created_at":"2020-01-01T00:00:00Z"}"""
+                    body = """{"number":2147483648,"state":"pending","id":"new-id","created_at":"2020-01-01T00:00:00Z"}"""
                 )
             )
             val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
@@ -98,8 +98,9 @@ object PipelineHttpSpec : Spek({
             assertEquals("9007199254740993", (parameters.getValue("marker") as Number).toString())
             assertEquals("/api/v2/pipeline/pipeline-id", server.takeRequest(1, SECONDS)?.target)
 
-            client.triggerNewPipeline(pipeline.projectSlug, TriggerNewPipelineRequest(parameters = parameters))
+            val triggered = client.triggerNewPipeline(pipeline.projectSlug, TriggerNewPipelineRequest(parameters = parameters))
                 .blockingSingle()
+            assertEquals(2147483648L, triggered.number)
             val request = requireNotNull(server.takeRequest(1, SECONDS))
             assertEquals("POST", request.method)
             val body = JsonParser.parseString(requireNotNull(request.body).utf8()).asJsonObject
@@ -119,6 +120,23 @@ object PipelineHttpSpec : Spek({
         }
 
         assertNull(pipeline.triggerParameters)
+    }
+
+    test("getPipelineByNumber preserves 64-bit pipeline numbers in the request and response") {
+        MockWebServer().use { server ->
+            server.start()
+            server.enqueue(pipelineResponse(number = 2147483648L))
+            server.enqueue(pipelineResponse())
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
+            val projectSlug = "gh/unhappychoice/circleci"
+
+            assertEquals(2147483648L, client.getPipelineByNumber(projectSlug, 2147483648L).blockingSingle().number)
+            assertEquals("/api/v2/project/gh%2Funhappychoice%2Fcircleci/pipeline/2147483648", server.takeRequest(1, SECONDS)?.target)
+
+            val legacyNumber: Int = 42
+            assertEquals(42L, client.getPipelineByNumber(projectSlug, legacyNumber).blockingSingle().number)
+            assertEquals("/api/v2/project/gh%2Funhappychoice%2Fcircleci/pipeline/42", server.takeRequest(1, SECONDS)?.target)
+        }
     }
 
     val lookups: Map<String, (CircleCIAPIClientV2) -> Pipeline> = mapOf(
@@ -163,7 +181,11 @@ private fun getPipeline(
         lookup(client)
     }
 
-private fun pipelineResponse(revisionJson: String = "null", additionalFields: String = ""): MockResponse =
+private fun pipelineResponse(
+    revisionJson: String = "null",
+    additionalFields: String = "",
+    number: Long = 42L
+): MockResponse =
     MockResponse(
         headers = headersOf("Content-Type", "application/json"),
         body = """
@@ -172,7 +194,7 @@ private fun pipelineResponse(revisionJson: String = "null", additionalFields: St
           "errors": [],
           $additionalFields
           "project_slug": "gh/unhappychoice/circleci",
-          "number": 42,
+          "number": $number,
           "state": "created",
           "created_at": "2020-01-01T00:00:00Z",
           "trigger": {

@@ -7,7 +7,7 @@ data class Job(
     val name: String,
     val type: String,
     val status: String,
-    @SerializedName("job_number") val jobNumber: Int?,
+    @SerializedName("job_number") val jobNumber: Long?,
     @SerializedName("project_slug") val projectSlug: String?,
     @SerializedName("started_at") val startedAt: String,
     @SerializedName("stopped_at") val stoppedAt: String?,

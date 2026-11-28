@@ -21,7 +21,7 @@ object WorkflowJobsHttpSpec : Spek({
         assertEquals("workflow/{id}/job", paginated.getAnnotation(GET::class.java)?.value)
     }
 
-    test("getWorkflowJobs preserves dependency conditions and optional actor IDs") {
+    test("getWorkflowJobs preserves 64-bit job numbers, dependency conditions and optional actor IDs") {
         MockWebServer().use { server ->
             server.start()
             server.enqueue(
@@ -39,6 +39,7 @@ object WorkflowJobsHttpSpec : Spek({
                           "requires": {"build": ["success"]}
                         },
                         {
+                          "job_number": 2147483648,
                           "id": "cleanup", "name": "cleanup", "type": "build", "status": "canceled",
                           "started_at": "2026-01-01T00:00:00Z",
                           "canceled_by": "a3349b77-90f7-4a39-b49b-7790f7da3943",
@@ -60,6 +61,8 @@ object WorkflowJobsHttpSpec : Spek({
             val jobs = client.getWorkflowJobs("workflow-id").blockingSingle().items
 
             assertEquals(3, jobs.size)
+            assertNull(jobs[0].jobNumber)
+            assertEquals(2147483648L, jobs[1].jobNumber)
             assertEquals(List(3) { listOf("build") }, jobs.map { it.dependencies })
             assertEquals(mapOf("build" to listOf("success")), jobs[0].requires)
             assertEquals(mapOf("build" to listOf("failed", "canceled")), jobs[1].requires)

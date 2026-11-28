@@ -10,7 +10,7 @@ data class Pipeline(
     val errors: List<PipelineError>,
     @SerializedName("project_slug") val projectSlug: String,
     @SerializedName("updated_at") val updatedAt: String?,
-    val number: Int,
+    val number: Long,
     @JsonAdapter(PipelineParametersDeserializer::class)
     @SerializedName("trigger_parameters") @Redacted val triggerParameters: Map<String, Any>?,
     val state: String,
@@ -63,7 +63,7 @@ data class Pipeline(
 }
 
 data class TriggerNewPipelineResponse(
-    val number: Int,
+    val number: Long,
     val state: String,
     val id: String,
     @SerializedName("created_at") val createdAt: String
