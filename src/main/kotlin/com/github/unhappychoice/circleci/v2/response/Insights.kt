@@ -12,20 +12,30 @@ data class DurationMetrics(
 )
 
 data class SummaryMetrics(
-    val total_runs: Long,
-    val total_duration_secs: Long,
-    val total_credits_used: Long,
-    val success_rate: Float,
+    @SerializedName("total_runs") val total_runs: Long,
+    @SerializedName("total_duration_secs") val total_duration_secs: Long,
+    @SerializedName("total_credits_used") val total_credits_used: Long,
+    @SerializedName("success_rate") val success_rate: Float,
     val throughput: Float
-)
+) {
+    val totalRuns: Long get() = total_runs
+    val totalDurationSecs: Long get() = total_duration_secs
+    val totalCreditsUsed: Long get() = total_credits_used
+    val successRate: Float get() = success_rate
+}
 
 data class SummaryTrends(
-    val total_runs: Float,
-    val total_duration_secs: Float,
-    val total_credits_used: Float,
-    val success_rate: Float,
+    @SerializedName("total_runs") val total_runs: Float,
+    @SerializedName("total_duration_secs") val total_duration_secs: Float,
+    @SerializedName("total_credits_used") val total_credits_used: Float,
+    @SerializedName("success_rate") val success_rate: Float,
     val throughput: Float
-)
+) {
+    val totalRuns: Float get() = total_runs
+    val totalDurationSecs: Float get() = total_duration_secs
+    val totalCreditsUsed: Float get() = total_credits_used
+    val successRate: Float get() = success_rate
+}
 
 data class WorkflowMetricsResponse(
     val items: List<WorkflowMetric>,
