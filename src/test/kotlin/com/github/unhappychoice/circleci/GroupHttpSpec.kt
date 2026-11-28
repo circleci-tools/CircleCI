@@ -7,7 +7,6 @@ import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.Headers.Companion.headersOf
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.spekframework.spek2.Spek
 
@@ -31,13 +30,19 @@ object GroupHttpSpec : Spek({
         }
     }
 
-    test("getOrganizationGroups omits the limit and decodes a page without a total count") {
-        withGroupResponse("""{"items":[$groupJson],"next_page_token":"next"}""") { client, server ->
-            client.getOrganizationGroups(orgId, "current").test()
-                .assertResult(GroupListResponse(listOf(group), "next"))
-            val url = server.takeRequest().url
-            assertEquals("current", url.queryParameter("page-token"))
-            assertFalse("limit" in url.queryParameterNames)
+    listOf("original", "paginated").forEach { overload ->
+        test("the $overload getOrganizationGroups overload omits the limit and decodes a page without a total count") {
+            withGroupResponse("""{"items":[$groupJson],"next_page_token":"next"}""") { client, server ->
+                val response = if (overload == "original") client.getOrganizationGroups(orgId, "current")
+                else client.getOrganizationGroups(orgId, pageToken = "current", limit = null)
+                response.test().assertResult(GroupListResponse(listOf(group), "next"))
+
+                val request = server.takeRequest()
+                assertEquals("GET", request.method)
+                assertEquals("/api/v2/organizations/$orgId/groups", request.url.encodedPath)
+                assertEquals(setOf("page-token"), request.url.queryParameterNames)
+                assertEquals("current", request.url.queryParameter("page-token"))
+            }
         }
     }
 
