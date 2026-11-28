@@ -29,7 +29,12 @@ object CircleCIAPIClientV3HttpSpec : Spek({
     mapOf(
         "{}" to TriggerRunRequest(pipelineId),
         """{"config":{"branch":"main"}}""" to TriggerRunRequest(pipelineId, config = TriggerRunRequest.Ref(branch = "main")),
-        """{"checkout":{"tag":"v1"}}""" to TriggerRunRequest(pipelineId, checkout = TriggerRunRequest.Ref(tag = "v1"))
+        """{"checkout":{"tag":"v1"}}""" to TriggerRunRequest(pipelineId, checkout = TriggerRunRequest.Ref(tag = "v1")),
+        """{"config":{"branch":"main"},"checkout":{"tag":"v2"}}""" to TriggerRunRequest(
+            pipelineId,
+            config = TriggerRunRequest.Ref(branch = "main"),
+            checkout = TriggerRunRequest.Ref(tag = "v2")
+        )
     ).forEach { (attributes, request) ->
         test("triggers a run with attributes $attributes") {
             MockWebServer().use { server ->
@@ -49,13 +54,6 @@ object CircleCIAPIClientV3HttpSpec : Spek({
     test("rejects refs with both branch and tag or neither") {
         assertThrows(IllegalArgumentException::class.java) { TriggerRunRequest.Ref(branch = "main", tag = "v1") }
         assertThrows(IllegalArgumentException::class.java) { TriggerRunRequest.Ref() }
-    }
-
-    test("rejects mixed config and checkout reference types") {
-        val branch = TriggerRunRequest.Ref(branch = "main")
-        val tag = TriggerRunRequest.Ref(tag = "v1")
-        assertThrows(IllegalArgumentException::class.java) { TriggerRunRequest(pipelineId, config = branch, checkout = tag) }
-        assertThrows(IllegalArgumentException::class.java) { TriggerRunRequest(pipelineId, config = tag, checkout = branch) }
     }
 
     listOf("branch" to "main", "tag" to "v1.0.0").forEach { (field, value) ->
