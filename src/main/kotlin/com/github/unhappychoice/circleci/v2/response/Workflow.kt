@@ -10,7 +10,7 @@ data class Workflow(
     @SerializedName("created_at") val createdAt: String,
     @SerializedName("stopped_at") val stoppedAt: String?,
     @SerializedName("pipeline_id") val pipelineId: String?,
-    @SerializedName("pipeline_number") val pipelineNumber: Int?,
+    @SerializedName("pipeline_number") val pipelineNumber: Long?,
     @SerializedName("started_by") val startedBy: String,
     @SerializedName("canceled_by") val canceledBy: String?,
     @SerializedName("errored_by") val erroredBy: String?,

@@ -425,7 +425,10 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     override fun getPipelineById(pipelineId: String): Observable<Pipeline> = Observable.just(createMockPipeline())
 
-    override fun getPipelineByNumber(projectSlug: String, pipelineNumber: Int): Observable<Pipeline> = Observable.just(createMockPipeline())
+    override fun getPipelineByNumber(projectSlug: String, pipelineNumber: Int): Observable<Pipeline> =
+        getPipelineByNumber(projectSlug, pipelineNumber.toLong())
+
+    override fun getPipelineByNumber(projectSlug: String, pipelineNumber: Long): Observable<Pipeline> = Observable.just(createMockPipeline())
 
     override fun getPipelineConfigById(pipelineId: String): Observable<PipelineConfig> = Observable.just(
         PipelineConfig(source = "source", compiled = "compiled", setupConfig = "setup_config", compiledSetupConfig = "compiled_setup_config")

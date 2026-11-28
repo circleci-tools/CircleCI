@@ -15,6 +15,7 @@ object WorkflowHttpSpec : Spek({
             server.enqueue(MockResponse(body = workflowJson("original")))
 
             val rerun = client.getWorkflowById("rerun").blockingSingle()
+            assertEquals(2147483648L, rerun.pipelineNumber)
             assertEquals(1L, rerun.autoRerunNumber)
             assertEquals(5L, rerun.maxAutoReruns)
             assertEquals("/api/v2/workflow/rerun", server.takeRequest().target)
@@ -58,7 +59,7 @@ private fun workflowJson(id: String, includeRerunMetadata: Boolean = false): Str
           "created_at": "2026-01-01T00:00:00Z",
           "stopped_at": "2026-01-01T00:01:00Z",
           "pipeline_id": "pipeline-id",
-          "pipeline_number": 42,
+          "pipeline_number": 2147483648,
           "started_by": "user-id"
         }
     """.trimIndent()
