@@ -5,6 +5,7 @@ import mockwebserver3.MockWebServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.spekframework.spek2.Spek
+import retrofit2.HttpException
 
 object WorkflowHttpSpec : Spek({
     test("getWorkflowById decodes workflows with and without automatic rerun metadata") {
@@ -42,6 +43,47 @@ object WorkflowHttpSpec : Spek({
             assertNull(workflows[1].autoRerunNumber)
             assertNull(workflows[1].maxAutoReruns)
             assertEquals("/api/v2/pipeline/pipeline-id/workflow", server.takeRequest().target)
+        }
+    }
+
+    test("cancelWorkflow posts to the workflow cancel endpoint and decodes the response") {
+        MockWebServer().use { server ->
+            server.start()
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
+            server.enqueue(MockResponse(body = """{"message":"Workflow canceled."}"""))
+
+            assertEquals("Workflow canceled.", client.cancelWorkflow("workflow-id").blockingSingle().message)
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertEquals("/api/v2/workflow/workflow-id/cancel", request.target)
+        }
+    }
+
+    test("approveJob posts to the approval request endpoint and decodes the response") {
+        MockWebServer().use { server ->
+            server.start()
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
+            server.enqueue(MockResponse(body = """{"message":"Job approved."}"""))
+
+            val response = client.approveJob("workflow-id", "approval-request-id").blockingSingle()
+            assertEquals("Job approved.", response.message)
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertEquals("/api/v2/workflow/workflow-id/approve/approval-request-id", request.target)
+        }
+    }
+
+    test("approveJob propagates the status and body when CircleCI rejects approval") {
+        MockWebServer().use { server ->
+            server.start()
+            val client = CircleCIAPIClient("test-token", server.url("/api/").toString()).clientV2()
+            val body = """{"message":"Approval request not found."}"""
+            server.enqueue(MockResponse(code = 404, body = body))
+
+            client.approveJob("workflow-id", "missing-approval-request").test()
+                .assertNoValues().assertNotComplete().assertError { error ->
+                    error is HttpException && error.code() == 404 && error.response()?.errorBody()?.string() == body
+                }
         }
     }
 })
