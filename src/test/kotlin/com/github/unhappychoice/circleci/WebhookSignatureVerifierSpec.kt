@@ -19,6 +19,7 @@ object WebhookSignatureVerifierSpec : Spek({
 
     test("accepts a signature header with extra comma-separated entries alongside v1") {
         assertTrue(isValidSignature(payload, "t=1700000000,v1=$signature", signingSecret))
+        assertTrue(isValidSignature(payload, "v2=abc, v1 = ${signature.uppercase()}", signingSecret))
     }
 
     test("rejects a signature computed for a different payload") {
@@ -37,6 +38,17 @@ object WebhookSignatureVerifierSpec : Spek({
 
     test("rejects a malformed header") {
         assertFalse(isValidSignature(payload, "not-a-valid-header", signingSecret))
+    }
+
+    test("rejects malformed entries alongside a matching v1 signature") {
+        listOf("not-a-pair", "=value", "t=", "t=a=b", "bad key=value", "t=line\nbreak", "").forEach { entry ->
+            assertFalse(isValidSignature(payload, "$entry,v1=$signature", signingSecret))
+            assertFalse(isValidSignature(payload, "v1=$signature,$entry", signingSecret))
+        }
+    }
+
+    test("rejects multiple v1 entries") {
+        assertFalse(isValidSignature(payload, "v1=$signature,v1=$signature", signingSecret))
     }
 
     test("rejects a header with non-hex v1 value") {

@@ -1,6 +1,5 @@
 package com.github.unhappychoice.circleci
 
-import org.apache.commons.codec.DecoderException
 import org.apache.commons.codec.binary.Hex
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -9,6 +8,8 @@ import javax.crypto.spec.SecretKeySpec
 
 private const val HMAC_ALGORITHM = "HmacSHA256"
 private const val SIGNATURE_VERSION = "v1"
+private val signatureEntry = Regex("""[ \t]*([A-Za-z0-9_-]+)[ \t]*=[ \t]*([\x21-\x7E&&[^=]]+)[ \t]*""")
+private val v1Digest = Regex("[0-9a-fA-F]{64}")
 
 /**
  * Verifies a CircleCI outbound webhook delivery: recomputes the HMAC-SHA256 digest of the raw
@@ -32,18 +33,9 @@ private fun computeSignature(payload: ByteArray, signingSecret: String): ByteArr
 
 private fun parseSignatureHeader(signatureHeader: String?): ByteArray? {
     if (signatureHeader.isNullOrBlank()) return null
-    return signatureHeader.split(",")
-        .mapNotNull { entry ->
-            val parts = entry.split("=", limit = 2)
-            if (parts.size != 2) null else parts[0].trim() to parts[1].trim()
-        }
-        .firstOrNull { (key, _) -> key == SIGNATURE_VERSION }
-        ?.second
-        ?.let(::decodeHex)
-}
-
-private fun decodeHex(hex: String): ByteArray? = try {
-    Hex.decodeHex(hex)
-} catch (error: DecoderException) {
-    null
+    val entries = signatureHeader.split(",").map { entry ->
+        signatureEntry.matchEntire(entry)?.destructured?.let { (key, value) -> key to value } ?: return null
+    }
+    val (_, digest) = entries.singleOrNull { (key, _) -> key == SIGNATURE_VERSION } ?: return null
+    return if (v1Digest.matches(digest)) Hex.decodeHex(digest) else null
 }
