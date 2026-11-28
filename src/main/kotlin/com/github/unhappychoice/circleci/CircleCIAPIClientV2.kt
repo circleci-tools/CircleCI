@@ -742,6 +742,9 @@ interface CircleCIAPIClientV2 {
 }
 
 internal interface CircleCIAPIClientV2Service : CircleCIAPIClientV2 {
+    override fun getOrganizationGroups(orgId: String, pageToken: String?): Observable<GroupListResponse> =
+        getOrganizationGroups(orgId, pageToken, limit = null)
+
     @GET("organizations/{org-id}/groups")
     override fun getOrganizationGroups(
         @Path("org-id") orgId: String,
