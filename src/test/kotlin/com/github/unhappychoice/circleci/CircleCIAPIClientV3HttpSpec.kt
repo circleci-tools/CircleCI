@@ -71,7 +71,7 @@ object CircleCIAPIClientV3HttpSpec : Spek({
                     checkout = selection,
                     parameters = mapOf("deploy" to true, "retries" to 2, "environment" to "staging")
                 )
-                server.client().triggerRun(request, projectId).blockingSingle()
+                server.client().triggerRun(request, projectId = projectId).blockingSingle()
 
                 val recorded = server.takeRequest(5, SECONDS)!!
                 assertRequest(recorded, "POST", "/api/v3/runs?filter%5Bproject_id%5D=$projectId")
