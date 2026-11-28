@@ -146,8 +146,11 @@ api.downloadArtifact(artifact) { input ->
 
 The download starts on subscription and runs the callback on a scheduler shared by all
 `downloadArtifact` calls, limited to eight concurrent downloads. Downloads beyond the
-limit queue without a thread until one finishes. Read or copy the stream within the
-callback. The client closes the response when the callback exits, including on failure.
+limit queue until a slot becomes available. A download subscribed to directly on a
+download worker runs inline and uses an additional slot. If all eight slots are in
+use, the nested subscription immediately receives a `RejectedExecutionException`.
+Read or copy the stream within the callback. The client closes the response when
+the callback exits, including on failure.
 Disposing a queued download removes it from the queue without starting it. Disposing an
 active download cancels the HTTP call and interrupts pending network reads.
 

@@ -13,30 +13,43 @@ import okhttp3.Response
 import java.io.IOException
 import java.io.InputStream
 import java.net.ProtocolException
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.Semaphore
 
 internal class ArtifactDownloader(transport: OkHttpClient, private val apiUrl: HttpUrl, private val token: String) {
-  fun <T : Any> download(artifact: Artifact, consume: (InputStream) -> T): Single<T> = Single.create<T> { emitter ->
+  fun <T : Any> download(artifact: Artifact, consume: (InputStream) -> T): Single<T> = Single.defer {
+    val onDownloadWorker = Thread.currentThread() is ArtifactDownloadThread
+    val download = Single.create<T> { emitter ->
+      val result = try {
+        withDownloadSlot(onDownloadWorker) {
+          if (emitter.isDisposed) return@create
+          val call = client.newCall(artifactRequest(artifact))
+          emitter.setCancellable(call::cancel)
+          if (emitter.isDisposed) return@create
+          call.execute().use {
+            if (emitter.isDisposed) return@create
+            if (!it.isSuccessful) throw IOException("Artifact download failed with HTTP ${it.code}")
+            consume(it.body.byteStream())
+          }
+        }
+      } catch (error: Throwable) {
+        Exceptions.throwIfFatal(error)
+        emitter.tryOnError(error)
+        return@create
+      }
+      emitter.onSuccess(result)
+    }
+    if (onDownloadWorker) download else download.subscribeOn(artifactDownloadScheduler)
+  }
+
+  private fun artifactRequest(artifact: Artifact): Request {
     val url = artifact.url.toHttpUrlOrNull()
     require(url != null && url.isArtifactUrl()) { "Expected an HTTPS artifact URL without user credentials" }
-    val request = Request.Builder().url(url)
-    if (canAuthenticateArtifact(url, apiUrl)) request.header(TOKEN_HEADER, token)
-    val call = client.newCall(request.build())
-    emitter.setCancellable(call::cancel)
-    if (emitter.isDisposed) return@create
-    val result = try {
-      call.execute().use {
-        if (emitter.isDisposed) return@create
-        if (!it.isSuccessful) throw IOException("Artifact download failed with HTTP ${it.code}")
-        consume(it.body.byteStream())
-      }
-    } catch (error: Throwable) {
-      Exceptions.throwIfFatal(error)
-      emitter.tryOnError(error)
-      return@create
-    }
-    emitter.onSuccess(result)
-  }.subscribeOn(artifactDownloadScheduler)
+    return Request.Builder().url(url).apply {
+      if (canAuthenticateArtifact(url, apiUrl)) header(TOKEN_HEADER, token)
+    }.build()
+  }
 
   private val client = transport.newBuilder()
     .followRedirects(false)
@@ -46,12 +59,31 @@ internal class ArtifactDownloader(transport: OkHttpClient, private val apiUrl: H
 
 internal const val ARTIFACT_DOWNLOAD_LIMIT = 8
 
+private val artifactDownloadSlots = Semaphore(ARTIFACT_DOWNLOAD_LIMIT)
+
+private inline fun <T> withDownloadSlot(onDownloadWorker: Boolean, download: () -> T): T {
+  if (!onDownloadWorker) {
+    artifactDownloadSlots.acquire()
+  } else if (!artifactDownloadSlots.tryAcquire()) {
+    throw RejectedExecutionException(
+      "Nested artifact download cannot start: all $ARTIFACT_DOWNLOAD_LIMIT download slots are in use",
+    )
+  }
+  try {
+    return download()
+  } finally {
+    artifactDownloadSlots.release()
+  }
+}
+
 private val artifactDownloadScheduler by lazy {
   val executor = ScheduledThreadPoolExecutor(ARTIFACT_DOWNLOAD_LIMIT) { task ->
-    Thread(task, "CircleCI-artifact-download").apply { isDaemon = true }
+    ArtifactDownloadThread(task).apply { isDaemon = true }
   }.apply { removeOnCancelPolicy = true }
   Schedulers.from(executor)
 }
+
+private class ArtifactDownloadThread(task: Runnable) : Thread(task, "CircleCI-artifact-download")
 
 internal fun canAuthenticateArtifact(url: HttpUrl, apiUrl: HttpUrl): Boolean =
   url.isArtifactUrl() && (url.hasSameOrigin(apiUrl) || (url.port == 443 &&

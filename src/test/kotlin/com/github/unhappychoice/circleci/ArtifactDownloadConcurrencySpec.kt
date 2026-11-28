@@ -1,6 +1,7 @@
 package com.github.unhappychoice.circleci
 
 import com.github.unhappychoice.circleci.v2.response.Artifact
+import io.reactivex.rxjava3.subjects.SingleSubject
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockResponseBody
@@ -12,15 +13,52 @@ import okhttp3.tls.HeldCertificate
 import okio.BufferedSink
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
 import java.io.IOException
 import java.io.OutputStream
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 
 object ArtifactDownloadConcurrencySpec : Spek({
+    test("rejects nested downloads when all workers are consuming artifacts") {
+        artifactServer().use { origin ->
+            repeat(ARTIFACT_DOWNLOAD_LIMIT) { origin.enqueue(MockResponse(body = "outer")) }
+            val api = artifactClient(origin)
+            val entered = CountDownLatch(ARTIFACT_DOWNLOAD_LIMIT)
+            val rejected = CountDownLatch(ARTIFACT_DOWNLOAD_LIMIT)
+            val cleanup = SingleSubject.create<Int>()
+            val downloads = List(ARTIFACT_DOWNLOAD_LIMIT) {
+                api.downloadArtifact(artifactAt(origin, "/outer")) { outer ->
+                    entered.countDown()
+                    assertTrue(entered.await(5, SECONDS))
+                    val error = assertThrows(RejectedExecutionException::class.java) {
+                        val inner = api.downloadArtifact(artifactAt(origin, "/inner")) { it.read() }
+                        cleanup.ambWith(inner).blockingGet()
+                    }
+                    rejected.countDown()
+                    assertTrue(rejected.await(5, SECONDS))
+                    assertEquals(
+                        "Nested artifact download cannot start: all $ARTIFACT_DOWNLOAD_LIMIT download slots are in use",
+                        error.message,
+                    )
+                    outer.reader().readText()
+                }.test()
+            }
+
+            try {
+                downloads.forEach { it.awaitDone(10, SECONDS).assertResult("outer") }
+                assertEquals(ARTIFACT_DOWNLOAD_LIMIT, origin.requestCount)
+            } finally {
+                cleanup.onSuccess(-1)
+                downloads.forEach { it.dispose() }
+            }
+        }
+    }
+
     test("keeps active downloads at the limit while bodies are paused, and releasing one starts the next queued download") {
         artifactServer().use { origin ->
             val heldTargets = (0 until ARTIFACT_DOWNLOAD_LIMIT).map { "/held-$it" }

@@ -84,7 +84,9 @@ class CircleCIAPIClient private constructor(
 
   /**
    * Consumes a V2 artifact with at most [ARTIFACT_DOWNLOAD_LIMIT] downloads, including [consume],
-   * running at once. Downloads beyond the limit queue without a worker until one frees up.
+   * running at once. Top-level downloads queue when the limit is reached.
+   * A download subscribed to directly from [consume] runs inline and uses an additional slot.
+   * If all slots are busy, it receives a [java.util.concurrent.RejectedExecutionException].
    * The stream is valid only during [consume] and is closed before success or failure is
    * delivered. Disposing a queued download never starts it; disposing an active download
    * cancels the call.
