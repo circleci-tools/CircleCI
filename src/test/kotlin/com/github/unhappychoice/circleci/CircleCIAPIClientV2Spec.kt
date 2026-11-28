@@ -147,6 +147,11 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(response.orgId).not.to.be.`null`
                 expect(response.projectId).not.to.be.`null`
                 expect(response.branches).not.to.be.empty
+                expect(response.org_id).to.equal(response.orgId)
+                expect(response.project_id).to.equal(response.projectId)
+                val copied = response.copy(org_id = "other-org", project_id = null)
+                expect(copied.orgId).to.equal("other-org")
+                expect(copied.projectId).to.be.`null`
             }
 
             test("#getFlakyTests() should return response") {

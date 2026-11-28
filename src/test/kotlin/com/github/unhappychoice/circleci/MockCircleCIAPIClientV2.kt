@@ -127,7 +127,7 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
 
     // Insights endpoints
     override fun getAllInsightsBranches(projectSlug: String, workflowName: String?): Observable<ProjectBranches> = Observable.just(
-        ProjectBranches(orgId = "org_id", projectId = "project_id", branches = listOf("branch"))
+        ProjectBranches(org_id = "org_id", project_id = "project_id", branches = listOf("branch"))
     )
 
     override fun getFlakyTests(projectSlug: String): Observable<FlakyTests> = Observable.just(
@@ -157,31 +157,31 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         JobTimeseriesResponse(
             items = listOf(
                 JobTimeseriesResponse.JobTimeseriesItem(
-                    name = "name", minStartedAt = "min_started_at", maxEndedAt = "max_ended_at", timestamp = "timestamp",
+                    name = "name", min_started_at = "min_started_at", max_ended_at = "max_ended_at", timestamp = "timestamp",
                     metrics = JobTimeseriesResponse.JobMetrics(
-                        totalRuns = 1, failedRuns = 1, successfulRuns = 1, throughput = 1f, medianCreditsUsed = 1, totalCreditsUsed = 1,
-                        durationMetrics = JobTimeseriesResponse.DurationMetrics(min = 1, median = 1, max = 1, p95 = 1, total = 1)
+                        total_runs = 1, failed_runs = 1, successful_runs = 1, throughput = 1f, median_credits_used = 1, total_credits_used = 1,
+                        duration_metrics = JobTimeseriesResponse.DurationMetrics(min = 1, median = 1, max = 1, p95 = 1, total = 1)
                     )
                 )
             ),
-            nextPageToken = "next_page_token"
+            next_page_token = "next_page_token"
         )
     )
 
     override fun getOrgSummaryData(orgSlug: String, reportingWindow: String?, projectNames: List<String>?): Observable<OrgSummaryData> = Observable.just(
         OrgSummaryData(
-            orgData = OrgSummaryData.OrgData(
-                metrics = SummaryMetrics(totalRuns = 1, totalDurationSecs = 1, totalCreditsUsed = 1, successRate = 1f, throughput = 1f),
-                trends = SummaryTrends(totalRuns = 1f, totalDurationSecs = 1f, totalCreditsUsed = 1f, successRate = 1f, throughput = 1f)
+            org_data = OrgSummaryData.OrgData(
+                metrics = SummaryMetrics(total_runs = 1, total_duration_secs = 1, total_credits_used = 1, success_rate = 1f, throughput = 1f),
+                trends = SummaryTrends(total_runs = 1f, total_duration_secs = 1f, total_credits_used = 1f, success_rate = 1f, throughput = 1f)
             ),
-            orgProjectData = listOf(
+            org_project_data = listOf(
                 OrgSummaryData.OrgProjectData(
-                    projectName = "project_name",
-                    metrics = OrgSummaryData.ProjectMetrics(totalRuns = 1, totalDurationSecs = 1, totalCreditsUsed = 1, successRate = 1f),
-                    trends = OrgSummaryData.ProjectTrends(totalRuns = 1f, totalDurationSecs = 1f, totalCreditsUsed = 1f, successRate = 1f)
+                    project_name = "project_name",
+                    metrics = OrgSummaryData.ProjectMetrics(total_runs = 1, total_duration_secs = 1, total_credits_used = 1, success_rate = 1f),
+                    trends = OrgSummaryData.ProjectTrends(total_runs = 1f, total_duration_secs = 1f, total_credits_used = 1f, success_rate = 1f)
                 )
             ),
-            allProjects = listOf("project")
+            all_projects = listOf("project")
         )
     )
 
@@ -189,27 +189,27 @@ class MockCircleCIAPIClientV2 : CircleCIAPIClientV2 by unsupportedEndpoints() {
         projectSlug: String, reportingWindow: String?, branches: List<String>?, workflowNames: List<String>?
     ): Observable<ProjectWorkflowsPageData> = Observable.just(
         ProjectWorkflowsPageData(
-            orgId = "org_id", projectId = "project_id",
-            projectData = ProjectWorkflowsPageData.ProjectData(
-                metrics = SummaryMetrics(totalRuns = 1, totalDurationSecs = 1, totalCreditsUsed = 1, successRate = 1f, throughput = 1f),
-                trends = SummaryTrends(totalRuns = 1f, totalDurationSecs = 1f, totalCreditsUsed = 1f, successRate = 1f, throughput = 1f)
+            org_id = "org_id", project_id = "project_id",
+            project_data = ProjectWorkflowsPageData.ProjectData(
+                metrics = SummaryMetrics(total_runs = 1, total_duration_secs = 1, total_credits_used = 1, success_rate = 1f, throughput = 1f),
+                trends = SummaryTrends(total_runs = 1f, total_duration_secs = 1f, total_credits_used = 1f, success_rate = 1f, throughput = 1f)
             ),
-            projectWorkflowData = listOf(
+            project_workflow_data = listOf(
                 ProjectWorkflowsPageData.ProjectWorkflowData(
-                    workflowName = "workflow_name",
-                    metrics = ProjectWorkflowsPageData.WorkflowMetrics(totalRuns = 1, totalCreditsUsed = 1, successRate = 1f, p95DurationSecs = 1f),
-                    trends = ProjectWorkflowsPageData.WorkflowTrends(totalRuns = 1f, totalCreditsUsed = 1f, successRate = 1f, p95DurationSecs = 1f)
+                    workflow_name = "workflow_name",
+                    metrics = ProjectWorkflowsPageData.WorkflowMetrics(total_runs = 1, total_credits_used = 1, success_rate = 1f, p95_duration_secs = 1f),
+                    trends = ProjectWorkflowsPageData.WorkflowTrends(total_runs = 1f, total_credits_used = 1f, success_rate = 1f, p95_duration_secs = 1f)
                 )
             ),
-            projectWorkflowBranchData = listOf(
+            project_workflow_branch_data = listOf(
                 ProjectWorkflowsPageData.ProjectWorkflowBranchData(
-                    workflowName = "workflow_name", branch = "branch",
-                    metrics = ProjectWorkflowsPageData.WorkflowMetrics(totalRuns = 1, totalCreditsUsed = 1, successRate = 1f, p95DurationSecs = 1f),
-                    trends = ProjectWorkflowsPageData.WorkflowTrends(totalRuns = 1f, totalCreditsUsed = 1f, successRate = 1f, p95DurationSecs = 1f)
+                    workflow_name = "workflow_name", branch = "branch",
+                    metrics = ProjectWorkflowsPageData.WorkflowMetrics(total_runs = 1, total_credits_used = 1, success_rate = 1f, p95_duration_secs = 1f),
+                    trends = ProjectWorkflowsPageData.WorkflowTrends(total_runs = 1f, total_credits_used = 1f, success_rate = 1f, p95_duration_secs = 1f)
                 )
             ),
-            allBranches = listOf("branch"),
-            allWorkflows = listOf("workflow")
+            all_branches = listOf("branch"),
+            all_workflows = listOf("workflow")
         )
     )
 
