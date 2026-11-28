@@ -144,9 +144,14 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val response = subscriber.values().first()
-                expect(response.org_id).not.to.be.`null`
-                expect(response.project_id).not.to.be.`null`
+                expect(response.orgId).not.to.be.`null`
+                expect(response.projectId).not.to.be.`null`
                 expect(response.branches).not.to.be.empty
+                expect(response.org_id).to.equal(response.orgId)
+                expect(response.project_id).to.equal(response.projectId)
+                val copied = response.copy(org_id = "other-org", project_id = null)
+                expect(copied.orgId).to.equal("other-org")
+                expect(copied.projectId).to.be.`null`
             }
 
             test("#getFlakyTests() should return response") {
@@ -164,7 +169,7 @@ object CircleCIAPIClientV2Spec : Spek({
 
                 val response = subscriber.values().first()
                 expect(response.items).not.to.be.empty
-                expect(response.next_page_token).not.to.be.`null`
+                expect(response.nextPageToken).not.to.be.`null`
                 expectNotNull(response.items.first())
             }
 
@@ -173,11 +178,11 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val response = subscriber.values().first()
-                expect(response.org_data).not.to.be.`null`
-                expectNotNull(response.org_data)
-                expect(response.org_project_data).not.to.be.empty
-                expectNotNull(response.org_project_data.first())
-                expect(response.all_projects).not.to.be.empty
+                expect(response.orgData).not.to.be.`null`
+                expectNotNull(response.orgData)
+                expect(response.orgProjectData).not.to.be.empty
+                expectNotNull(response.orgProjectData.first())
+                expect(response.allProjects).not.to.be.empty
             }
 
             test("#getProjectWorkflowsPageData() should return response") {
@@ -185,16 +190,16 @@ object CircleCIAPIClientV2Spec : Spek({
                 expect(subscriber.isFinished()).to.be.`true`
 
                 val response = subscriber.values().first()
-                expect(response.org_id).not.to.be.`null`
-                expect(response.project_id).not.to.be.`null`
-                expect(response.project_data).not.to.be.`null`
-                expectNotNull(response.project_data)
-                expect(response.project_workflow_data).not.to.be.empty
-                expectNotNull(response.project_workflow_data.first())
-                expect(response.project_workflow_branch_data).not.to.be.empty
-                expectNotNull(response.project_workflow_branch_data.first())
-                expect(response.all_branches).not.to.be.empty
-                expect(response.all_workflows).not.to.be.empty
+                expect(response.orgId).not.to.be.`null`
+                expect(response.projectId).not.to.be.`null`
+                expect(response.projectData).not.to.be.`null`
+                expectNotNull(response.projectData)
+                expect(response.projectWorkflowData).not.to.be.empty
+                expectNotNull(response.projectWorkflowData.first())
+                expect(response.projectWorkflowBranchData).not.to.be.empty
+                expectNotNull(response.projectWorkflowBranchData.first())
+                expect(response.allBranches).not.to.be.empty
+                expect(response.allWorkflows).not.to.be.empty
             }
 
             test("#getProjectWorkflowJobMetrics() should return response") {
@@ -1430,22 +1435,22 @@ private fun expectNotNull(test: FlakyTests.FlakyTest) {
 
 private fun expectNotNull(item: JobTimeseriesResponse.JobTimeseriesItem) {
     expect(item.name).not.to.be.`null`
-    expect(item.min_started_at).not.to.be.`null`
-    expect(item.max_ended_at).not.to.be.`null`
+    expect(item.minStartedAt).not.to.be.`null`
+    expect(item.maxEndedAt).not.to.be.`null`
     expect(item.timestamp).not.to.be.`null`
     expect(item.metrics).not.to.be.`null`
     expectNotNull(item.metrics)
 }
 
 private fun expectNotNull(metrics: JobTimeseriesResponse.JobMetrics) {
-    expect(metrics.total_runs).not.to.be.`null`
-    expect(metrics.failed_runs).not.to.be.`null`
-    expect(metrics.successful_runs).not.to.be.`null`
+    expect(metrics.totalRuns).not.to.be.`null`
+    expect(metrics.failedRuns).not.to.be.`null`
+    expect(metrics.successfulRuns).not.to.be.`null`
     expect(metrics.throughput).not.to.be.`null`
-    expect(metrics.median_credits_used).not.to.be.`null`
-    expect(metrics.total_credits_used).not.to.be.`null`
-    expect(metrics.duration_metrics).not.to.be.`null`
-    expectNotNull(metrics.duration_metrics)
+    expect(metrics.medianCreditsUsed).not.to.be.`null`
+    expect(metrics.totalCreditsUsed).not.to.be.`null`
+    expect(metrics.durationMetrics).not.to.be.`null`
+    expectNotNull(metrics.durationMetrics)
 }
 
 private fun expectNotNull(duration: JobTimeseriesResponse.DurationMetrics) {
@@ -1464,23 +1469,23 @@ private fun expectNotNull(data: OrgSummaryData.OrgData) {
 }
 
 private fun expectNotNull(metrics: SummaryMetrics) {
-    expect(metrics.total_runs).not.to.be.`null`
-    expect(metrics.total_duration_secs).not.to.be.`null`
-    expect(metrics.total_credits_used).not.to.be.`null`
-    expect(metrics.success_rate).not.to.be.`null`
+    expect(metrics.totalRuns).not.to.be.`null`
+    expect(metrics.totalDurationSecs).not.to.be.`null`
+    expect(metrics.totalCreditsUsed).not.to.be.`null`
+    expect(metrics.successRate).not.to.be.`null`
     expect(metrics.throughput).not.to.be.`null`
 }
 
 private fun expectNotNull(trends: SummaryTrends) {
-    expect(trends.total_runs).not.to.be.`null`
-    expect(trends.total_duration_secs).not.to.be.`null`
-    expect(trends.total_credits_used).not.to.be.`null`
-    expect(trends.success_rate).not.to.be.`null`
+    expect(trends.totalRuns).not.to.be.`null`
+    expect(trends.totalDurationSecs).not.to.be.`null`
+    expect(trends.totalCreditsUsed).not.to.be.`null`
+    expect(trends.successRate).not.to.be.`null`
     expect(trends.throughput).not.to.be.`null`
 }
 
 private fun expectNotNull(data: OrgSummaryData.OrgProjectData) {
-    expect(data.project_name).not.to.be.`null`
+    expect(data.projectName).not.to.be.`null`
     expect(data.metrics).not.to.be.`null`
     expectNotNull(data.metrics)
     expect(data.trends).not.to.be.`null`
@@ -1488,17 +1493,17 @@ private fun expectNotNull(data: OrgSummaryData.OrgProjectData) {
 }
 
 private fun expectNotNull(metrics: OrgSummaryData.ProjectMetrics) {
-    expect(metrics.total_runs).not.to.be.`null`
-    expect(metrics.total_duration_secs).not.to.be.`null`
-    expect(metrics.total_credits_used).not.to.be.`null`
-    expect(metrics.success_rate).not.to.be.`null`
+    expect(metrics.totalRuns).not.to.be.`null`
+    expect(metrics.totalDurationSecs).not.to.be.`null`
+    expect(metrics.totalCreditsUsed).not.to.be.`null`
+    expect(metrics.successRate).not.to.be.`null`
 }
 
 private fun expectNotNull(trends: OrgSummaryData.ProjectTrends) {
-    expect(trends.total_runs).not.to.be.`null`
-    expect(trends.total_duration_secs).not.to.be.`null`
-    expect(trends.total_credits_used).not.to.be.`null`
-    expect(trends.success_rate).not.to.be.`null`
+    expect(trends.totalRuns).not.to.be.`null`
+    expect(trends.totalDurationSecs).not.to.be.`null`
+    expect(trends.totalCreditsUsed).not.to.be.`null`
+    expect(trends.successRate).not.to.be.`null`
 }
 
 private fun expectNotNull(data: ProjectWorkflowsPageData.ProjectData) {
@@ -1509,7 +1514,7 @@ private fun expectNotNull(data: ProjectWorkflowsPageData.ProjectData) {
 }
 
 private fun expectNotNull(data: ProjectWorkflowsPageData.ProjectWorkflowData) {
-    expect(data.workflow_name).not.to.be.`null`
+    expect(data.workflowName).not.to.be.`null`
     expect(data.metrics).not.to.be.`null`
     expectNotNull(data.metrics)
     expect(data.trends).not.to.be.`null`
@@ -1517,21 +1522,21 @@ private fun expectNotNull(data: ProjectWorkflowsPageData.ProjectWorkflowData) {
 }
 
 private fun expectNotNull(metrics: ProjectWorkflowsPageData.WorkflowMetrics) {
-    expect(metrics.total_runs).not.to.be.`null`
-    expect(metrics.total_credits_used).not.to.be.`null`
-    expect(metrics.success_rate).not.to.be.`null`
-    expect(metrics.p95_duration_secs).not.to.be.`null`
+    expect(metrics.totalRuns).not.to.be.`null`
+    expect(metrics.totalCreditsUsed).not.to.be.`null`
+    expect(metrics.successRate).not.to.be.`null`
+    expect(metrics.p95DurationSecs).not.to.be.`null`
 }
 
 private fun expectNotNull(trends: ProjectWorkflowsPageData.WorkflowTrends) {
-    expect(trends.total_runs).not.to.be.`null`
-    expect(trends.total_credits_used).not.to.be.`null`
-    expect(trends.success_rate).not.to.be.`null`
-    expect(trends.p95_duration_secs).not.to.be.`null`
+    expect(trends.totalRuns).not.to.be.`null`
+    expect(trends.totalCreditsUsed).not.to.be.`null`
+    expect(trends.successRate).not.to.be.`null`
+    expect(trends.p95DurationSecs).not.to.be.`null`
 }
 
 private fun expectNotNull(data: ProjectWorkflowsPageData.ProjectWorkflowBranchData) {
-    expect(data.workflow_name).not.to.be.`null`
+    expect(data.workflowName).not.to.be.`null`
     expect(data.branch).not.to.be.`null`
     expect(data.metrics).not.to.be.`null`
     expectNotNull(data.metrics)
