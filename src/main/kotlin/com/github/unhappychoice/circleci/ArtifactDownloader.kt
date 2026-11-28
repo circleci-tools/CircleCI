@@ -37,6 +37,7 @@ internal class ArtifactDownloader(transport: OkHttpClient, private val apiUrl: H
     }
     emitter.onSuccess(result)
   }.subscribeOn(artifactDownloadScheduler)
+    .observeOn(Schedulers.io())
 
   private val client = transport.newBuilder()
     .followRedirects(false)

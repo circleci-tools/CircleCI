@@ -21,6 +21,14 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 
 object ArtifactDownloadConcurrencySpec : Spek({
+    test("completes a ninth download while eight success callbacks are blocked") {
+        assertDownloadCompletesWhileCallbacksAreBlocked(200)
+    }
+
+    test("completes a ninth download while eight error callbacks are blocked") {
+        assertDownloadCompletesWhileCallbacksAreBlocked(500)
+    }
+
     test("keeps active downloads at the limit while bodies are paused, and releasing one starts the next queued download") {
         artifactServer().use { origin ->
             val heldTargets = (0 until ARTIFACT_DOWNLOAD_LIMIT).map { "/held-$it" }
@@ -109,6 +117,42 @@ object ArtifactDownloadConcurrencySpec : Spek({
         }
     }
 })
+
+private fun assertDownloadCompletesWhileCallbacksAreBlocked(status: Int) {
+    artifactServer().use { origin ->
+        repeat(ARTIFACT_DOWNLOAD_LIMIT) { origin.enqueue(MockResponse(code = status, body = "held")) }
+        origin.enqueue(MockResponse(body = "next"))
+        val api = artifactClient(origin)
+        val callbacksEntered = CountDownLatch(ARTIFACT_DOWNLOAD_LIMIT)
+        val releaseCallbacks = CountDownLatch(1)
+        val blockCallback = {
+            callbacksEntered.countDown()
+            releaseCallbacks.await()
+        }
+        val held = (0 until ARTIFACT_DOWNLOAD_LIMIT).map { index ->
+            api.downloadArtifact(artifactAt(origin, "/held-$index")) { it.readBytes().decodeToString() }
+                .subscribe(
+                    { if (status == 200 && it == "held") blockCallback() },
+                    { if (status == 500 && it is IOException) blockCallback() },
+                )
+        }
+        try {
+            assertTrue(callbacksEntered.await(5, SECONDS))
+            repeat(ARTIFACT_DOWNLOAD_LIMIT) { origin.takeRequest(5, SECONDS) }
+
+            val next = api.downloadArtifact(artifactAt(origin, "/next")) { it.readBytes().decodeToString() }.test()
+            try {
+                assertEquals("/next", origin.takeRequest(5, SECONDS)?.target)
+                next.awaitDone(5, SECONDS).assertResult("next")
+            } finally {
+                next.dispose()
+            }
+        } finally {
+            releaseCallbacks.countDown()
+            held.forEach { it.dispose() }
+        }
+    }
+}
 
 private val concurrencyCertificate = HeldCertificate.Builder().addSubjectAlternativeName("localhost").build()
 private val concurrencyServerTls = HandshakeCertificates.Builder().heldCertificate(concurrencyCertificate).build()
