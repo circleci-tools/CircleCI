@@ -5,6 +5,9 @@ import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.Headers.Companion.headersOf
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.HeldCertificate
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -85,6 +88,30 @@ object CircleCIServerSpec : Spek({
                 assertEquals(token, origin.takeRequest(5, SECONDS)!!.headers["Circle-Token"])
                 assertEquals(token, origin.takeRequest(5, SECONDS)!!.headers["Circle-Token"])
             }
+        }
+
+        test("sends the instance token only to the configured artifact origin in $mode mode") {
+            val instanceUrl = "https://ci.example.com:8443"
+            val headersByUrl = mutableMapOf<String, String?>()
+            val recordingTransport = OkHttpClient.Builder().addInterceptor { chain ->
+                val request = chain.request()
+                headersByUrl[request.url.toString()] = request.header("Circle-Token")
+                Response.Builder().request(request).protocol(Protocol.HTTP_1_1)
+                    .code(200).message("OK").body("artifact-body".toResponseBody()).build()
+            }.build()
+            val client = CircleCIAPIClient.server(token, instanceUrl, asynchronous, recordingTransport)
+            val expectedHeaders = mapOf(
+                "$instanceUrl/artifact" to token,
+                "https://ci.example.com/artifact" to null,
+                "https://circleci.com/artifact" to null,
+                "https://dl.circleci.com/artifact" to null,
+                "https://output.circle-artifacts.com/artifact" to null,
+            )
+            expectedHeaders.keys.forEach { url ->
+                val body = client.downloadArtifact(Artifact(url, "report", 0)) { it.reader().readText() }.blockingGet()
+                assertEquals("artifact-body", body)
+            }
+            assertEquals(expectedHeaders, headersByUrl)
         }
 
         test("drops the instance token when a downloaded artifact redirects to another origin in $mode mode") {
