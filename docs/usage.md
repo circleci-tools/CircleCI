@@ -48,6 +48,24 @@ the CircleCI API v2 resource of the same name:
 Read the method's Retrofit annotations in the source file for its exact path, query
 parameters, and request/response types.
 
+### Verifying webhook signatures
+
+[`isValidSignature`](../src/main/kotlin/com/github/unhappychoice/circleci/WebhookSignatureVerifier.kt)
+checks a CircleCI outbound webhook delivery against the `signing-secret` used when the
+webhook was created with `CreateWebhookRequest` or `UpdateWebhookRequest`. Pass the raw
+request body bytes and the `circleci-signature` header CircleCI sends with each delivery:
+
+```kotlin
+import com.github.unhappychoice.circleci.isValidSignature
+
+val valid = isValidSignature(requestBody, request.getHeader("circleci-signature"), signingSecret)
+```
+
+It recomputes the HMAC-SHA256 digest of `payload` keyed by `signingSecret`, parses the
+header's comma-separated `key=value` pairs, and compares the `v1` entry in constant time.
+A null, blank, or malformed header, or one with no `v1` entry, returns `false` rather than
+throwing. `payload` must be the exact bytes CircleCI sent, before any re-encoding.
+
 ## V3 (`clientV3()`)
 
 `CircleCIAPIClientV3` covers CircleCI Cloud pipeline runs: `triggerRun`, `getRun`,

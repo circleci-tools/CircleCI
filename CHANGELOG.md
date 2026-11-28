@@ -21,6 +21,8 @@ Changes on `master` that have not shipped in a tagged release yet:
   connect a V2 client to an HTTPS CircleCI Server instance.
 - `Observable<T>.await()` and `Completable.await()` suspend extension functions
   (`Coroutines.kt`), built on `kotlinx-coroutines-rx3`, alongside the existing RxJava3 API.
+- `isValidSignature` (`WebhookSignatureVerifier.kt`) to verify a CircleCI outbound webhook
+  delivery's `circleci-signature` header against the webhook's signing secret.
 
 ### Fixed
 - `client()` and `client1_1()` now validate the token's header characters, matching the
