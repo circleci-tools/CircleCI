@@ -11,7 +11,8 @@ before reading its Retrofit declaration.
 [`CircleCIAPIClient(token)`](../src/main/kotlin/com/github/unhappychoice/circleci/CircleCIAPIClient.kt)
 and `CircleCIAPIClient.async(token)` construct every client below for CircleCI Cloud.
 `CircleCIAPIClient.server(token, instanceUrl)` and `.serverAsync(token, instanceUrl)`
-construct a V2 client for a CircleCI Server instance instead.
+return a [`CircleCIServerClient`](../src/main/kotlin/com/github/unhappychoice/circleci/CircleCIServerClient.kt)
+for the specified instance.
 
 - `clientV2()` — [`CircleCIAPIClientV2`](../src/main/kotlin/com/github/unhappychoice/circleci/CircleCIAPIClientV2.kt), the current API.
 - `clientV3()` — [`CircleCIAPIClientV3`](../src/main/kotlin/com/github/unhappychoice/circleci/CircleCIAPIClientV3.kt), triggering and polling pipeline runs.
@@ -64,10 +65,12 @@ README's "Coroutines on master" section for an example and cancellation semantic
 
 ## CircleCI Server
 
-`CircleCIAPIClient.server(token, instanceUrl)` and `.serverAsync(token, instanceUrl)`
-return a `CircleCIAPIClientV2` scoped to that instance. See
-[Architecture](architecture.md) and the README's "CircleCI Server on master" section for
-which endpoints are tested against a live-shaped mock.
+`CircleCIServerClient` extends `CircleCIAPIClientV2`, so call V2 methods directly on
+the returned client. It also exposes `downloadArtifact(artifact, consume)`, which
+streams the artifact to your callback and returns the callback's result as a
+`Single<T>`. Use `server()` for synchronous V2 subscriptions and `serverAsync()`
+for asynchronous ones. See the [CircleCI Server examples](../README.md#circleci-server-on-master)
+for workflow jobs and artifact downloads.
 
 ## V1 and V1.1 (deprecated)
 
